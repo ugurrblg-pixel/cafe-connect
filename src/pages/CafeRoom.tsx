@@ -1,19 +1,35 @@
-import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { UserCard } from '@/components/UserCard';
 import { CheckInButton } from '@/components/CheckInButton';
-import { mockCafes, mockUsers } from '@/data/mockData';
+import { useCheckIn } from '@/hooks/useCheckIn';
+import { useCafeUsers } from '@/hooks/useCafeUsers';
+import { useCafes } from '@/hooks/useCafes';
 import { MapPin, Star, Users, Clock, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function CafeRoom() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const { user } = useAuth();
+  const { cafes, loading: cafesLoading } = useCafes();
+  const { isCheckedIn, loading: checkInLoading, checkIn, checkOut } = useCheckIn(id || '');
+  const { users: activeUsers, loading: usersLoading } = useCafeUsers(id || '');
 
-  const cafe = mockCafes.find((c) => c.id === id);
-  const activeUsers = mockUsers.filter((u) => u.cafeId === id);
+  const cafe = cafes.find((c) => c.id === id);
+
+  if (cafesLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Skeleton className="h-56 w-full" />
+        <div className="px-4 -mt-16 relative">
+          <Skeleton className="h-32 w-full rounded-2xl" />
+        </div>
+      </div>
+    );
+  }
 
   if (!cafe) {
     return (
@@ -23,16 +39,20 @@ export default function CafeRoom() {
     );
   }
 
-  const handleCheckIn = () => {
-    setIsCheckedIn(true);
-    toast.success("You're now visible at " + cafe.name, {
-      description: 'Your presence will expire in 60 minutes',
-    });
+  const handleCheckIn = async () => {
+    const success = await checkIn();
+    if (success) {
+      toast.success("You're now visible at " + cafe.name, {
+        description: 'Your presence will expire in 60 minutes',
+      });
+    }
   };
 
-  const handleCheckOut = () => {
-    setIsCheckedIn(false);
-    toast.info("You've left " + cafe.name);
+  const handleCheckOut = async () => {
+    const success = await checkOut();
+    if (success) {
+      toast.info("You've left " + cafe.name);
+    }
   };
 
   const handleMessage = (userName: string) => {
@@ -48,6 +68,9 @@ export default function CafeRoom() {
     };
     toast.success(messages[type]);
   };
+
+  // Filter out current user from the list
+  const otherUsers = activeUsers.filter((u) => u.userId !== user?.id);
 
   return (
     <div className="min-h-screen bg-background">
@@ -99,14 +122,30 @@ export default function CafeRoom() {
             People here now
           </h2>
 
-          {activeUsers.length > 0 ? (
+          {usersLoading ? (
             <div className="space-y-3">
-              {activeUsers.map((user, index) => (
+              {[1, 2].map((i) => (
+                <Skeleton key={i} className="h-24 w-full rounded-2xl" />
+              ))}
+            </div>
+          ) : otherUsers.length > 0 ? (
+            <div className="space-y-3">
+              {otherUsers.map((activeUser, index) => (
                 <UserCard
-                  key={user.id}
-                  user={user}
-                  onMessage={() => handleMessage(user.name)}
-                  onInteraction={(type) => handleInteraction(type, user.name)}
+                  key={activeUser.id}
+                  user={{
+                    id: activeUser.id,
+                    name: activeUser.name,
+                    age: activeUser.age || 0,
+                    bio: activeUser.bio,
+                    photoUrl: activeUser.photoUrl,
+                    purpose: activeUser.purpose,
+                    allowDMs: activeUser.allowDMs,
+                    isOnline: true,
+                    checkedInAt: activeUser.checkedInAt,
+                  }}
+                  onMessage={() => handleMessage(activeUser.name)}
+                  onInteraction={(type) => handleInteraction(type, activeUser.name)}
                   style={{ animationDelay: `${index * 100}ms` } as React.CSSProperties}
                 />
               ))}
@@ -116,7 +155,7 @@ export default function CafeRoom() {
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                 <Users className="w-8 h-8 text-muted-foreground" />
               </div>
-              <p className="text-muted-foreground mb-1">No one here yet</p>
+              <p className="text-muted-foreground mb-1">No one else here yet</p>
               <p className="text-sm text-muted-foreground">Be the first to check in!</p>
             </div>
           )}
