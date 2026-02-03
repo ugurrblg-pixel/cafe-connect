@@ -14,7 +14,113 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      cafes: {
+        Row: {
+          address: string
+          created_at: string
+          distance: string | null
+          id: string
+          image_url: string | null
+          is_open: boolean
+          name: string
+          rating: number | null
+        }
+        Insert: {
+          address?: string
+          created_at?: string
+          distance?: string | null
+          id?: string
+          image_url?: string | null
+          is_open?: boolean
+          name: string
+          rating?: number | null
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          distance?: string | null
+          id?: string
+          image_url?: string | null
+          is_open?: boolean
+          name?: string
+          rating?: number | null
+        }
+        Relationships: []
+      }
+      check_ins: {
+        Row: {
+          cafe_id: string
+          check_in_time: string
+          created_at: string
+          expiry_time: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          cafe_id: string
+          check_in_time?: string
+          created_at?: string
+          expiry_time?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          cafe_id?: string
+          check_in_time?: string
+          created_at?: string
+          expiry_time?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "check_ins_cafe_id_fkey"
+            columns: ["cafe_id"]
+            isOneToOne: false
+            referencedRelation: "cafes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          age: number | null
+          allow_dms: boolean
+          bio: string | null
+          created_at: string
+          id: string
+          name: string
+          photo_url: string | null
+          purpose: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age?: number | null
+          allow_dms?: boolean
+          bio?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          photo_url?: string | null
+          purpose?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age?: number | null
+          allow_dms?: boolean
+          bio?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          photo_url?: string | null
+          purpose?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
