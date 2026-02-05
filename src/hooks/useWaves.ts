@@ -150,18 +150,37 @@ export function useWaves(): UseWavesReturn {
           });
 
         if (!matchExists) {
-          // Create the match
+          // First create the conversation
+          const { data: newConversation, error: convError } = await supabase
+            .from('conversations')
+            .insert({
+              user1_id: user.id,
+              user2_id: toUserId,
+              cafe_id: cafeId,
+            })
+            .select('id')
+            .single();
+
+          if (convError) {
+            console.error('Error creating conversation:', convError);
+            return { success: true, isMatch: true };
+          }
+
+          // Create the match with conversation_id
           const { error: matchError } = await supabase
             .from('matches')
             .insert({
               user1_id: user.id,
               user2_id: toUserId,
               cafe_id: cafeId,
+              conversation_id: newConversation.id,
             });
 
           if (matchError && matchError.code !== '23505') {
             console.error('Error creating match:', matchError);
           }
+
+          toast.success("It's a match! You can now chat 💬");
         }
 
         return { success: true, isMatch: true };
