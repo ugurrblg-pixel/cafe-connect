@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Discover from "./pages/Discover";
 import CafeRoom from "./pages/CafeRoom";
 import Messages from "./pages/Messages";
+import ChatRoom from "./pages/ChatRoom";
 import Profile from "./pages/Profile";
 import ProfileEdit from "./pages/ProfileEdit";
 import Search from "./pages/Search";
@@ -86,6 +87,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <Messages />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chat/:conversationId"
+          element={
+            <ProtectedRoute>
+              <ChatRoom />
             </ProtectedRoute>
           }
         />

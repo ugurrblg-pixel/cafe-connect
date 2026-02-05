@@ -15,11 +15,14 @@ import { Purpose } from '@/types';
 
 interface SelectedUser {
   id: string;
+  userId?: string;
   name: string;
   photoUrl: string;
   bio: string;
   purpose: Purpose;
+  allowDMs?: boolean;
   checkedInAt?: Date;
+  cafeId?: string;
 }
 
 export default function CafeRoom() {
@@ -87,11 +90,14 @@ export default function CafeRoom() {
   const handleUserTap = (activeUser: typeof activeUsers[0]) => {
     setSelectedUser({
       id: activeUser.id,
+      userId: activeUser.userId,
       name: activeUser.displayName || activeUser.name,
       photoUrl: activeUser.photoUrl,
       bio: activeUser.bio,
       purpose: activeUser.purpose,
+      allowDMs: activeUser.allowDMs,
       checkedInAt: activeUser.checkedInAt,
+      cafeId: id,
     });
     setSheetOpen(true);
   };
@@ -217,6 +223,7 @@ export default function CafeRoom() {
         user={selectedUser}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
+        cafeId={id}
       />
     </div>
   );

@@ -82,6 +82,120 @@ export type Database = {
           },
         ]
       }
+      conversations: {
+        Row: {
+          cafe_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          updated_at: string
+          user1_id: string
+          user2_id: string
+        }
+        Insert: {
+          cafe_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          user1_id: string
+          user2_id: string
+        }
+        Update: {
+          cafe_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          user1_id?: string
+          user2_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_cafe_id_fkey"
+            columns: ["cafe_id"]
+            isOneToOne: false
+            referencedRelation: "cafes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_requests: {
+        Row: {
+          cafe_id: string
+          created_at: string
+          from_user_id: string
+          id: string
+          preset_message: string
+          responded_at: string | null
+          status: string
+          to_user_id: string
+        }
+        Insert: {
+          cafe_id: string
+          created_at?: string
+          from_user_id: string
+          id?: string
+          preset_message: string
+          responded_at?: string | null
+          status?: string
+          to_user_id: string
+        }
+        Update: {
+          cafe_id?: string
+          created_at?: string
+          from_user_id?: string
+          id?: string
+          preset_message?: string
+          responded_at?: string | null
+          status?: string
+          to_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_requests_cafe_id_fkey"
+            columns: ["cafe_id"]
+            isOneToOne: false
+            referencedRelation: "cafes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          read_at: string | null
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           age: number | null
@@ -127,12 +241,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      count_recent_message_requests: {
+        Args: { user_id: string }
+        Returns: number
+      }
+      is_blocked: {
+        Args: { checker_id: string; target_id: string }
+        Returns: boolean
+      }
+      is_conversation_participant: {
+        Args: { conv_id: string; user_id: string }
+        Returns: boolean
+      }
+      users_in_same_cafe: {
+        Args: { target_cafe_id: string; user1: string; user2: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
