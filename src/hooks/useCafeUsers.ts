@@ -5,11 +5,13 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 interface CafeUser {
   id: string;
   name: string;
+  displayName: string;
   age: number | null;
   bio: string;
   photoUrl: string;
   purpose: 'chat' | 'friendship' | 'dating';
   allowDMs: boolean;
+  isVisible: boolean;
   checkedInAt: Date;
   userId: string;
 }
@@ -29,11 +31,13 @@ export function useCafeUsers(cafeId: string) {
           id,
           user_id,
           name,
+          display_name,
           age,
           bio,
           photo_url,
           purpose,
-          allow_dms
+          allow_dms,
+          is_visible
         )
       `)
       .eq('cafe_id', cafeId)
@@ -46,16 +50,18 @@ export function useCafeUsers(cafeId: string) {
     }
 
     const activeUsers: CafeUser[] = (data || [])
-      .filter((checkIn: any) => checkIn.profiles)
+      .filter((checkIn: any) => checkIn.profiles && checkIn.profiles.is_visible !== false)
       .map((checkIn: any) => ({
         id: checkIn.profiles.id,
         userId: checkIn.profiles.user_id,
         name: checkIn.profiles.name || 'Anonymous',
+        displayName: checkIn.profiles.display_name || checkIn.profiles.name || 'Anonymous',
         age: checkIn.profiles.age,
         bio: checkIn.profiles.bio || '',
-        photoUrl: checkIn.profiles.photo_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face',
+        photoUrl: checkIn.profiles.photo_url || '',
         purpose: checkIn.profiles.purpose as 'chat' | 'friendship' | 'dating',
         allowDMs: checkIn.profiles.allow_dms,
+        isVisible: checkIn.profiles.is_visible ?? true,
         checkedInAt: new Date(checkIn.check_in_time),
       }));
 

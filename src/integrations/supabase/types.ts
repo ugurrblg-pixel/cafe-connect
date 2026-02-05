@@ -88,7 +88,9 @@ export type Database = {
           allow_dms: boolean
           bio: string | null
           created_at: string
+          display_name: string | null
           id: string
+          is_visible: boolean | null
           name: string
           photo_url: string | null
           purpose: string
@@ -100,7 +102,9 @@ export type Database = {
           allow_dms?: boolean
           bio?: string | null
           created_at?: string
+          display_name?: string | null
           id?: string
+          is_visible?: boolean | null
           name?: string
           photo_url?: string | null
           purpose?: string
@@ -112,7 +116,9 @@ export type Database = {
           allow_dms?: boolean
           bio?: string | null
           created_at?: string
+          display_name?: string | null
           id?: string
+          is_visible?: boolean | null
           name?: string
           photo_url?: string | null
           purpose?: string
