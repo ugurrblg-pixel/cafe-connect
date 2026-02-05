@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { PurposeBadge } from '@/components/PurposeBadge';
+import { InitialsAvatar } from '@/components/InitialsAvatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Purpose } from '@/types';
-import { Camera, Edit2, Shield, Bell, HelpCircle, LogOut, MessageCircle, Users, Heart } from 'lucide-react';
+import { Edit2, Shield, Bell, HelpCircle, LogOut, MessageCircle, Users, Heart, Eye, EyeOff } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,16 +14,18 @@ import { Skeleton } from '@/components/ui/skeleton';
 interface Profile {
   id: string;
   name: string;
+  display_name: string;
   age: number | null;
   bio: string;
   photo_url: string;
   purpose: Purpose;
   allow_dms: boolean;
+  is_visible: boolean;
 }
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, refreshProfile } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -42,11 +45,13 @@ export default function Profile() {
         setProfile({
           id: data.id,
           name: data.name || user.user_metadata?.name || 'Anonymous',
+          display_name: data.display_name || '',
           age: data.age,
           bio: data.bio || '',
-          photo_url: data.photo_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face',
+          photo_url: data.photo_url || '',
           purpose: data.purpose as Purpose,
           allow_dms: data.allow_dms,
+          is_visible: data.is_visible ?? true,
         });
       }
       setLoading(false);
@@ -100,6 +105,17 @@ export default function Profile() {
     navigate('/auth');
   };
 
+  const displayName = profile?.display_name || profile?.name || 'Anonymous';
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || 'U';
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background pb-24">
@@ -131,26 +147,46 @@ export default function Profile() {
         {/* Profile Header */}
         <div className="flex flex-col items-center py-6 animate-scale-in">
           <div className="relative mb-4">
-            <img
-              src={profile.photo_url}
-              alt={profile.name}
-              className="w-28 h-28 rounded-full object-cover border-4 border-card shadow-lg"
-            />
-            <button className="absolute bottom-0 right-0 w-10 h-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-md">
-              <Camera className="w-5 h-5" />
-            </button>
+            {profile.photo_url ? (
+              <img
+                src={profile.photo_url}
+                alt={displayName}
+                className="w-28 h-28 rounded-full object-cover border-4 border-card shadow-lg"
+              />
+            ) : (
+              <div className="w-28 h-28 rounded-full bg-primary flex items-center justify-center border-4 border-card shadow-lg">
+                <span className="text-3xl font-bold text-primary-foreground">
+                  {getInitials(displayName)}
+                </span>
+              </div>
+            )}
+            {/* Visibility indicator */}
+            <div className={`absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center border-2 border-card ${profile.is_visible ? 'bg-accent' : 'bg-muted'}`}>
+              {profile.is_visible ? (
+                <Eye className="w-4 h-4 text-accent-foreground" />
+              ) : (
+                <EyeOff className="w-4 h-4 text-muted-foreground" />
+              )}
+            </div>
           </div>
           <h1 className="text-2xl font-bold text-foreground mb-1">
-            {profile.name}{profile.age ? `, ${profile.age}` : ''}
+            {displayName}{profile.age ? `, ${profile.age}` : ''}
           </h1>
           <PurposeBadge purpose={profile.purpose} />
+          <button
+            onClick={() => navigate('/profile/edit')}
+            className="mt-3 flex items-center gap-2 text-primary text-sm font-medium"
+          >
+            <Edit2 className="w-4 h-4" />
+            Edit Profile
+          </button>
         </div>
 
         {/* Bio Section */}
         <section className="card-elevated p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold text-foreground">About</h2>
-            <button className="text-primary p-1">
+            <button onClick={() => navigate('/profile/edit')} className="text-primary p-1">
               <Edit2 className="w-4 h-4" />
             </button>
           </div>

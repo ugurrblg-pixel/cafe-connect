@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { UserCard } from '@/components/UserCard';
 import { CheckInButton } from '@/components/CheckInButton';
+import { ProfileBottomSheet } from '@/components/ProfileBottomSheet';
 import { useCheckIn } from '@/hooks/useCheckIn';
 import { useCafeUsers } from '@/hooks/useCafeUsers';
 import { useCafes } from '@/hooks/useCafes';
@@ -9,6 +11,16 @@ import { MapPin, Star, Users, Clock, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
+import { Purpose } from '@/types';
+
+interface SelectedUser {
+  id: string;
+  name: string;
+  photoUrl: string;
+  bio: string;
+  purpose: Purpose;
+  checkedInAt?: Date;
+}
 
 export default function CafeRoom() {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +29,9 @@ export default function CafeRoom() {
   const { cafes, loading: cafesLoading } = useCafes();
   const { isCheckedIn, loading: checkInLoading, checkIn, checkOut } = useCheckIn(id || '');
   const { users: activeUsers, loading: usersLoading } = useCafeUsers(id || '');
+  
+  const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const cafe = cafes.find((c) => c.id === id);
 
@@ -67,6 +82,18 @@ export default function CafeRoom() {
       eye: `👀 You made eye contact with ${userName}!`,
     };
     toast.success(messages[type]);
+  };
+
+  const handleUserTap = (activeUser: typeof activeUsers[0]) => {
+    setSelectedUser({
+      id: activeUser.id,
+      name: activeUser.displayName || activeUser.name,
+      photoUrl: activeUser.photoUrl,
+      bio: activeUser.bio,
+      purpose: activeUser.purpose,
+      checkedInAt: activeUser.checkedInAt,
+    });
+    setSheetOpen(true);
   };
 
   // Filter out current user from the list
@@ -136,6 +163,7 @@ export default function CafeRoom() {
                   user={{
                     id: activeUser.id,
                     name: activeUser.name,
+                    displayName: activeUser.displayName,
                     age: activeUser.age || 0,
                     bio: activeUser.bio,
                     photoUrl: activeUser.photoUrl,
@@ -144,8 +172,9 @@ export default function CafeRoom() {
                     isOnline: true,
                     checkedInAt: activeUser.checkedInAt,
                   }}
-                  onMessage={() => handleMessage(activeUser.name)}
-                  onInteraction={(type) => handleInteraction(type, activeUser.name)}
+                  onMessage={() => handleMessage(activeUser.displayName || activeUser.name)}
+                  onInteraction={(type) => handleInteraction(type, activeUser.displayName || activeUser.name)}
+                  onTap={() => handleUserTap(activeUser)}
                   style={{ animationDelay: `${index * 100}ms` } as React.CSSProperties}
                 />
               ))}
@@ -182,6 +211,13 @@ export default function CafeRoom() {
           cafeName={cafe.name}
         />
       </div>
+
+      {/* Profile Bottom Sheet */}
+      <ProfileBottomSheet
+        user={selectedUser}
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+      />
     </div>
   );
 }

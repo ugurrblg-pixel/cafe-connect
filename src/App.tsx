@@ -9,14 +9,15 @@ import Discover from "./pages/Discover";
 import CafeRoom from "./pages/CafeRoom";
 import Messages from "./pages/Messages";
 import Profile from "./pages/Profile";
+import ProfileEdit from "./pages/ProfileEdit";
 import Search from "./pages/Search";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+function ProtectedRoute({ children, requireProfileComplete = true }: { children: React.ReactNode; requireProfileComplete?: boolean }) {
+  const { user, loading, profileComplete } = useAuth();
 
   if (loading) {
     return (
@@ -28,6 +29,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Redirect to profile edit if profile is incomplete (but allow access to profile-edit page)
+  if (requireProfileComplete && !profileComplete) {
+    return <Navigate to="/profile/edit" replace />;
   }
 
   return <>{children}</>;
@@ -88,6 +94,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/edit"
+          element={
+            <ProtectedRoute requireProfileComplete={false}>
+              <ProfileEdit />
             </ProtectedRoute>
           }
         />

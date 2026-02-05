@@ -3,12 +3,14 @@ export type Purpose = 'chat' | 'friendship' | 'dating';
 export interface User {
   id: string;
   name: string;
+  displayName?: string;
   age: number;
   bio: string;
   photoUrl: string;
   purpose: Purpose;
   allowDMs: boolean;
   isOnline: boolean;
+  isVisible?: boolean;
   checkedInAt?: Date;
   cafeId?: string;
 }
