@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { UserCard } from '@/components/UserCard';
 import { CheckInButton } from '@/components/CheckInButton';
 import { ProfileBottomSheet } from '@/components/ProfileBottomSheet';
+import { IntentFilterChips, FilterOption } from '@/components/IntentFilterChips';
 import { useCheckIn } from '@/hooks/useCheckIn';
 import { useCafeUsers } from '@/hooks/useCafeUsers';
 import { useCafes } from '@/hooks/useCafes';
@@ -35,8 +36,16 @@ export default function CafeRoom() {
   
   const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [intentFilter, setIntentFilter] = useState<FilterOption>('all');
 
   const cafe = cafes.find((c) => c.id === id);
+
+  // Filter out current user and apply intent filter (must be before early returns)
+  const otherUsers = activeUsers.filter((u) => u.userId !== user?.id);
+  const filteredUsers = useMemo(() => {
+    if (intentFilter === 'all') return otherUsers;
+    return otherUsers.filter((u) => u.purpose === intentFilter);
+  }, [otherUsers, intentFilter]);
 
   if (cafesLoading) {
     return (
@@ -102,8 +111,6 @@ export default function CafeRoom() {
     setSheetOpen(true);
   };
 
-  // Filter out current user from the list
-  const otherUsers = activeUsers.filter((u) => u.userId !== user?.id);
 
   return (
     <div className="min-h-screen bg-background">
@@ -148,11 +155,23 @@ export default function CafeRoom() {
           </div>
         </div>
 
+        {/* Intent Filter Chips */}
+        <IntentFilterChips
+          selected={intentFilter}
+          onChange={setIntentFilter}
+          className="mb-4"
+        />
+
         {/* Active Users */}
         <section>
           <h2 className="font-semibold text-lg text-foreground mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-accent rounded-full animate-pulse-soft" />
             People here now
+            {intentFilter !== 'all' && (
+              <span className="text-sm font-normal text-muted-foreground">
+                ({filteredUsers.length} of {otherUsers.length})
+              </span>
+            )}
           </h2>
 
           {usersLoading ? (
@@ -161,9 +180,9 @@ export default function CafeRoom() {
                 <Skeleton key={i} className="h-24 w-full rounded-2xl" />
               ))}
             </div>
-          ) : otherUsers.length > 0 ? (
+          ) : filteredUsers.length > 0 ? (
             <div className="space-y-3">
-              {otherUsers.map((activeUser, index) => (
+              {filteredUsers.map((activeUser, index) => (
                 <UserCard
                   key={activeUser.id}
                   user={{
@@ -184,6 +203,14 @@ export default function CafeRoom() {
                   style={{ animationDelay: `${index * 100}ms` } as React.CSSProperties}
                 />
               ))}
+            </div>
+          ) : otherUsers.length > 0 ? (
+            <div className="card-elevated p-8 text-center">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground mb-1">No one matches this filter</p>
+              <p className="text-sm text-muted-foreground">Try selecting "All" to see everyone</p>
             </div>
           ) : (
             <div className="card-elevated p-8 text-center">

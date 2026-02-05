@@ -8,9 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Camera, User, Loader2 } from 'lucide-react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Camera, User, Loader2, MessageCircle, Users, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Purpose } from '@/types';
 
 interface ProfileData {
   id: string;
@@ -18,6 +20,7 @@ interface ProfileData {
   bio: string;
   photo_url: string;
   is_visible: boolean;
+  purpose: Purpose;
 }
 
 export default function ProfileEdit() {
@@ -33,6 +36,7 @@ export default function ProfileEdit() {
     bio: '',
     photo_url: '',
     is_visible: true,
+    purpose: 'friendship',
   });
 
   useEffect(() => {
@@ -41,7 +45,7 @@ export default function ProfileEdit() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, display_name, bio, photo_url, is_visible')
+        .select('id, display_name, bio, photo_url, is_visible, purpose')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -55,6 +59,7 @@ export default function ProfileEdit() {
           bio: data.bio || '',
           photo_url: data.photo_url || '',
           is_visible: data.is_visible ?? true,
+          purpose: (data.purpose as Purpose) || 'friendship',
         });
       }
       setLoading(false);
@@ -138,6 +143,7 @@ export default function ProfileEdit() {
         bio: trimmedBio,
         photo_url: profile.photo_url,
         is_visible: profile.is_visible,
+        purpose: profile.purpose,
       })
       .eq('id', profile.id);
 
@@ -248,6 +254,44 @@ export default function ProfileEdit() {
             />
             <p className="text-xs text-muted-foreground text-right">
               {profile.bio.length}/120
+            </p>
+          </div>
+
+          {/* Intent/Purpose Selector */}
+          <div className="space-y-3">
+            <Label>What are you looking for?</Label>
+            <ToggleGroup
+              type="single"
+              value={profile.purpose}
+              onValueChange={(value) => {
+                if (value) setProfile(prev => ({ ...prev, purpose: value as Purpose }));
+              }}
+              className="grid grid-cols-3 gap-2"
+            >
+              <ToggleGroupItem
+                value="friendship"
+                className="flex flex-col items-center gap-1 py-3 px-2 h-auto data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+              >
+                <Users className="w-5 h-5" />
+                <span className="text-xs font-medium">Friendship</span>
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="dating"
+                className="flex flex-col items-center gap-1 py-3 px-2 h-auto data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+              >
+                <Heart className="w-5 h-5" />
+                <span className="text-xs font-medium">Dating</span>
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="chat"
+                className="flex flex-col items-center gap-1 py-3 px-2 h-auto data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+              >
+                <MessageCircle className="w-5 h-5" />
+                <span className="text-xs font-medium">Chat</span>
+              </ToggleGroupItem>
+            </ToggleGroup>
+            <p className="text-xs text-muted-foreground">
+              This helps others know what kind of connection you're open to
             </p>
           </div>
 
