@@ -8,10 +8,18 @@ import {
 import { Button } from '@/components/ui/button';
 import { PurposeBadge } from './PurposeBadge';
 import { MessageRequestModal } from './MessageRequestModal';
+import { BlockDialog, ReportDialog } from './BlockReportDialog';
 import { Purpose } from '@/types';
-import { MapPin, MessageCircle } from 'lucide-react';
+import { MapPin, MessageCircle, Ban, Flag, MoreVertical } from 'lucide-react';
 import { useMessageRequests } from '@/hooks/useMessageRequests';
+import { useBlocking } from '@/hooks/useBlocking';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface ProfileUser {
   id: string;
@@ -35,9 +43,15 @@ interface ProfileBottomSheetProps {
 export function ProfileBottomSheet({ user, open, onOpenChange, cafeId }: ProfileBottomSheetProps) {
   const { user: currentUser, profile } = useAuth();
   const { sendRequest, presetMessages, sentRequests } = useMessageRequests();
+  const { blockUser, reportUser } = useBlocking();
+  
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [showBlockDialog, setShowBlockDialog] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
 
   if (!user) return null;
+
+  const targetUserId = user.userId || user.id;
 
   const getInitials = (name: string) => {
     return name
@@ -54,7 +68,7 @@ export function ProfileBottomSheet({ user, open, onOpenChange, cafeId }: Profile
 
   // Check if request already sent
   const alreadySentRequest = sentRequests.some(
-    r => r.toUserId === (user.userId || user.id) && r.cafeId === cafeId
+    r => r.toUserId === targetUserId && r.cafeId === cafeId
   );
 
   // Check if user allows DMs and current user allows DMs
@@ -62,11 +76,25 @@ export function ProfileBottomSheet({ user, open, onOpenChange, cafeId }: Profile
 
   const handleSendRequest = async (message: string) => {
     const targetCafeId = cafeId || user.cafeId;
-    const targetUserId = user.userId || user.id;
     
     if (!targetCafeId || !targetUserId) return false;
     
     return await sendRequest(targetUserId, targetCafeId, message);
+  };
+
+  const handleBlock = async () => {
+    const success = await blockUser(targetUserId);
+    if (success) {
+      setShowBlockDialog(false);
+      onOpenChange(false);
+    }
+  };
+
+  const handleReport = async (reason: 'spam' | 'harassment' | 'inappropriate', description?: string) => {
+    const success = await reportUser(targetUserId, reason, description);
+    if (success) {
+      setShowReportDialog(false);
+    }
   };
 
   return (
@@ -76,6 +104,35 @@ export function ProfileBottomSheet({ user, open, onOpenChange, cafeId }: Profile
           <SheetHeader className="sr-only">
             <SheetTitle>{user.name}'s Profile</SheetTitle>
           </SheetHeader>
+          
+          {/* Action Menu */}
+          {currentUser && currentUser.id !== targetUserId && (
+            <div className="absolute top-4 right-4">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="p-2 rounded-full hover:bg-secondary transition-colors">
+                    <MoreVertical className="w-5 h-5 text-muted-foreground" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-card border border-border">
+                  <DropdownMenuItem 
+                    onClick={() => setShowReportDialog(true)} 
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Flag className="w-4 h-4 mr-2" />
+                    Şikayet Et
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setShowBlockDialog(true)} 
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Ban className="w-4 h-4 mr-2" />
+                    Engelle
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
           
           <div className="flex flex-col items-center py-4">
             {/* Profile Photo or Initials */}
@@ -112,12 +169,12 @@ export function ProfileBottomSheet({ user, open, onOpenChange, cafeId }: Profile
             <div className="flex items-center gap-2 mt-4 px-4 py-2 bg-accent/10 rounded-full">
               <MapPin className="w-4 h-4 text-accent" />
               <span className="text-sm font-medium text-accent">
-                Currently here • {timeAgo} min
+                Burada • {timeAgo} dk
               </span>
             </div>
 
             {/* Message Request Button */}
-            {canMessage && currentUser && (
+            {canMessage && currentUser && currentUser.id !== targetUserId && (
               <Button
                 onClick={() => setShowRequestModal(true)}
                 disabled={alreadySentRequest}
@@ -125,15 +182,15 @@ export function ProfileBottomSheet({ user, open, onOpenChange, cafeId }: Profile
                 variant={alreadySentRequest ? 'secondary' : 'default'}
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
-                {alreadySentRequest ? 'Request Sent' : 'Send Message Request'}
+                {alreadySentRequest ? 'İstek Gönderildi' : 'Mesaj İsteği Gönder'}
               </Button>
             )}
 
-            {!canMessage && (
+            {!canMessage && currentUser && currentUser.id !== targetUserId && (
               <p className="mt-4 text-sm text-muted-foreground">
                 {user.allowDMs === false 
-                  ? 'This user is not accepting messages' 
-                  : 'Enable DMs in your profile to message others'}
+                  ? 'Bu kullanıcı mesaj kabul etmiyor' 
+                  : 'Mesaj göndermek için profilinizde DM\'leri açın'}
               </p>
             )}
           </div>
@@ -146,6 +203,20 @@ export function ProfileBottomSheet({ user, open, onOpenChange, cafeId }: Profile
         userName={user.name}
         presetMessages={presetMessages}
         onSend={handleSendRequest}
+      />
+      
+      <BlockDialog
+        open={showBlockDialog}
+        onOpenChange={setShowBlockDialog}
+        userName={user.name}
+        onConfirm={handleBlock}
+      />
+      
+      <ReportDialog
+        open={showReportDialog}
+        onOpenChange={setShowReportDialog}
+        userName={user.name}
+        onConfirm={handleReport}
       />
     </>
   );
