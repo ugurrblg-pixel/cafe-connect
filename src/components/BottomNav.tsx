@@ -1,10 +1,10 @@
 import { cn } from '@/lib/utils';
-import { MapPin, MessageSquare, User, Search } from 'lucide-react';
+import { MapPin, MessageSquare, User, Bell } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const navItems = [
   { path: '/', icon: MapPin, label: 'Discover' },
-  { path: '/search', icon: Search, label: 'Search' },
+  { path: '/notifications', icon: Bell, label: 'Waves' },
   { path: '/messages', icon: MessageSquare, label: 'Messages' },
   { path: '/profile', icon: User, label: 'Profile' },
 ];

@@ -2,18 +2,22 @@ import { User } from '@/types';
 import { PurposeBadge } from './PurposeBadge';
 import { InitialsAvatar } from './InitialsAvatar';
 import { cn } from '@/lib/utils';
-import { MessageCircle, Hand, Coffee, Eye } from 'lucide-react';
+import { MessageCircle, Hand, Check, Loader2, Heart } from 'lucide-react';
+
+type WaveState = 'none' | 'waved' | 'received' | 'matched';
 
 interface UserCardProps {
   user: User;
   onMessage?: () => void;
   onInteraction?: (type: 'wave' | 'coffee' | 'eye') => void;
   onTap?: () => void;
+  waveState?: WaveState;
+  isWaving?: boolean;
   className?: string;
   style?: React.CSSProperties;
 }
 
-export function UserCard({ user, onMessage, onInteraction, onTap, className, style }: UserCardProps) {
+export function UserCard({ user, onMessage, onInteraction, onTap, waveState = 'none', isWaving = false, className, style }: UserCardProps) {
   const timeAgo = user.checkedInAt
     ? Math.floor((Date.now() - user.checkedInAt.getTime()) / 60000)
     : 0;
@@ -62,7 +66,8 @@ export function UserCard({ user, onMessage, onInteraction, onTap, className, sty
 
       {/* Actions */}
       <div className="flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
-        {user.allowDMs && (
+        {/* Message button - only show if matched */}
+        {waveState === 'matched' && (
           <button
             onClick={onMessage}
             className="interaction-btn text-primary"
@@ -71,29 +76,49 @@ export function UserCard({ user, onMessage, onInteraction, onTap, className, sty
             <MessageCircle className="w-5 h-5" />
           </button>
         )}
-        <div className="flex gap-1">
-          <button
-            onClick={() => onInteraction?.('wave')}
-            className="interaction-btn w-9 h-9"
-            aria-label="Wave"
-          >
-            <Hand className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => onInteraction?.('coffee')}
-            className="interaction-btn w-9 h-9"
-            aria-label="Coffee invite"
-          >
-            <Coffee className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => onInteraction?.('eye')}
-            className="interaction-btn w-9 h-9"
-            aria-label="Eye contact"
-          >
-            <Eye className="w-4 h-4" />
-          </button>
-        </div>
+        
+        {/* Wave button with state */}
+        <button
+          onClick={() => onInteraction?.('wave')}
+          disabled={isWaving || waveState === 'waved' || waveState === 'matched'}
+          className={cn(
+            'interaction-btn w-full min-w-[80px] px-3 py-2 flex items-center justify-center gap-1.5',
+            waveState === 'matched' && 'bg-accent text-accent-foreground',
+            waveState === 'waved' && 'bg-secondary text-muted-foreground',
+            waveState === 'received' && 'bg-primary text-primary-foreground animate-pulse-soft',
+            waveState === 'none' && 'hover:bg-secondary'
+          )}
+          aria-label={
+            waveState === 'matched' ? 'Matched' :
+            waveState === 'waved' ? 'Wave sent' :
+            waveState === 'received' ? 'Wave back' :
+            'Wave'
+          }
+        >
+          {isWaving ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : waveState === 'matched' ? (
+            <>
+              <Heart className="w-4 h-4" />
+              <span className="text-xs font-medium">Matched</span>
+            </>
+          ) : waveState === 'waved' ? (
+            <>
+              <Check className="w-4 h-4" />
+              <span className="text-xs font-medium">Waved</span>
+            </>
+          ) : waveState === 'received' ? (
+            <>
+              <Hand className="w-4 h-4" />
+              <span className="text-xs font-medium">Wave back</span>
+            </>
+          ) : (
+            <>
+              <Hand className="w-4 h-4" />
+              <span className="text-xs font-medium">Wave</span>
+            </>
+          )}
+        </button>
       </div>
     </div>
   );
