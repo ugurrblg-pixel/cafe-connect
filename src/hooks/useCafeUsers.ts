@@ -21,12 +21,13 @@ export function useCafeUsers(cafeId: string) {
   const [loading, setLoading] = useState(true);
 
   const fetchActiveUsers = async () => {
-    // First get active check-ins
+    // First get active check-ins.
+    // IMPORTANT: Do not use client-side timestamps (device clock/timezone can be wrong).
+    // We rely on the database RLS policy (expiry_time > now()) to return only active rows.
     const { data: checkInsData, error: checkInsError } = await supabase
       .from('check_ins')
       .select('id, check_in_time, user_id')
-      .eq('cafe_id', cafeId)
-      .gt('expiry_time', new Date().toISOString());
+      .eq('cafe_id', cafeId);
 
     if (checkInsError) {
       console.error('Error fetching check-ins:', checkInsError);
