@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { toast } from 'sonner';
+import { sendWaveNotification, sendMatchNotification } from '@/lib/pushNotifications';
 
 interface Wave {
   id: string;
@@ -132,6 +133,15 @@ export function useWaves(): UseWavesReturn {
         throw waveError;
       }
 
+      // Get current user's profile for notification
+      const { data: myProfile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('user_id', user.id)
+        .single();
+
+      const myName = myProfile?.display_name || 'Birisi';
+
       // Check if this creates a mutual wave (match)
       const { data: mutualCheck } = await supabase
         .rpc('check_mutual_wave', {
@@ -180,11 +190,17 @@ export function useWaves(): UseWavesReturn {
             console.error('Error creating match:', matchError);
           }
 
+          // Send match notification to the other user
+          sendMatchNotification(toUserId, myName, newConversation.id);
+
           toast.success("It's a match! You can now chat 💬");
         }
 
         return { success: true, isMatch: true };
       }
+
+      // Send wave notification (not a match yet)
+      sendWaveNotification(toUserId, myName);
 
       await fetchWaves();
       return { success: true, isMatch: false };

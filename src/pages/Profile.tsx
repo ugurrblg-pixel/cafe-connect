@@ -4,12 +4,14 @@ import { Header } from '@/components/Header';
 import { PurposeBadge } from '@/components/PurposeBadge';
 import { InitialsAvatar } from '@/components/InitialsAvatar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotifications } from '@/contexts/NotificationContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Purpose } from '@/types';
-import { Edit2, Shield, Bell, HelpCircle, LogOut, MessageCircle, Users, Heart, Eye, EyeOff } from 'lucide-react';
+import { Edit2, Shield, Bell, HelpCircle, LogOut, MessageCircle, Users, Heart, Eye, EyeOff, BellOff, BellRing, Loader2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 
 interface Profile {
   id: string;
@@ -26,8 +28,10 @@ interface Profile {
 export default function Profile() {
   const navigate = useNavigate();
   const { user, signOut, refreshProfile } = useAuth();
+  const { isSubscribed, isSupported, permission, subscribe, unsubscribe } = useNotifications();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notificationLoading, setNotificationLoading] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -98,6 +102,19 @@ export default function Profile() {
 
     setProfile({ ...profile, allow_dms: enabled });
     toast.success(enabled ? 'Direct messages enabled' : 'Direct messages disabled');
+  };
+
+  const handleNotificationToggle = async () => {
+    setNotificationLoading(true);
+    try {
+      if (isSubscribed) {
+        await unsubscribe();
+      } else {
+        await subscribe();
+      }
+    } finally {
+      setNotificationLoading(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -214,17 +231,62 @@ export default function Profile() {
           </div>
         </section>
 
+        {/* Notification Settings */}
+        <section className="card-elevated p-4 mb-4">
+          <h2 className="font-semibold text-foreground mb-4">Bildirimler</h2>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isSubscribed ? 'bg-primary/10' : 'bg-secondary'}`}>
+                {isSubscribed ? (
+                  <BellRing className="w-5 h-5 text-primary" />
+                ) : (
+                  <BellOff className="w-5 h-5 text-muted-foreground" />
+                )}
+              </div>
+              <div>
+                <p className="font-medium text-foreground">Push Bildirimleri</p>
+                <p className="text-sm text-muted-foreground">
+                  {!isSupported 
+                    ? 'Tarayıcınız desteklemiyor'
+                    : permission === 'denied'
+                    ? 'Bildirimler engellendi'
+                    : isSubscribed 
+                    ? 'Wave, match ve mesaj bildirimleri alın'
+                    : 'Bildirimleri aktif edin'
+                  }
+                </p>
+              </div>
+            </div>
+            {isSupported && permission !== 'denied' && (
+              <Button
+                variant={isSubscribed ? 'outline' : 'default'}
+                size="sm"
+                onClick={handleNotificationToggle}
+                disabled={notificationLoading}
+              >
+                {notificationLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : isSubscribed ? (
+                  'Kapat'
+                ) : (
+                  'Aç'
+                )}
+              </Button>
+            )}
+          </div>
+        </section>
+
         {/* Privacy Settings */}
         <section className="card-elevated p-4 mb-4">
-          <h2 className="font-semibold text-foreground mb-4">Privacy</h2>
+          <h2 className="font-semibold text-foreground mb-4">Gizlilik</h2>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center">
                 <MessageCircle className="w-5 h-5 text-muted-foreground" />
               </div>
               <div>
-                <p className="font-medium text-foreground">Allow Direct Messages</p>
-                <p className="text-sm text-muted-foreground">Let others message you</p>
+                <p className="font-medium text-foreground">Mesajlara İzin Ver</p>
+                <p className="text-sm text-muted-foreground">Diğerlerinin size mesaj atmasına izin verin</p>
               </div>
             </div>
             <Switch checked={profile.allow_dms} onCheckedChange={handleDMToggle} />
