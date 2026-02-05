@@ -59,12 +59,14 @@ export function useCheckIn(cafeId: string) {
         .delete()
         .eq('user_id', user.id);
 
-      // Create new check-in
+      // Create new check-in with explicit expiry (60 minutes from now)
+      const expiryTime = new Date(Date.now() + 60 * 60 * 1000).toISOString();
       const { data, error } = await supabase
         .from('check_ins')
         .insert({
           user_id: user.id,
           cafe_id: cafeId,
+          expiry_time: expiryTime,
         })
         .select()
         .single();
