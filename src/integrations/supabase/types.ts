@@ -120,6 +120,48 @@ export type Database = {
           },
         ]
       }
+      matches: {
+        Row: {
+          cafe_id: string
+          conversation_id: string | null
+          created_at: string
+          id: string
+          user1_id: string
+          user2_id: string
+        }
+        Insert: {
+          cafe_id: string
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          user1_id: string
+          user2_id: string
+        }
+        Update: {
+          cafe_id?: string
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          user1_id?: string
+          user2_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_cafe_id_fkey"
+            columns: ["cafe_id"]
+            isOneToOne: false
+            referencedRelation: "cafes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_requests: {
         Row: {
           cafe_id: string
@@ -262,11 +304,47 @@ export type Database = {
         }
         Relationships: []
       }
+      waves: {
+        Row: {
+          cafe_id: string
+          created_at: string
+          from_user_id: string
+          id: string
+          to_user_id: string
+        }
+        Insert: {
+          cafe_id: string
+          created_at?: string
+          from_user_id: string
+          id?: string
+          to_user_id: string
+        }
+        Update: {
+          cafe_id?: string
+          created_at?: string
+          from_user_id?: string
+          id?: string
+          to_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waves_cafe_id_fkey"
+            columns: ["cafe_id"]
+            isOneToOne: false
+            referencedRelation: "cafes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      check_mutual_wave: {
+        Args: { target_cafe_id: string; user_a: string; user_b: string }
+        Returns: boolean
+      }
       count_recent_message_requests: {
         Args: { user_id: string }
         Returns: number
@@ -277,6 +355,10 @@ export type Database = {
       }
       is_conversation_participant: {
         Args: { conv_id: string; user_id: string }
+        Returns: boolean
+      }
+      match_exists: {
+        Args: { target_cafe_id: string; user_a: string; user_b: string }
         Returns: boolean
       }
       users_in_same_cafe: {

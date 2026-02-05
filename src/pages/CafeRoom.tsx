@@ -8,6 +8,8 @@ import { IntentFilterChips, FilterOption } from '@/components/IntentFilterChips'
 import { useCheckIn } from '@/hooks/useCheckIn';
 import { useCafeUsers } from '@/hooks/useCafeUsers';
 import { useCafes } from '@/hooks/useCafes';
+import { useWaves } from '@/hooks/useWaves';
+import { useMatches } from '@/hooks/useMatches';
 import { MapPin, Star, Users, Clock, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -33,10 +35,13 @@ export default function CafeRoom() {
   const { cafes, loading: cafesLoading } = useCafes();
   const { isCheckedIn, loading: checkInLoading, checkIn, checkOut } = useCheckIn(id || '');
   const { users: activeUsers, loading: usersLoading } = useCafeUsers(id || '');
+  const { sendWave, hasWavedAt, hasReceivedWaveFrom } = useWaves();
+  const { hasMatchWith, getMatchConversation, createConversationForMatch, matches } = useMatches();
   
   const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [intentFilter, setIntentFilter] = useState<FilterOption>('all');
+  const [wavingAt, setWavingAt] = useState<string | null>(null);
 
   const cafe = cafes.find((c) => c.id === id);
 
@@ -82,18 +87,60 @@ export default function CafeRoom() {
     }
   };
 
-  const handleMessage = (userName: string) => {
-    toast.info(`Opening chat with ${userName}...`);
-    navigate('/messages');
+  const handleOpenChat = async (userId: string, userName: string) => {
+    // Check if matched
+    if (!hasMatchWith(userId)) {
+      toast.info('Wave at each other first to unlock chat');
+      return;
+    }
+
+    const conversationId = getMatchConversation(userId);
+    if (conversationId) {
+      navigate(`/chat/${conversationId}`);
+    } else {
+      // Find the match and create conversation
+      const match = matches.find(m => 
+        m.otherUser?.userId === userId
+      );
+      if (match) {
+        const newConvoId = await createConversationForMatch(match.id);
+        if (newConvoId) {
+          navigate(`/chat/${newConvoId}`);
+        }
+      }
+    }
   };
 
-  const handleInteraction = (type: 'wave' | 'coffee' | 'eye', userName: string) => {
-    const messages = {
-      wave: `👋 You waved at ${userName}!`,
-      coffee: `☕ You invited ${userName} for coffee!`,
-      eye: `👀 You made eye contact with ${userName}!`,
-    };
-    toast.success(messages[type]);
+  const handleWave = async (userId: string, userName: string) => {
+    if (!id) return;
+    
+    setWavingAt(userId);
+    const result = await sendWave(userId, id);
+    setWavingAt(null);
+    
+    if (result.success) {
+      if (result.isMatch) {
+        toast.success(`You and ${userName} waved at each other! 🎉`, {
+          description: 'Chat is now unlocked',
+        });
+      } else if (hasReceivedWaveFrom(userId, id)) {
+        // They already waved at us, so this should create a match
+        toast.success(`You matched with ${userName}! 🎉`);
+      } else {
+        toast.success(`👋 You waved at ${userName}!`, {
+          description: 'They\'ll be notified',
+        });
+      }
+    }
+  };
+
+  const handleInteraction = (type: 'wave' | 'coffee' | 'eye', userId: string, userName: string) => {
+    if (type === 'wave') {
+      handleWave(userId, userName);
+    } else {
+      // Remove coffee and eye contact for now - focus on waves
+      toast.info('Coming soon!');
+    }
   };
 
   const handleUserTap = (activeUser: typeof activeUsers[0]) => {
@@ -197,8 +244,15 @@ export default function CafeRoom() {
                     isOnline: true,
                     checkedInAt: activeUser.checkedInAt,
                   }}
-                  onMessage={() => handleMessage(activeUser.displayName || activeUser.name)}
-                  onInteraction={(type) => handleInteraction(type, activeUser.displayName || activeUser.name)}
+                  onMessage={() => handleOpenChat(activeUser.userId, activeUser.displayName || activeUser.name)}
+                  onInteraction={(type) => handleInteraction(type, activeUser.userId, activeUser.displayName || activeUser.name)}
+                  waveState={
+                    hasMatchWith(activeUser.userId) ? 'matched' :
+                    hasWavedAt(activeUser.userId, id || '') ? 'waved' :
+                    hasReceivedWaveFrom(activeUser.userId, id || '') ? 'received' :
+                    'none'
+                  }
+                  isWaving={wavingAt === activeUser.userId}
                   onTap={() => handleUserTap(activeUser)}
                   style={{ animationDelay: `${index * 100}ms` } as React.CSSProperties}
                 />
