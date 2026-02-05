@@ -178,7 +178,7 @@ export default function ChatRoom() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 pt-20 pb-20 px-4 overflow-y-auto">
+      <div className="flex-1 pt-20 pb-32 px-4 overflow-y-auto">
         <div className="space-y-3">
           {messages.map((message) => {
             const isOwn = message.senderId === user?.id;
@@ -211,7 +211,7 @@ export default function ChatRoom() {
       </div>
 
       {/* Input */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 glass-effect border-t border-border safe-bottom">
+      <div className="fixed bottom-16 left-0 right-0 p-4 glass-effect border-t border-border">
         <div className="flex items-center gap-2">
           <Input
             value={messageInput}
