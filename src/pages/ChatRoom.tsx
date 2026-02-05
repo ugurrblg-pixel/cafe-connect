@@ -14,22 +14,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { TypingIndicator } from '@/components/chat/TypingIndicator';
 import { EmptyChat } from '@/components/chat/EmptyChat';
+import { BlockDialog, ReportDialog } from '@/components/BlockReportDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 
 interface OtherUser {
   userId: string;
@@ -140,9 +131,9 @@ export default function ChatRoom() {
     setShowBlockDialog(false);
   };
 
-  const handleReport = async () => {
+  const handleReport = async (reason: 'spam' | 'harassment' | 'inappropriate', description?: string) => {
     if (!otherUser) return;
-    await reportUser(otherUser.userId, 'Reported from chat');
+    await reportUser(otherUser.userId, reason, description);
     setShowReportDialog(false);
   };
 
@@ -330,40 +321,20 @@ export default function ChatRoom() {
       </div>
 
       {/* Block Dialog */}
-      <AlertDialog open={showBlockDialog} onOpenChange={setShowBlockDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{otherUser?.displayName} engellensin mi?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Bu kullanıcı size mesaj gönderemez ve kafelerde sizi göremez. Daha sonra ayarlardan engeli kaldırabilirsiniz.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>İptal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBlock} className="bg-destructive text-destructive-foreground">
-              Engelle
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <BlockDialog
+        open={showBlockDialog}
+        onOpenChange={setShowBlockDialog}
+        userName={otherUser?.displayName || 'Kullanıcı'}
+        onConfirm={handleBlock}
+      />
 
       {/* Report Dialog */}
-      <AlertDialog open={showReportDialog} onOpenChange={setShowReportDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{otherUser?.displayName} şikayet edilsin mi?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Bu, güvenlik ekibimize inceleme için bir rapor gönderecektir. Lütfen yalnızca topluluk kurallarını ihlal eden kullanıcıları şikayet edin.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>İptal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleReport}>
-              Şikayet Et
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ReportDialog
+        open={showReportDialog}
+        onOpenChange={setShowReportDialog}
+        userName={otherUser?.displayName || 'Kullanıcı'}
+        onConfirm={handleReport}
+      />
     </div>
   );
 }
