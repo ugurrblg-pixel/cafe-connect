@@ -253,7 +253,15 @@ export function useChat(conversationId: string) {
   }, [conversationId, user]);
 
   const sendMessage = async (content: string): Promise<boolean> => {
-    if (!user || !conversationId || !content.trim()) return false;
+    const trimmedContent = content.trim();
+    
+    // Client-side validation for message length
+    if (!user || !conversationId || !trimmedContent) return false;
+    
+    if (trimmedContent.length > 2000) {
+      console.error('Message exceeds maximum length of 2000 characters');
+      return false;
+    }
 
     setSending(true);
 
@@ -262,7 +270,7 @@ export function useChat(conversationId: string) {
       .insert({
         conversation_id: conversationId,
         sender_id: user.id,
-        content: content.trim(),
+        content: trimmedContent,
       });
 
     setSending(false);
