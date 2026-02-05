@@ -30,7 +30,7 @@ export function useCheckIn(cafeId: string) {
         .select('*')
         .eq('user_id', user.id)
         .eq('cafe_id', cafeId)
-        .gt('expiry_time', new Date().toISOString())
+        // Rely on database-side filtering (RLS policy expiry_time > now())
         .maybeSingle();
 
       if (!error && data) {
