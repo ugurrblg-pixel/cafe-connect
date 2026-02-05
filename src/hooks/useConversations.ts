@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { sendMessageNotification } from '@/lib/pushNotifications';
 
 interface Message {
   id: string;
@@ -159,11 +160,17 @@ export function useConversations() {
   return { conversations, loading, refetch: fetchConversations };
 }
 
+interface ConversationMeta {
+  otherUserId: string;
+  otherUserName: string;
+}
+
 export function useChat(conversationId: string) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [conversationMeta, setConversationMeta] = useState<ConversationMeta | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   const fetchMessages = async () => {
@@ -203,6 +210,36 @@ export function useChat(conversationId: string) {
         .is('read_at', null);
     }
   };
+
+  // Fetch conversation meta (other user info)
+  const fetchConversationMeta = async () => {
+    if (!conversationId || !user) return;
+
+    const { data: conv } = await supabase
+      .from('conversations')
+      .select('user1_id, user2_id')
+      .eq('id', conversationId)
+      .single();
+
+    if (!conv) return;
+
+    const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id;
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('display_name')
+      .eq('user_id', user.id)
+      .single();
+
+    setConversationMeta({
+      otherUserId,
+      otherUserName: profile?.display_name || 'Birisi',
+    });
+  };
+
+  useEffect(() => {
+    fetchConversationMeta();
+  }, [conversationId, user]);
 
   useEffect(() => {
     if (!conversationId) return;
@@ -278,6 +315,16 @@ export function useChat(conversationId: string) {
     if (error) {
       console.error('Error sending message:', error);
       return false;
+    }
+
+    // Send push notification to the other user
+    if (conversationMeta) {
+      sendMessageNotification(
+        conversationMeta.otherUserId,
+        conversationMeta.otherUserName,
+        conversationId,
+        trimmedContent
+      );
     }
 
     return true;

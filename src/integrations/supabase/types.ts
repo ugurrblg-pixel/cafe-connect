@@ -238,6 +238,39 @@ export type Database = {
           },
         ]
       }
+      notification_log: {
+        Row: {
+          body: string
+          clicked_at: string | null
+          data: Json | null
+          id: string
+          sent_at: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          clicked_at?: string | null
+          data?: Json | null
+          id?: string
+          sent_at?: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          clicked_at?: string | null
+          data?: Json | null
+          id?: string
+          sent_at?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           age: number | null
@@ -280,6 +313,60 @@ export type Database = {
           purpose?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          platform: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          platform?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          platform?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      unread_counts: {
+        Row: {
+          messages: number
+          updated_at: string
+          user_id: string
+          waves: number
+        }
+        Insert: {
+          messages?: number
+          updated_at?: string
+          user_id: string
+          waves?: number
+        }
+        Update: {
+          messages?: number
+          updated_at?: string
+          user_id?: string
+          waves?: number
         }
         Relationships: []
       }
@@ -349,6 +436,10 @@ export type Database = {
         Args: { user_id: string }
         Returns: number
       }
+      increment_unread_count: {
+        Args: { count_type: string; target_user_id: string }
+        Returns: undefined
+      }
       is_blocked: {
         Args: { checker_id: string; target_id: string }
         Returns: boolean
@@ -360,6 +451,10 @@ export type Database = {
       match_exists: {
         Args: { target_cafe_id: string; user_a: string; user_b: string }
         Returns: boolean
+      }
+      reset_unread_count: {
+        Args: { count_type: string; target_user_id: string }
+        Returns: undefined
       }
       users_in_same_cafe: {
         Args: { target_cafe_id: string; user1: string; user2: string }
