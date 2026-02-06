@@ -22,6 +22,8 @@ export type Database = {
           id: string
           image_url: string | null
           is_open: boolean
+          latitude: number | null
+          longitude: number | null
           name: string
           rating: number | null
         }
@@ -32,6 +34,8 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_open?: boolean
+          latitude?: number | null
+          longitude?: number | null
           name: string
           rating?: number | null
         }
@@ -42,6 +46,8 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_open?: boolean
+          latitude?: number | null
+          longitude?: number | null
           name?: string
           rating?: number | null
         }
@@ -50,26 +56,35 @@ export type Database = {
       check_ins: {
         Row: {
           cafe_id: string
+          check_in_latitude: number | null
+          check_in_longitude: number | null
           check_in_time: string
           created_at: string
           expiry_time: string
           id: string
+          last_active_at: string | null
           user_id: string
         }
         Insert: {
           cafe_id: string
+          check_in_latitude?: number | null
+          check_in_longitude?: number | null
           check_in_time?: string
           created_at?: string
           expiry_time?: string
           id?: string
+          last_active_at?: string | null
           user_id: string
         }
         Update: {
           cafe_id?: string
+          check_in_latitude?: number | null
+          check_in_longitude?: number | null
           check_in_time?: string
           created_at?: string
           expiry_time?: string
           id?: string
+          last_active_at?: string | null
           user_id?: string
         }
         Relationships: [

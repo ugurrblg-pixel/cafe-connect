@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { MapPin, Check } from 'lucide-react';
+import { MapPin, Check, Loader2 } from 'lucide-react';
 
 interface CheckInButtonProps {
   isCheckedIn: boolean;
@@ -7,6 +7,7 @@ interface CheckInButtonProps {
   onCheckOut: () => void;
   cafeName?: string;
   className?: string;
+  verifyingLocation?: boolean;
 }
 
 export function CheckInButton({
@@ -15,6 +16,7 @@ export function CheckInButton({
   onCheckOut,
   cafeName,
   className,
+  verifyingLocation = false,
 }: CheckInButtonProps) {
   if (isCheckedIn) {
     return (
@@ -27,7 +29,7 @@ export function CheckInButton({
         )}
       >
         <Check className="w-5 h-5" />
-        <span>You're here{cafeName ? ` at ${cafeName}` : ''}</span>
+        <span>Buradasın{cafeName ? ` - ${cafeName}` : ''}</span>
       </button>
     );
   }
@@ -35,10 +37,24 @@ export function CheckInButton({
   return (
     <button
       onClick={onCheckIn}
-      className={cn('btn-checkin w-full flex items-center justify-center gap-2', className)}
+      disabled={verifyingLocation}
+      className={cn(
+        'btn-checkin w-full flex items-center justify-center gap-2',
+        verifyingLocation && 'opacity-70 cursor-not-allowed',
+        className
+      )}
     >
-      <MapPin className="w-5 h-5" />
-      <span>I'm here</span>
+      {verifyingLocation ? (
+        <>
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span>Konum doğrulanıyor...</span>
+        </>
+      ) : (
+        <>
+          <MapPin className="w-5 h-5" />
+          <span>Buradayım</span>
+        </>
+      )}
     </button>
   );
 }

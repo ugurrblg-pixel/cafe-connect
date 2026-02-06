@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { INACTIVITY_TIMEOUT_MS } from '@/lib/geolocation';
 
 interface CafeUser {
   id: string;
@@ -13,6 +14,7 @@ interface CafeUser {
   allowDMs: boolean;
   isVisible: boolean;
   checkedInAt: Date;
+  lastActiveAt: Date;
   userId: string;
 }
 
@@ -26,7 +28,7 @@ export function useCafeUsers(cafeId: string) {
     // We rely on the database RLS policy (expiry_time > now()) to return only active rows.
     const { data: checkInsData, error: checkInsError } = await supabase
       .from('check_ins')
-      .select('id, check_in_time, user_id')
+      .select('id, check_in_time, user_id, last_active_at')
       .eq('cafe_id', cafeId);
 
     if (checkInsError) {
@@ -41,8 +43,22 @@ export function useCafeUsers(cafeId: string) {
       return;
     }
 
-    // Get the user_ids from check-ins
-    const userIds = checkInsData.map((c) => c.user_id);
+    // Filter out inactive users (no activity in last 15 minutes)
+    const now = Date.now();
+    const activeCheckIns = checkInsData.filter((checkIn) => {
+      if (!checkIn.last_active_at) return true; // Legacy check-ins without last_active_at
+      const lastActive = new Date(checkIn.last_active_at).getTime();
+      return now - lastActive < INACTIVITY_TIMEOUT_MS;
+    });
+
+    if (activeCheckIns.length === 0) {
+      setUsers([]);
+      setLoading(false);
+      return;
+    }
+
+    // Get the user_ids from active check-ins
+    const userIds = activeCheckIns.map((c) => c.user_id);
 
     // Fetch profiles for those users
     const { data: profilesData, error: profilesError } = await supabase
@@ -61,8 +77,13 @@ export function useCafeUsers(cafeId: string) {
       (profilesData || []).map((p) => [p.user_id, p])
     );
 
+    // Map check-ins by user_id for quick lookup
+    const checkInMap = new Map(
+      activeCheckIns.map((c) => [c.user_id, c])
+    );
+
     // Build the active users list - ALL checked-in users are visible regardless of is_visible setting
-    const activeUsers: CafeUser[] = checkInsData
+    const activeUsers: CafeUser[] = activeCheckIns
       .map((checkIn) => {
         const profile = profileMap.get(checkIn.user_id);
         if (!profile) return null;
@@ -79,6 +100,7 @@ export function useCafeUsers(cafeId: string) {
           allowDMs: profile.allow_dms,
           isVisible: profile.is_visible ?? true,
           checkedInAt: new Date(checkIn.check_in_time),
+          lastActiveAt: new Date(checkIn.last_active_at || checkIn.check_in_time),
         };
       })
       .filter((u): u is CafeUser => u !== null);
@@ -109,8 +131,12 @@ export function useCafeUsers(cafeId: string) {
       )
       .subscribe();
 
+    // Refresh every minute to filter out inactive users
+    const refreshInterval = setInterval(fetchActiveUsers, 60000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(refreshInterval);
     };
   }, [cafeId]);
 
