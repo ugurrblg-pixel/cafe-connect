@@ -33,7 +33,7 @@ export default function CafeRoom() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { cafes, loading: cafesLoading } = useCafes();
-  const { isCheckedIn, loading: checkInLoading, checkIn, checkOut } = useCheckIn(id || '');
+  const { isCheckedIn, loading: checkInLoading, verifyingLocation, checkIn, checkOut } = useCheckIn(id || '');
   const { users: activeUsers, loading: usersLoading } = useCafeUsers(id || '');
   const { sendWave, hasWavedAt, hasReceivedWaveFrom } = useWaves();
   const { hasMatchWith, getMatchConversation, createConversationForMatch, matches } = useMatches();
@@ -296,6 +296,7 @@ export default function CafeRoom() {
           onCheckIn={handleCheckIn}
           onCheckOut={handleCheckOut}
           cafeName={cafe.name}
+          verifyingLocation={verifyingLocation}
         />
       </div>
 
