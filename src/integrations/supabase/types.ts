@@ -19,9 +19,11 @@ export type Database = {
           address: string
           created_at: string
           distance: string | null
+          google_place_id: string | null
           id: string
           image_url: string | null
           is_open: boolean
+          last_synced_at: string | null
           latitude: number | null
           longitude: number | null
           name: string
@@ -31,9 +33,11 @@ export type Database = {
           address?: string
           created_at?: string
           distance?: string | null
+          google_place_id?: string | null
           id?: string
           image_url?: string | null
           is_open?: boolean
+          last_synced_at?: string | null
           latitude?: number | null
           longitude?: number | null
           name: string
@@ -43,9 +47,11 @@ export type Database = {
           address?: string
           created_at?: string
           distance?: string | null
+          google_place_id?: string | null
           id?: string
           image_url?: string | null
           is_open?: boolean
+          last_synced_at?: string | null
           latitude?: number | null
           longitude?: number | null
           name?: string

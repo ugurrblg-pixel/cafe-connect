@@ -2,15 +2,15 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { CafeCard } from '@/components/CafeCard';
-import { useCafes } from '@/hooks/useCafes';
+import { useNearbyCafes } from '@/hooks/useNearbyCafes';
 import { useGeolocation } from '@/hooks/useGeolocation';
-import { MapPin, Coffee, Loader2, AlertCircle } from 'lucide-react';
+import { MapPin, Coffee, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 
 export default function Discover() {
   const navigate = useNavigate();
-  const { cafes, loading, updateUserLocation } = useCafes();
+  const { cafes, loading, error, source, fetchNearbyCafes } = useNearbyCafes();
   const { position, loading: locationLoading, error: locationError, getPosition, isSupported } = useGeolocation();
   const [locationRequested, setLocationRequested] = useState(false);
 
@@ -24,12 +24,12 @@ export default function Discover() {
     }
   }, [isSupported, getPosition, locationRequested]);
 
-  // Update cafe distances when position changes
+  // Fetch nearby cafes when position changes
   useEffect(() => {
     if (position) {
-      updateUserLocation(position);
+      fetchNearbyCafes(position);
     }
-  }, [position, updateUserLocation]);
+  }, [position, fetchNearbyCafes]);
 
   const handleRequestLocation = async () => {
     try {
@@ -38,6 +38,15 @@ export default function Discover() {
       // Error is handled by the hook
     }
   };
+
+  const handleRefresh = () => {
+    if (position) {
+      fetchNearbyCafes(position);
+    }
+  };
+
+  const activeCafes = cafes.filter((cafe) => cafe.activeUsers > 0 && cafe.isOpen);
+  const otherCafes = cafes.filter((cafe) => cafe.activeUsers === 0 || !cafe.isOpen);
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -56,7 +65,12 @@ export default function Discover() {
           <div className="flex-1">
             <p className="text-sm text-muted-foreground">Konumun</p>
             {position ? (
-              <p className="font-semibold text-foreground">Yakındaki kafeler</p>
+              <p className="font-semibold text-foreground">
+                Yakındaki kafeler
+                {source === 'google_places' && (
+                  <span className="text-xs text-muted-foreground ml-2">(Google Places)</span>
+                )}
+              </p>
             ) : locationError ? (
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-destructive" />
@@ -66,6 +80,16 @@ export default function Discover() {
               <p className="text-muted-foreground text-sm">Konum alınıyor...</p>
             )}
           </div>
+          {position && !loading && (
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={handleRefresh}
+              className="shrink-0"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          )}
           {!position && !locationLoading && (
             <Button
               size="sm"
@@ -76,6 +100,26 @@ export default function Discover() {
             </Button>
           )}
         </div>
+
+        {/* Error State */}
+        {error && (
+          <div className="mb-4 p-4 rounded-xl bg-destructive/10 border border-destructive/20">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-destructive" />
+              <p className="text-sm text-destructive">{error}</p>
+            </div>
+            {position && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleRefresh}
+                className="mt-2"
+              >
+                Tekrar Dene
+              </Button>
+            )}
+          </div>
+        )}
 
         {loading ? (
           <div className="space-y-4">
@@ -92,30 +136,31 @@ export default function Discover() {
                 <h2 className="font-semibold text-lg text-foreground">Yakındaki Aktif Kafeler</h2>
               </div>
               <div className="grid gap-4">
-                {cafes
-                  .filter((cafe) => cafe.activeUsers > 0 && cafe.isOpen)
-                  .map((cafe, index) => (
-                    <CafeCard
-                      key={cafe.id}
-                      cafe={cafe}
-                      onClick={() => navigate(`/cafe/${cafe.id}`)}
-                      className="animation-delay-100"
-                      style={{ animationDelay: `${index * 100}ms` } as React.CSSProperties}
-                    />
-                  ))}
-                {cafes.filter((cafe) => cafe.activeUsers > 0 && cafe.isOpen).length === 0 && (
-                  <p className="text-muted-foreground text-sm py-4">Yakında aktif kafe yok. İlk check-in yapan sen ol!</p>
+                {activeCafes.map((cafe, index) => (
+                  <CafeCard
+                    key={cafe.id}
+                    cafe={cafe}
+                    onClick={() => navigate(`/cafe/${cafe.id}`)}
+                    className="animation-delay-100"
+                    style={{ animationDelay: `${index * 100}ms` } as React.CSSProperties}
+                  />
+                ))}
+                {activeCafes.length === 0 && (
+                  <p className="text-muted-foreground text-sm py-4">
+                    {cafes.length === 0 
+                      ? 'Konum bilgisi alındığında yakındaki kafeler görünecek.' 
+                      : 'Yakında aktif kafe yok. İlk check-in yapan sen ol!'}
+                  </p>
                 )}
               </div>
             </section>
 
             {/* All Cafes */}
-            <section>
-              <h2 className="font-semibold text-lg text-foreground mb-4">Tüm Kafeler</h2>
-              <div className="grid gap-4">
-                {cafes
-                  .filter((cafe) => cafe.activeUsers === 0 || !cafe.isOpen)
-                  .map((cafe, index) => (
+            {otherCafes.length > 0 && (
+              <section>
+                <h2 className="font-semibold text-lg text-foreground mb-4">Tüm Kafeler</h2>
+                <div className="grid gap-4">
+                  {otherCafes.map((cafe, index) => (
                     <CafeCard
                       key={cafe.id}
                       cafe={cafe}
@@ -123,8 +168,20 @@ export default function Discover() {
                       style={{ animationDelay: `${index * 100}ms` } as React.CSSProperties}
                     />
                   ))}
+                </div>
+              </section>
+            )}
+
+            {/* Empty State */}
+            {cafes.length === 0 && position && !loading && !error && (
+              <div className="text-center py-12">
+                <Coffee className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="font-semibold text-lg mb-2">Yakında kafe bulunamadı</h3>
+                <p className="text-muted-foreground text-sm">
+                  1 km çevresinde kayıtlı kafe yok.
+                </p>
               </div>
-            </section>
+            )}
           </>
         )}
       </main>

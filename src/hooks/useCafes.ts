@@ -16,10 +16,38 @@ interface Cafe {
   longitude: number | null;
 }
 
-export function useCafes() {
-  const [cafes, setCafes] = useState<Cafe[]>([]);
-  const [loading, setLoading] = useState(true);
+// This hook is now used primarily for realtime active user count updates
+// The main discovery flow uses useNearbyCafes which calls the edge function
+export function useCafes(initialCafes?: Cafe[]) {
+  const [cafes, setCafes] = useState<Cafe[]>(initialCafes || []);
+  const [loading, setLoading] = useState(!initialCafes);
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
+
+  // Update active user counts without refetching all cafes
+  const updateActiveUserCounts = useCallback(async () => {
+    const { data: checkInsData, error: checkInsError } = await supabase
+      .from('check_ins')
+      .select('cafe_id');
+      // RLS already filters by expiry_time > now()
+
+    if (checkInsError) {
+      console.error('Error fetching check-ins:', checkInsError);
+      return;
+    }
+
+    // Count active users per cafe
+    const activeUserCounts: Record<string, number> = {};
+    (checkInsData || []).forEach((checkIn) => {
+      activeUserCounts[checkIn.cafe_id] = (activeUserCounts[checkIn.cafe_id] || 0) + 1;
+    });
+
+    setCafes((prev) =>
+      prev.map((cafe) => ({
+        ...cafe,
+        activeUsers: activeUserCounts[cafe.id] || 0,
+      }))
+    );
+  }, []);
 
   const fetchCafes = useCallback(async (userCoords?: Coordinates | null) => {
     // First get all cafes
@@ -98,10 +126,20 @@ export function useCafes() {
     fetchCafes(coords);
   }, [fetchCafes]);
 
+  // Set initial cafes if provided
   useEffect(() => {
-    fetchCafes(userLocation);
+    if (initialCafes && initialCafes.length > 0) {
+      setCafes(initialCafes);
+      setLoading(false);
+    }
+  }, [initialCafes]);
 
-    // Subscribe to realtime changes on check_ins
+  useEffect(() => {
+    if (!initialCafes) {
+      fetchCafes(userLocation);
+    }
+
+    // Subscribe to realtime changes on check_ins for active user count updates
     const channel = supabase
       .channel('cafes-check-ins')
       .on(
@@ -112,7 +150,7 @@ export function useCafes() {
           table: 'check_ins',
         },
         () => {
-          fetchCafes(userLocation);
+          updateActiveUserCounts();
         }
       )
       .subscribe();
@@ -120,7 +158,7 @@ export function useCafes() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userLocation, fetchCafes]);
+  }, [userLocation, fetchCafes, updateActiveUserCounts, initialCafes]);
 
   return { 
     cafes, 
