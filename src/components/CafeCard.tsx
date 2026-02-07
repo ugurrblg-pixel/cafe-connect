@@ -1,6 +1,7 @@
 import { Cafe } from '@/types';
 import { cn } from '@/lib/utils';
 import { MapPin, Star, Users, Clock } from 'lucide-react';
+import { getCafeStatus, getStatusColors } from '@/lib/openingHours';
 
 interface CafeCardProps {
   cafe: Cafe;
@@ -10,6 +11,10 @@ interface CafeCardProps {
 }
 
 export function CafeCard({ cafe, onClick, className, style }: CafeCardProps) {
+  // Get live status from opening hours
+  const hoursStatus = getCafeStatus(cafe.openingHours);
+  const statusColors = getStatusColors(hoursStatus.status);
+
   return (
     <button
       onClick={onClick}
@@ -44,16 +49,20 @@ export function CafeCard({ cafe, onClick, className, style }: CafeCardProps) {
             {cafe.activeUsers} here
           </div>
         )}
-        {/* Status */}
+        {/* Status badge */}
         <div
           className={cn(
-            'absolute bottom-3 left-3 px-2 py-0.5 rounded-full text-xs font-medium',
-            cafe.isOpen
-              ? 'bg-sage-light text-accent'
-              : 'bg-muted text-muted-foreground'
+            'absolute bottom-3 left-3 px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1',
+            statusColors.bg,
+            statusColors.text
           )}
         >
-          {cafe.isOpen ? 'Open' : 'Closed'}
+          {hoursStatus.status === 'closing-soon' && (
+            <Clock className="w-3 h-3 animate-pulse" />
+          )}
+          {hoursStatus.status === 'open' ? 'Open' : 
+           hoursStatus.status === 'closing-soon' ? 'Closing soon' : 
+           hoursStatus.status === 'closed' ? 'Closed' : 'Hours unknown'}
         </div>
       </div>
 
@@ -67,25 +76,21 @@ export function CafeCard({ cafe, onClick, className, style }: CafeCardProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
           {cafe.distance && (
             <div className="flex items-center gap-1">
               <MapPin className="w-4 h-4" />
               <span>{cafe.distance}</span>
             </div>
           )}
-          {cafe.address && (
-            <div className="flex items-center gap-1 truncate">
-              <Clock className="w-4 h-4 shrink-0" />
-              <span className="truncate">{cafe.address}</span>
-            </div>
-          )}
-          {!cafe.distance && !cafe.address && (
-            <div className="flex items-center gap-1">
-              <MapPin className="w-4 h-4" />
-              <span>Nearby</span>
-            </div>
-          )}
+          {/* Show opening hours info */}
+          <div className={cn(
+            'flex items-center gap-1 truncate',
+            hoursStatus.status === 'closing-soon' && 'text-warning font-medium'
+          )}>
+            <Clock className="w-4 h-4 shrink-0" />
+            <span className="truncate">{hoursStatus.label}</span>
+          </div>
         </div>
       </div>
     </button>

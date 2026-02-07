@@ -25,6 +25,7 @@ export interface Cafe {
   activeUsers: number;
   rating: number;
   isOpen: boolean;
+  openingHours?: string | null; // OSM opening_hours format
 }
 
 export interface Message {

@@ -206,8 +206,9 @@ Deno.serve(async (req) => {
           latitude: coords?.lat ?? null,
           longitude: coords?.lon ?? null,
           rating: 4.5, // Default rating (OSM doesn't have ratings)
-          is_open: true, // Default to open (would need separate API for hours)
+          is_open: true, // Will be computed client-side from opening_hours
           image_url: '', // OSM doesn't provide images
+          opening_hours: element.tags?.opening_hours || null, // Store OSM opening hours
           last_synced_at: new Date().toISOString(),
         };
       })
