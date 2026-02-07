@@ -308,7 +308,18 @@ export default function ChatRoom() {
       {/* Messages area with warm off-white background */}
       <div className="flex-1 pt-16 pb-24 px-4 overflow-y-auto">
         {messages.length === 0 ? (
-          <EmptyChat otherUserName={otherUser?.displayName || 'User'} />
+          <EmptyChat 
+            otherUserName={otherUser?.displayName || 'User'} 
+            onSuggestionTap={(text) => {
+              setMessageInput(text);
+              setTyping(true);
+              inputRef.current?.focus();
+              // Trigger resize for the textarea
+              if (inputRef.current) {
+                inputRef.current.style.height = 'auto';
+              }
+            }}
+          />
         ) : (
           <div className="py-4">
             {groupedMessages.map((message) => {
