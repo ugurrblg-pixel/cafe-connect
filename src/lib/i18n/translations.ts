@@ -72,6 +72,9 @@ export const translations = {
       noMatches: 'No matches yet',
       noMatchesDesc: 'Wave at people in cafes and when they wave back, you can chat!',
       matchedAt: 'Matched at {cafe}',
+      emptyInbox: 'Your inbox is empty',
+      emptyInboxDesc: 'Check into a cafe, wave at people, and start conversations!',
+      findCafes: 'Find Cafes Nearby',
     },
 
     // Chat
@@ -218,6 +221,9 @@ export const translations = {
       noMatches: 'Henüz eşleşme yok',
       noMatchesDesc: 'Kafelerdeki insanlara el salla, onlar da karşılık verince sohbet edebilirsin!',
       matchedAt: '{cafe} kafesinde eşleştiniz',
+      emptyInbox: 'Gelen kutun boş',
+      emptyInboxDesc: 'Bir kafeye check-in yap, insanlara el salla ve sohbete başla!',
+      findCafes: 'Yakındaki Kafeleri Bul',
     },
 
     // Chat
