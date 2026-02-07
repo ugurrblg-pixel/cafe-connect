@@ -4,12 +4,14 @@ import { Header } from '@/components/Header';
 import { InitialsAvatar } from '@/components/InitialsAvatar';
 import { PageLayout } from '@/components/PageLayout';
 import { useMatches } from '@/hooks/useMatches';
+import { useI18n } from '@/contexts/I18nContext';
 import { MessageSquare, Heart, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function Messages() {
   const navigate = useNavigate();
+  const { t, formatString } = useI18n();
   const { matches, createConversationForMatch, loading } = useMatches();
   const [openingChat, setOpeningChat] = useState<string | null>(null);
 
@@ -32,7 +34,7 @@ export default function Messages() {
   return (
     <PageLayout>
       <div className="min-h-screen bg-background pb-24">
-        <Header title="Messages" />
+        <Header title={t.messages.title} />
 
       <main className="pt-16 px-4">
         {loading ? (
@@ -82,7 +84,7 @@ export default function Messages() {
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Matched at {match.cafe?.name || 'a cafe'}
+                    {formatString(t.messages.matchedAt, { cafe: match.cafe?.name || 'a cafe' })}
                   </p>
                 </div>
 
@@ -98,9 +100,9 @@ export default function Messages() {
             <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4">
               <MessageSquare className="w-10 h-10 text-muted-foreground" />
             </div>
-            <h3 className="font-semibold text-lg text-foreground mb-2">No matches yet</h3>
+            <h3 className="font-semibold text-lg text-foreground mb-2">{t.messages.noMatches}</h3>
             <p className="text-muted-foreground text-center">
-              Wave at people in cafes and when they wave back, you can chat!
+              {t.messages.noMatchesDesc}
             </p>
           </div>
         )}

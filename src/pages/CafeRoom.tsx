@@ -11,7 +11,7 @@ import { useCafeUsers } from '@/hooks/useCafeUsers';
 import { useCafes } from '@/hooks/useCafes';
 import { useWaves } from '@/hooks/useWaves';
 import { useMatches } from '@/hooks/useMatches';
-import { MapPin, Star, Users, Clock, AlertCircle } from 'lucide-react';
+import { MapPin, Users, Clock, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
@@ -192,17 +192,11 @@ export default function CafeRoom() {
       <main className="px-4 -mt-16 relative pb-32">
         {/* Cafe Info Card */}
         <div className="card-elevated p-5 mb-6">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <h1 className="text-xl font-bold text-foreground mb-1">{cafe.name}</h1>
-              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <MapPin className="w-4 h-4" />
-                <span>{cafe.address}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 bg-secondary px-2.5 py-1 rounded-full">
-              <Star className="w-4 h-4 fill-primary text-primary" />
-              <span className="font-semibold text-sm">{cafe.rating}</span>
+          <div className="mb-3">
+            <h1 className="text-xl font-bold text-foreground mb-1">{cafe.name}</h1>
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+              <MapPin className="w-4 h-4" />
+              <span>{cafe.address}</span>
             </div>
           </div>
 

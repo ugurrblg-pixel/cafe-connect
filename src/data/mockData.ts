@@ -71,7 +71,6 @@ export const mockCafes: Cafe[] = [
     distance: '0.2 km',
     imageUrl: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=400&h=300&fit=crop',
     activeUsers: 3,
-    rating: 4.8,
     isOpen: true,
   },
   {
@@ -81,7 +80,6 @@ export const mockCafes: Cafe[] = [
     distance: '0.5 km',
     imageUrl: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=300&fit=crop',
     activeUsers: 2,
-    rating: 4.5,
     isOpen: true,
   },
   {
@@ -91,7 +89,6 @@ export const mockCafes: Cafe[] = [
     distance: '0.8 km',
     imageUrl: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400&h=300&fit=crop',
     activeUsers: 0,
-    rating: 4.6,
     isOpen: true,
   },
   {
@@ -101,7 +98,6 @@ export const mockCafes: Cafe[] = [
     distance: '1.2 km',
     imageUrl: 'https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=400&h=300&fit=crop',
     activeUsers: 5,
-    rating: 4.9,
     isOpen: true,
   },
   {
@@ -111,7 +107,6 @@ export const mockCafes: Cafe[] = [
     distance: '1.5 km',
     imageUrl: 'https://images.unsplash.com/photo-1493857671505-72967e2e2760?w=400&h=300&fit=crop',
     activeUsers: 1,
-    rating: 4.3,
     isOpen: false,
   },
 ];

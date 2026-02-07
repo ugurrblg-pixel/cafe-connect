@@ -10,7 +10,6 @@ interface Cafe {
   distanceMeters: number | null;
   imageUrl: string;
   activeUsers: number;
-  rating: number;
   isOpen: boolean;
   openingHours: string | null;
   latitude: number | null;
@@ -77,7 +76,6 @@ export function useNearbyCafes(): UseNearbyCafesResult {
           distanceMeters,
           imageUrl: cafe.image_url || '',
           activeUsers: cafe.activeUsers || 0,
-          rating: Number(cafe.rating) || 4.5,
           isOpen: cafe.is_open ?? true,
           openingHours: cafe.opening_hours || null,
           latitude: cafe.latitude,
