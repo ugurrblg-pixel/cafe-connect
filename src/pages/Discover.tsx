@@ -1,19 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { CafeCard } from '@/components/CafeCard';
 import { PageLayout } from '@/components/PageLayout';
 import { useNearbyCafes } from '@/hooks/useNearbyCafes';
 import { useGeolocation } from '@/hooks/useGeolocation';
+import { getCafeStatus } from '@/lib/openingHours';
 import { MapPin, Coffee, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 export default function Discover() {
   const navigate = useNavigate();
   const { cafes, loading, error, source, fetchNearbyCafes } = useNearbyCafes();
   const { position, loading: locationLoading, error: locationError, getPosition, isSupported } = useGeolocation();
   const [locationRequested, setLocationRequested] = useState(false);
+  const [showOpenOnly, setShowOpenOnly] = useState(true);
 
   // Request location on mount
   useEffect(() => {
@@ -46,8 +50,25 @@ export default function Discover() {
     }
   };
 
-  const activeCafes = cafes.filter((cafe) => cafe.activeUsers > 0 && cafe.isOpen);
-  const otherCafes = cafes.filter((cafe) => cafe.activeUsers === 0 || !cafe.isOpen);
+  // Filter cafes based on live opening hours status
+  const filteredCafes = useMemo(() => {
+    if (!showOpenOnly) return cafes;
+    
+    return cafes.filter((cafe) => {
+      const status = getCafeStatus(cafe.openingHours);
+      return status.status === 'open' || status.status === 'closing-soon';
+    });
+  }, [cafes, showOpenOnly]);
+
+  const closedCount = useMemo(() => {
+    return cafes.filter((cafe) => {
+      const status = getCafeStatus(cafe.openingHours);
+      return status.status === 'closed';
+    }).length;
+  }, [cafes]);
+
+  const activeCafes = filteredCafes.filter((cafe) => cafe.activeUsers > 0);
+  const otherCafes = filteredCafes.filter((cafe) => cafe.activeUsers === 0);
 
   return (
     <PageLayout>
@@ -131,6 +152,25 @@ export default function Discover() {
           </div>
         ) : (
           <>
+            {/* Filter Controls */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Checkbox 
+                  id="open-only" 
+                  checked={showOpenOnly}
+                  onCheckedChange={(checked) => setShowOpenOnly(checked === true)}
+                />
+                <Label htmlFor="open-only" className="text-sm text-muted-foreground cursor-pointer">
+                  Sadece açık olanlar
+                </Label>
+              </div>
+              {showOpenOnly && closedCount > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  +{closedCount} kapalı
+                </span>
+              )}
+            </div>
+
             {/* Active Section */}
             <section className="mb-8">
               <div className="flex items-center gap-2 mb-4">
@@ -149,7 +189,7 @@ export default function Discover() {
                 ))}
                 {activeCafes.length === 0 && (
                   <p className="text-muted-foreground text-sm py-4">
-                    {cafes.length === 0 
+                    {filteredCafes.length === 0 
                       ? 'Konum bilgisi alındığında yakındaki kafeler görünecek.' 
                       : 'Yakında aktif kafe yok. İlk check-in yapan sen ol!'}
                   </p>
@@ -175,13 +215,26 @@ export default function Discover() {
             )}
 
             {/* Empty State */}
-            {cafes.length === 0 && position && !loading && !error && (
+            {filteredCafes.length === 0 && position && !loading && !error && (
               <div className="text-center py-12">
                 <Coffee className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="font-semibold text-lg mb-2">Yakında kafe bulunamadı</h3>
-                <p className="text-muted-foreground text-sm">
-                  1 km çevresinde kayıtlı kafe yok.
+                <h3 className="font-semibold text-lg mb-2">
+                  {showOpenOnly ? 'Açık kafe bulunamadı' : 'Yakında kafe bulunamadı'}
+                </h3>
+                <p className="text-muted-foreground text-sm mb-4">
+                  {showOpenOnly 
+                    ? 'Şu an açık kafe yok. Kapalı kafeleri de görmek için filtreyi kaldırın.'
+                    : '1 km çevresinde kayıtlı kafe yok.'}
                 </p>
+                {showOpenOnly && closedCount > 0 && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowOpenOnly(false)}
+                  >
+                    Tümünü göster ({closedCount} kapalı)
+                  </Button>
+                )}
               </div>
             )}
           </>
