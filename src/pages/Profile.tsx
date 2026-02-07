@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { PurposeBadge } from '@/components/PurposeBadge';
 import { InitialsAvatar } from '@/components/InitialsAvatar';
+import { PageLayout } from '@/components/PageLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -135,16 +136,18 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background pb-24">
-        <Header title="Profile" showMenu />
-        <main className="pt-16 px-4">
-          <div className="flex flex-col items-center py-6">
-            <Skeleton className="w-28 h-28 rounded-full mb-4" />
-            <Skeleton className="h-8 w-32 mb-2" />
-            <Skeleton className="h-6 w-24" />
-          </div>
-        </main>
-      </div>
+      <PageLayout>
+        <div className="min-h-screen bg-background pb-24">
+          <Header title="Profile" showMenu />
+          <main className="pt-16 px-4">
+            <div className="flex flex-col items-center py-6">
+              <Skeleton className="w-28 h-28 rounded-full mb-4" />
+              <Skeleton className="h-8 w-32 mb-2" />
+              <Skeleton className="h-6 w-24" />
+            </div>
+          </main>
+        </div>
+      </PageLayout>
     );
   }
 
@@ -157,10 +160,11 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <Header title="Profile" showMenu />
+    <PageLayout>
+      <div className="min-h-screen bg-background pb-24">
+        <Header title="Profile" showMenu />
 
-      <main className="pt-16 px-4">
+        <main className="pt-16 px-4">
         {/* Profile Header */}
         <div className="flex flex-col items-center py-6 animate-scale-in">
           <div className="relative mb-4">
@@ -312,6 +316,7 @@ export default function Profile() {
           ))}
         </section>
       </main>
-    </div>
+      </div>
+    </PageLayout>
   );
 }

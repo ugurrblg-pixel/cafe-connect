@@ -243,6 +243,7 @@ export default function CafeRoom() {
                     allowDMs: activeUser.allowDMs,
                     isOnline: true,
                     checkedInAt: activeUser.checkedInAt,
+                    lastActiveAt: activeUser.lastActiveAt,
                   }}
                   onMessage={() => handleOpenChat(activeUser.userId, activeUser.displayName || activeUser.name)}
                   onInteraction={(type) => handleInteraction(type, activeUser.userId, activeUser.displayName || activeUser.name)}

@@ -3,6 +3,7 @@ import { PurposeBadge } from './PurposeBadge';
 import { InitialsAvatar } from './InitialsAvatar';
 import { cn } from '@/lib/utils';
 import { MessageCircle, Hand, Check, Loader2, Heart } from 'lucide-react';
+import { formatLastActive, isActiveNow } from '@/lib/activityTime';
 
 type WaveState = 'none' | 'waved' | 'received' | 'matched';
 
@@ -23,6 +24,8 @@ export function UserCard({ user, onMessage, onInteraction, onTap, waveState = 'n
     : 0;
 
   const displayName = user.displayName || user.name;
+  const isActive = isActiveNow(user.lastActiveAt);
+  const activityText = formatLastActive(user.lastActiveAt);
 
   return (
     <div
@@ -45,7 +48,13 @@ export function UserCard({ user, onMessage, onInteraction, onTap, waveState = 'n
         ) : (
           <InitialsAvatar name={displayName} size="md" />
         )}
-        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-accent rounded-full border-2 border-card" />
+        {/* Activity indicator dot */}
+        <div 
+          className={cn(
+            'absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-card',
+            isActive ? 'bg-accent' : 'bg-muted-foreground/50'
+          )} 
+        />
       </div>
 
       {/* Info */}
@@ -59,9 +68,13 @@ export function UserCard({ user, onMessage, onInteraction, onTap, waveState = 'n
         <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
           {user.bio}
         </p>
-        <p className="text-xs text-muted-foreground">
-          Here for {timeAgo} min
-        </p>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className={cn(isActive && 'text-accent font-medium')}>
+            {activityText}
+          </span>
+          <span className="opacity-50">·</span>
+          <span>Here for {timeAgo} min</span>
+        </div>
       </div>
 
       {/* Actions */}

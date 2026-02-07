@@ -12,6 +12,7 @@ export interface User {
   isOnline: boolean;
   isVisible?: boolean;
   checkedInAt?: Date;
+  lastActiveAt?: Date;
   cafeId?: string;
 }
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { InitialsAvatar } from '@/components/InitialsAvatar';
+import { PageLayout } from '@/components/PageLayout';
 import { useMatches } from '@/hooks/useMatches';
 import { MessageSquare, Heart, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,8 +30,9 @@ export default function Messages() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <Header title="Messages" />
+    <PageLayout>
+      <div className="min-h-screen bg-background pb-24">
+        <Header title="Messages" />
 
       <main className="pt-16 px-4">
         {loading ? (
@@ -103,6 +105,7 @@ export default function Messages() {
           </div>
         )}
       </main>
-    </div>
+      </div>
+    </PageLayout>
   );
 }
