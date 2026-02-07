@@ -1,6 +1,5 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { InitialsAvatar } from '@/components/InitialsAvatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useChat } from '@/hooks/useConversations';
@@ -15,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { TypingIndicator } from '@/components/chat/TypingIndicator';
 import { EmptyChat } from '@/components/chat/EmptyChat';
+import { ChatHeader } from '@/components/chat/ChatHeader';
 import { BlockDialog, ReportDialog } from '@/components/BlockReportDialog';
 import {
   DropdownMenu,
@@ -27,6 +27,7 @@ interface OtherUser {
   userId: string;
   displayName: string;
   photoUrl: string;
+  lastActiveAt?: Date;
 }
 
 export default function ChatRoom() {
@@ -70,17 +71,30 @@ export default function ChatRoom() {
 
       const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id;
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('user_id, display_name, photo_url')
-        .eq('user_id', otherUserId)
-        .maybeSingle();
+      // Fetch profile and check-in for activity status
+      const [profileRes, checkInRes] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('user_id, display_name, photo_url')
+          .eq('user_id', otherUserId)
+          .maybeSingle(),
+        supabase
+          .from('check_ins')
+          .select('last_active_at')
+          .eq('user_id', otherUserId)
+          .gt('expiry_time', new Date().toISOString())
+          .maybeSingle(),
+      ]);
+
+      const profile = profileRes.data;
+      const checkIn = checkInRes.data;
 
       if (profile) {
         setOtherUser({
           userId: profile.user_id,
           displayName: profile.display_name || 'Anonymous',
           photoUrl: profile.photo_url || '',
+          lastActiveAt: checkIn?.last_active_at ? new Date(checkIn.last_active_at) : undefined,
         });
       }
     };
@@ -101,12 +115,12 @@ export default function ChatRoom() {
   }, [messages, isOtherUserTyping]);
 
   // Handle input change with typing indicator
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setMessageInput(e.target.value);
     setTyping(e.target.value.length > 0);
-  };
+  }, [setTyping]);
 
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     if (!messageInput.trim()) return;
     
     setTyping(false);
@@ -115,14 +129,14 @@ export default function ChatRoom() {
       setMessageInput('');
       inputRef.current?.focus();
     }
-  };
+  }, [messageInput, sendMessage, setTyping]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
-  };
+  }, [handleSend]);
 
   const handleBlock = async () => {
     if (!otherUser) return;
@@ -139,9 +153,19 @@ export default function ChatRoom() {
     setShowReportDialog(false);
   };
 
-  // Group messages by sender for consecutive message handling
-  const groupedMessages = useMemo(() => {
-    return messages.map((message, index) => {
+  // Group messages by sender and find last own message
+  const { groupedMessages, lastOwnMessageId } = useMemo(() => {
+    let lastOwnId: string | null = null;
+    
+    // Find the last own message
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].senderId === user?.id) {
+        lastOwnId = messages[i].id;
+        break;
+      }
+    }
+
+    const grouped = messages.map((message, index) => {
       const prevMessage = index > 0 ? messages[index - 1] : null;
       const nextMessage = index < messages.length - 1 ? messages[index + 1] : null;
       
@@ -154,21 +178,29 @@ export default function ChatRoom() {
         isLastInGroup,
       };
     });
-  }, [messages]);
 
+    return { groupedMessages: grouped, lastOwnMessageId: lastOwnId };
+  }, [messages, user?.id]);
+
+  // Loading state
   if (loading || matchesLoading) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <div className="fixed top-0 left-0 right-0 z-50 glass-effect border-b border-border">
-          <div className="flex items-center gap-3 px-4 py-4">
+      <div className="min-h-screen bg-secondary/20 flex flex-col">
+        <div className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-border shadow-sm">
+          <div className="flex items-center gap-3 px-4 py-3">
             <Skeleton className="w-10 h-10 rounded-full" />
-            <Skeleton className="h-5 w-32" />
+            <div className="space-y-1.5">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-3 w-16" />
+            </div>
           </div>
         </div>
         <div className="flex-1 pt-24 p-4">
-          <Skeleton className="h-12 w-48 mb-3 rounded-2xl" />
-          <Skeleton className="h-12 w-40 ml-auto mb-3 rounded-2xl" />
-          <Skeleton className="h-12 w-52 mb-3 rounded-2xl" />
+          <Skeleton className="h-12 w-48 mb-2 rounded-[22px]" />
+          <Skeleton className="h-10 w-36 mb-4 rounded-[22px]" />
+          <Skeleton className="h-12 w-40 ml-auto mb-2 rounded-[22px]" />
+          <Skeleton className="h-16 w-52 ml-auto mb-4 rounded-[22px]" />
+          <Skeleton className="h-10 w-44 rounded-[22px]" />
         </div>
       </div>
     );
@@ -177,9 +209,9 @@ export default function ChatRoom() {
   // Show blocked/no match state
   if (hasMatch === false) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <div className="fixed top-0 left-0 right-0 z-50 glass-effect border-b border-border">
-          <div className="flex items-center gap-3 px-4 py-4">
+      <div className="min-h-screen bg-secondary/20 flex flex-col">
+        <div className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-border shadow-sm">
+          <div className="flex items-center gap-3 px-4 py-3">
             <button 
               onClick={() => navigate('/messages')} 
               className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors"
@@ -213,50 +245,19 @@ export default function ChatRoom() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header - cleaner, more minimal */}
-      <div className="fixed top-0 left-0 right-0 z-50 glass-effect border-b border-border/50">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => navigate('/messages')} 
-              className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-            
-            {otherUser && (
-              <div className="flex items-center gap-3">
-                {otherUser.photoUrl ? (
-                  <img
-                    src={otherUser.photoUrl}
-                    alt={otherUser.displayName}
-                    className="w-10 h-10 rounded-full object-cover ring-2 ring-background"
-                  />
-                ) : (
-                  <InitialsAvatar 
-                    name={otherUser.displayName} 
-                    size="sm" 
-                    className="rounded-full ring-2 ring-background" 
-                  />
-                )}
-                <div className="flex flex-col">
-                  <span className="font-semibold text-foreground leading-tight">
-                    {otherUser.displayName}
-                  </span>
-                  {isOtherUserTyping && (
-                    <span className="text-xs text-primary font-medium">
-                      {t.chat.typing}
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
+    <div className="min-h-screen bg-secondary/20 flex flex-col">
+      {/* Header with online status */}
+      <ChatHeader
+        userName={otherUser?.displayName || 'User'}
+        userPhotoUrl={otherUser?.photoUrl}
+        lastActiveAt={otherUser?.lastActiveAt}
+        isTyping={isOtherUserTyping}
+        typingText={t.chat.typing}
+        onBack={() => navigate('/messages')}
+        actions={
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="p-2 rounded-full hover:bg-secondary transition-colors">
+              <button className="p-2 rounded-full hover:bg-secondary active:bg-secondary/80 transition-colors">
                 <MoreVertical className="w-5 h-5 text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>
@@ -277,11 +278,11 @@ export default function ChatRoom() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-      </div>
+        }
+      />
 
-      {/* Messages - improved spacing and layout */}
-      <div className="flex-1 pt-20 pb-24 px-4 overflow-y-auto">
+      {/* Messages area with warm off-white background */}
+      <div className="flex-1 pt-16 pb-24 px-4 overflow-y-auto">
         {messages.length === 0 ? (
           <EmptyChat otherUserName={otherUser?.displayName || 'User'} />
         ) : (
@@ -297,6 +298,7 @@ export default function ChatRoom() {
                   isRead={!!message.readAt}
                   isFirstInGroup={message.isFirstInGroup}
                   isLastInGroup={message.isLastInGroup}
+                  isLastOwnMessage={message.id === lastOwnMessageId}
                 />
               );
             })}
@@ -311,8 +313,8 @@ export default function ChatRoom() {
         )}
       </div>
 
-      {/* Input - more refined */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 pb-6 glass-effect border-t border-border/50">
+      {/* Message input - refined and warm */}
+      <div className="fixed bottom-0 left-0 right-0 px-4 py-3 bg-background/95 backdrop-blur-md border-t border-border">
         <div className="flex items-center gap-3">
           <Input
             ref={inputRef}
@@ -321,14 +323,14 @@ export default function ChatRoom() {
             onKeyPress={handleKeyPress}
             onBlur={() => setTyping(false)}
             placeholder={t.chat.typeMessage}
-            className="flex-1 rounded-full px-5 py-3 h-12 bg-secondary/50 border-0 focus-visible:ring-1 focus-visible:ring-primary/30"
+            className="flex-1 rounded-full px-5 py-3 h-11 bg-secondary/60 border-0 focus-visible:ring-1 focus-visible:ring-primary/40 placeholder:text-muted-foreground/60"
             maxLength={500}
           />
           <Button
             onClick={handleSend}
             disabled={!messageInput.trim() || sending}
             size="icon"
-            className="w-12 h-12 rounded-full shrink-0"
+            className="w-11 h-11 rounded-full shrink-0 shadow-sm"
           >
             {sending ? (
               <Loader2 className="w-5 h-5 animate-spin" />

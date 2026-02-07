@@ -142,6 +142,9 @@ export const translations = {
       openUntil: 'Open until {time}',
       opensAt: 'Opens {day} {time}',
       open24h: 'Open 24 hours',
+      online: 'Online',
+      lastActive: 'Active {time} ago',
+      lastActiveNow: 'Active now',
     },
 
     // Errors
@@ -291,6 +294,9 @@ export const translations = {
       openUntil: '{time} kadar açık',
       opensAt: '{day} {time} açılıyor',
       open24h: '24 saat açık',
+      online: 'Çevrimiçi',
+      lastActive: '{time} önce aktif',
+      lastActiveNow: 'Şu an aktif',
     },
 
     // Errors

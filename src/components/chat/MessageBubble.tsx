@@ -9,6 +9,7 @@ interface MessageBubbleProps {
   showTimestamp?: boolean;
   isFirstInGroup?: boolean;
   isLastInGroup?: boolean;
+  isLastOwnMessage?: boolean;
 }
 
 export function MessageBubble({
@@ -16,60 +17,61 @@ export function MessageBubble({
   timestamp,
   isOwn,
   isRead,
-  showTimestamp = true,
   isFirstInGroup = true,
   isLastInGroup = true,
+  isLastOwnMessage = false,
 }: MessageBubbleProps) {
   return (
     <div
       className={cn(
-        'flex',
+        'flex animate-in fade-in-0 slide-in-from-bottom-2 duration-300',
         isOwn ? 'justify-end' : 'justify-start',
-        !isLastInGroup && 'mb-0.5',
-        isLastInGroup && 'mb-3'
+        // Tighter spacing for grouped messages
+        isLastInGroup ? 'mb-3' : 'mb-0.5'
       )}
     >
       <div
         className={cn(
-          'max-w-[80%] px-4 py-2.5 transition-all',
-          // Bubble colors - calmer palette
+          'max-w-[70%] px-4 py-2.5 shadow-sm',
+          // Bubble colors - warm palette
           isOwn
-            ? 'bg-primary/90 text-primary-foreground'
-            : 'bg-secondary text-secondary-foreground',
-          // Bubble shape based on position in group - softer corners
-          isOwn && isFirstInGroup && isLastInGroup && 'rounded-[20px] rounded-br-lg',
-          isOwn && isFirstInGroup && !isLastInGroup && 'rounded-[20px] rounded-br-lg',
-          isOwn && !isFirstInGroup && isLastInGroup && 'rounded-[20px] rounded-br-lg rounded-tr-lg',
-          isOwn && !isFirstInGroup && !isLastInGroup && 'rounded-[18px] rounded-r-lg',
-          !isOwn && isFirstInGroup && isLastInGroup && 'rounded-[20px] rounded-bl-lg',
-          !isOwn && isFirstInGroup && !isLastInGroup && 'rounded-[20px] rounded-bl-lg',
-          !isOwn && !isFirstInGroup && isLastInGroup && 'rounded-[20px] rounded-bl-lg rounded-tl-lg',
-          !isOwn && !isFirstInGroup && !isLastInGroup && 'rounded-[18px] rounded-l-lg'
+            ? 'bg-primary text-primary-foreground'
+            : 'bg-card text-card-foreground border border-border/30',
+          // Dynamic border radius based on position and ownership
+          isOwn && isFirstInGroup && isLastInGroup && 'rounded-[22px] rounded-br-md',
+          isOwn && isFirstInGroup && !isLastInGroup && 'rounded-[22px] rounded-br-md rounded-tr-[22px]',
+          isOwn && !isFirstInGroup && isLastInGroup && 'rounded-[22px] rounded-br-md rounded-tr-md',
+          isOwn && !isFirstInGroup && !isLastInGroup && 'rounded-[18px] rounded-r-md',
+          !isOwn && isFirstInGroup && isLastInGroup && 'rounded-[22px] rounded-bl-md',
+          !isOwn && isFirstInGroup && !isLastInGroup && 'rounded-[22px] rounded-bl-md rounded-tl-[22px]',
+          !isOwn && !isFirstInGroup && isLastInGroup && 'rounded-[22px] rounded-bl-md rounded-tl-md',
+          !isOwn && !isFirstInGroup && !isLastInGroup && 'rounded-[18px] rounded-l-md'
         )}
       >
-        {/* Message content with better typography */}
+        {/* Message content */}
         <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
           {content}
         </p>
         
-        {/* Timestamp and read status - more subtle */}
-        {showTimestamp && isLastInGroup && (
+        {/* Timestamp and read status - only show on last message in group */}
+        {isLastInGroup && (
           <div className={cn(
-            'flex items-center gap-1.5 mt-1.5',
+            'flex items-center gap-1 mt-1',
             isOwn ? 'justify-end' : 'justify-start'
           )}>
             <span className={cn(
-              'text-[11px] font-medium',
-              isOwn ? 'text-primary-foreground/50' : 'text-muted-foreground/70'
+              'text-[10px]',
+              isOwn ? 'text-primary-foreground/60' : 'text-muted-foreground'
             )}>
               {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
             
-            {isOwn && (
+            {/* Read receipt - only on the last own message */}
+            {isOwn && isLastOwnMessage && (
               isRead ? (
-                <CheckCheck className="w-3.5 h-3.5 text-primary-foreground/50" />
+                <CheckCheck className="w-3.5 h-3.5 text-primary-foreground/60" />
               ) : (
-                <Check className="w-3.5 h-3.5 text-primary-foreground/50" />
+                <Check className="w-3.5 h-3.5 text-primary-foreground/60" />
               )
             )}
           </div>
