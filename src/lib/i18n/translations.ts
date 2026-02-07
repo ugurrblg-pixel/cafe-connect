@@ -87,8 +87,11 @@ export const translations = {
       backToMessages: 'Back to Messages',
       reportUser: 'Report User',
       blockUser: 'Block User',
-      startConversation: 'Start a conversation with {name}',
-      startConversationDesc: 'Say hello and break the ice! ☕',
+      letsChat: "Let's chat",
+      firstMessageEncouragement: "First messages are always hard, but someone has to start 🙂",
+      suggestion1: "What are you having?",
+      suggestion2: "Is this your favorite cafe?",
+      suggestion3: "How's your day going?",
     },
 
     // Profile
@@ -239,8 +242,11 @@ export const translations = {
       backToMessages: 'Mesajlara Dön',
       reportUser: 'Kullanıcıyı Şikayet Et',
       blockUser: 'Kullanıcıyı Engelle',
-      startConversation: '{name} ile sohbete başla',
-      startConversationDesc: 'Merhaba de ve buzları kır! ☕',
+      letsChat: 'Sohbet başlasın',
+      firstMessageEncouragement: 'İlk mesajı atmak her zaman zordur ama biri başlamak zorunda 🙂',
+      suggestion1: 'Burada ne içiyorsun?',
+      suggestion2: 'Bu kafe favorin mi?',
+      suggestion3: 'Bugün nasıl geçiyor?',
     },
 
     // Profile
