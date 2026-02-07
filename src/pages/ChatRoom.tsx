@@ -35,11 +35,12 @@ export default function ChatRoom() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useI18n();
-  const { messages, loading, sending, sendMessage } = useChat(conversationId || '');
+  const { messages, loading, sendMessage, retryMessage } = useChat(conversationId || '');
   const { blockUser, reportUser } = useBlocking();
   const { hasMatchWith, loading: matchesLoading } = useMatches();
   
   const [messageInput, setMessageInput] = useState('');
+  const [isSending, setIsSending] = useState(false);
   const [otherUser, setOtherUser] = useState<OtherUser | null>(null);
   const [showBlockDialog, setShowBlockDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
@@ -131,19 +132,22 @@ export default function ChatRoom() {
   }, [setTyping]);
 
   const handleSend = useCallback(async () => {
-    if (!messageInput.trim() || sending) return;
+    if (!messageInput.trim() || isSending) return;
     
+    const contentToSend = messageInput;
+    setMessageInput('');
     setTyping(false);
-    const success = await sendMessage(messageInput);
-    if (success) {
-      setMessageInput('');
-      // Reset textarea height
-      if (inputRef.current) {
-        inputRef.current.style.height = 'auto';
-        inputRef.current.focus();
-      }
+    setIsSending(true);
+    
+    // Reset textarea height
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      inputRef.current.focus();
     }
-  }, [messageInput, sending, sendMessage, setTyping]);
+    
+    await sendMessage(contentToSend);
+    setIsSending(false);
+  }, [messageInput, isSending, sendMessage, setTyping]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -334,6 +338,8 @@ export default function ChatRoom() {
                   isFirstInGroup={message.isFirstInGroup}
                   isLastInGroup={message.isLastInGroup}
                   isLastOwnMessage={message.id === lastOwnMessageId}
+                  status={message.status}
+                  onRetry={message.status === 'failed' && message.tempId ? () => retryMessage(message.tempId!, message.content) : undefined}
                 />
               );
             })}
@@ -367,17 +373,17 @@ export default function ChatRoom() {
           />
           <Button
             onClick={handleSend}
-            disabled={!messageInput.trim() || sending}
+            disabled={!messageInput.trim() || isSending}
             size="icon"
             className={cn(
               "w-11 h-11 rounded-full shrink-0 transition-all duration-200",
-              messageInput.trim() && !sending
+              messageInput.trim() && !isSending
                 ? "bg-primary text-primary-foreground shadow-md scale-100 opacity-100"
                 : "bg-muted text-muted-foreground shadow-none scale-95 opacity-60",
               "active:scale-90"
             )}
           >
-            {sending ? (
+            {isSending ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <Send className="w-5 h-5" />
