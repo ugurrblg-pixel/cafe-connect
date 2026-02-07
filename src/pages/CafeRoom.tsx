@@ -6,6 +6,7 @@ import { CheckInButton } from '@/components/CheckInButton';
 import { ProfileBottomSheet } from '@/components/ProfileBottomSheet';
 import { IntentFilterChips, FilterOption } from '@/components/IntentFilterChips';
 import { ConnectionIndicator } from '@/components/ConnectionIndicator';
+import { CafeImage } from '@/components/CafeImage';
 import { useCheckIn } from '@/hooks/useCheckIn';
 import { useCafeUsers } from '@/hooks/useCafeUsers';
 import { useCafes } from '@/hooks/useCafes';
@@ -179,10 +180,12 @@ export default function CafeRoom() {
     <div className="min-h-screen bg-background">
       {/* Hero Image */}
       <div className="relative h-56">
-        <img
-          src={cafe.imageUrl}
+        <CafeImage
+          cafeId={cafe.id}
+          imageUrl={cafe.imageUrl}
           alt={cafe.name}
-          className="w-full h-full object-cover"
+          className="h-56"
+          aspectRatio="hero"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
         <Header title="" showBack transparent />
