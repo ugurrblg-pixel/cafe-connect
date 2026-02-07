@@ -5,12 +5,13 @@ import { UserCard } from '@/components/UserCard';
 import { CheckInButton } from '@/components/CheckInButton';
 import { ProfileBottomSheet } from '@/components/ProfileBottomSheet';
 import { IntentFilterChips, FilterOption } from '@/components/IntentFilterChips';
+import { ConnectionIndicator } from '@/components/ConnectionIndicator';
 import { useCheckIn } from '@/hooks/useCheckIn';
 import { useCafeUsers } from '@/hooks/useCafeUsers';
 import { useCafes } from '@/hooks/useCafes';
 import { useWaves } from '@/hooks/useWaves';
 import { useMatches } from '@/hooks/useMatches';
-import { MapPin, Star, Users, Clock, AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { MapPin, Star, Users, Clock, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
@@ -229,17 +230,7 @@ export default function CafeRoom() {
               </span>
             )}
             {/* Connection status indicator */}
-            {connectionStatus === 'reconnecting' && (
-              <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground animate-pulse">
-                <WifiOff className="w-3 h-3" />
-                Reconnecting...
-              </span>
-            )}
-            {connectionStatus === 'connected' && (
-              <span className="ml-auto">
-                <Wifi className="w-3 h-3 text-accent opacity-60" />
-              </span>
-            )}
+            <ConnectionIndicator status={connectionStatus} className="ml-auto" />
           </h2>
 
           {usersLoading ? (
