@@ -12,6 +12,7 @@ interface Cafe {
   activeUsers: number;
   rating: number;
   isOpen: boolean;
+  openingHours: string | null;
   latitude: number | null;
   longitude: number | null;
 }
@@ -101,6 +102,7 @@ export function useCafes(initialCafes?: Cafe[]) {
         activeUsers: activeUserCounts[cafe.id] || 0,
         rating: Number(cafe.rating) || 4.5,
         isOpen: cafe.is_open,
+        openingHours: (cafe as { opening_hours?: string | null }).opening_hours || null,
         latitude: cafe.latitude,
         longitude: cafe.longitude,
       };

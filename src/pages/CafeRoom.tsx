@@ -16,6 +16,8 @@ import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { Purpose } from '@/types';
+import { getCafeStatus, getStatusColors } from '@/lib/openingHours';
+import { cn } from '@/lib/utils';
 
 interface SelectedUser {
   id: string;
@@ -54,6 +56,10 @@ export default function CafeRoom() {
   const [wavingAt, setWavingAt] = useState<string | null>(null);
 
   const cafe = cafes.find((c) => c.id === id);
+  
+  // Get live cafe status from opening hours
+  const cafeStatus = cafe ? getCafeStatus(cafe.openingHours) : null;
+  const statusColors = cafeStatus ? getStatusColors(cafeStatus.status) : null;
 
   // Filter out current user and apply intent filter (must be before early returns)
   const otherUsers = activeUsers.filter((u) => u.userId !== user?.id);
@@ -205,9 +211,16 @@ export default function CafeRoom() {
               <Users className="w-4 h-4" />
               <span>{activeUsers.length} people here</span>
             </div>
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <Clock className="w-4 h-4" />
-              <span>{cafe.isOpen ? 'Open now' : 'Closed'}</span>
+            <div className={cn(
+              'flex items-center gap-1.5',
+              statusColors?.text || 'text-muted-foreground',
+              cafeStatus?.status === 'closing-soon' && 'font-medium'
+            )}>
+              <Clock className={cn(
+                'w-4 h-4',
+                cafeStatus?.status === 'closing-soon' && 'animate-pulse'
+              )} />
+              <span>{cafeStatus?.label || (cafe.isOpen ? 'Open now' : 'Closed')}</span>
             </div>
           </div>
         </div>
