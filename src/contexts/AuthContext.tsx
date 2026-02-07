@@ -7,6 +7,7 @@ interface Profile {
   display_name: string;
   bio: string;
   photo_url: string;
+  purpose: string;
   is_visible: boolean;
   allow_dms: boolean;
 }
@@ -32,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, display_name, bio, photo_url, is_visible, allow_dms')
+      .select('id, display_name, bio, photo_url, purpose, is_visible, allow_dms')
       .eq('user_id', userId)
       .maybeSingle();
 
