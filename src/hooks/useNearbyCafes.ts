@@ -21,7 +21,7 @@ interface UseNearbyCafesResult {
   cafes: Cafe[];
   loading: boolean;
   error: string | null;
-  source: 'cache' | 'google_places' | 'cache_fallback' | null;
+  source: 'cache' | 'google_places' | 'openstreetmap' | 'cache_fallback' | null;
   fetchNearbyCafes: (coords: Coordinates) => Promise<void>;
 }
 
@@ -29,7 +29,7 @@ export function useNearbyCafes(): UseNearbyCafesResult {
   const [cafes, setCafes] = useState<Cafe[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [source, setSource] = useState<'cache' | 'google_places' | 'cache_fallback' | null>(null);
+  const [source, setSource] = useState<'cache' | 'google_places' | 'openstreetmap' | 'cache_fallback' | null>(null);
 
   const fetchNearbyCafes = useCallback(async (coords: Coordinates) => {
     setLoading(true);
