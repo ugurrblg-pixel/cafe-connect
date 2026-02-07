@@ -47,8 +47,8 @@ export default function ChatRoom() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Typing indicator
-  const { isOtherUserTyping, setTyping } = useTypingIndicator(
+  // Typing indicator with debouncing
+  const { isOtherUserTyping, setTyping, hideTypingImmediately } = useTypingIndicator(
     conversationId || '', 
     otherUser?.userId || ''
   );
@@ -109,10 +109,20 @@ export default function ChatRoom() {
     }
   }, [otherUser, hasMatchWith, matchesLoading]);
 
-  // Scroll to bottom on new messages
+  // Scroll to bottom on new messages and hide typing when message received
+  const prevMessageCountRef = useRef(messages.length);
   useEffect(() => {
+    // Hide typing indicator immediately when a new message arrives from other user
+    if (messages.length > prevMessageCountRef.current) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage && lastMessage.senderId !== user?.id) {
+        hideTypingImmediately();
+      }
+    }
+    prevMessageCountRef.current = messages.length;
+    
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isOtherUserTyping]);
+  }, [messages, user?.id, hideTypingImmediately]);
 
   // Handle input change with typing indicator
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
