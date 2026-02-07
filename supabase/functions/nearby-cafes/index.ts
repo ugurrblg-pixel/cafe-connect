@@ -41,6 +41,9 @@ function getElementCoords(element: OverpassElement): { lat: number; lon: number 
   return null;
 }
 
+// Search radius for cafe discovery (meters)
+const SEARCH_RADIUS_METERS = 3000;
+
 // Grid cell size for caching (approximately 1km at equator)
 const GRID_CELL_SIZE = 0.009; // ~1km in degrees
 
@@ -85,8 +88,8 @@ Deno.serve(async (req) => {
       throw new Error('Missing Supabase configuration');
     }
 
-    // Parse request body
-    const { latitude, longitude, radius = 1000 } = await req.json();
+  // Parse request body - use expanded search radius by default
+    const { latitude, longitude, radius = SEARCH_RADIUS_METERS } = await req.json();
 
     if (!latitude || !longitude) {
       return new Response(
@@ -155,13 +158,20 @@ Deno.serve(async (req) => {
     // Not enough cached cafes, fetch from Overpass API
     console.log('Fetching from OpenStreetMap Overpass API...');
     
-    // Build Overpass QL query for cafes within radius
-    const radiusMeters = Math.min(radius, 2000); // Cap at 2km for performance
+    // Build Overpass QL query for cafe-like places within radius
+    // Include: cafes, restaurants, fast food, and coffee shops
+    const radiusMeters = Math.min(radius, SEARCH_RADIUS_METERS);
     const overpassQuery = `
-      [out:json][timeout:25];
+      [out:json][timeout:30];
       (
         node["amenity"="cafe"](around:${radiusMeters},${latitude},${longitude});
         way["amenity"="cafe"](around:${radiusMeters},${latitude},${longitude});
+        node["amenity"="restaurant"](around:${radiusMeters},${latitude},${longitude});
+        way["amenity"="restaurant"](around:${radiusMeters},${latitude},${longitude});
+        node["amenity"="fast_food"](around:${radiusMeters},${latitude},${longitude});
+        way["amenity"="fast_food"](around:${radiusMeters},${latitude},${longitude});
+        node["shop"="coffee"](around:${radiusMeters},${latitude},${longitude});
+        way["shop"="coffee"](around:${radiusMeters},${latitude},${longitude});
       );
       out center;
     `;
@@ -194,14 +204,27 @@ Deno.serve(async (req) => {
     const overpassData: OverpassResponse = await overpassResponse.json();
     console.log(`Overpass returned ${overpassData.elements?.length || 0} cafes`);
 
+    // Helper to generate a fallback name based on amenity/shop type
+    const getFallbackName = (tags: OverpassElement['tags']): string => {
+      if (tags?.name) return tags.name;
+      if (tags?.['addr:street']) return `Cafe at ${tags['addr:street']}`;
+      // Fallback based on type
+      const amenity = tags?.amenity;
+      const shop = tags?.shop;
+      if (amenity === 'restaurant') return 'Restaurant';
+      if (amenity === 'fast_food') return 'Fast Food';
+      if (shop === 'coffee') return 'Coffee Shop';
+      return 'Unnamed Cafe';
+    };
+
     // Transform and upsert cafes from Overpass into our database
+    // Do NOT filter by name - use fallback names instead
     const cafesToUpsert = (overpassData.elements || [])
-      .filter(element => element.tags?.name) // Only include named cafes
       .map((element) => {
         const coords = getElementCoords(element);
         return {
           google_place_id: generateOsmId(element), // Reuse column for OSM ID
-          name: element.tags?.name || 'Unnamed Cafe',
+          name: getFallbackName(element.tags),
           address: buildAddress(element.tags),
           latitude: coords?.lat ?? null,
           longitude: coords?.lon ?? null,
