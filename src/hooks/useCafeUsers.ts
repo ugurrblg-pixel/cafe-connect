@@ -1,7 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { INACTIVITY_TIMEOUT_MS } from '@/lib/geolocation';
+
+interface PresenceState {
+  user_id: string;
+  display_name: string;
+  photo_url: string;
+  purpose: string;
+  online_at: string; // ISO timestamp of last presence heartbeat
+}
 
 interface CafeUser {
   id: string;
@@ -14,18 +23,37 @@ interface CafeUser {
   allowDMs: boolean;
   isVisible: boolean;
   checkedInAt: Date;
-  lastActiveAt: Date;
+  lastActiveAt: Date; // Derived from presence heartbeat
   userId: string;
 }
 
-export function useCafeUsers(cafeId: string) {
+interface UseCafeUsersOptions {
+  /** If true, user joins the presence channel when checked in */
+  joinPresence?: boolean;
+  /** User's display name for presence */
+  displayName?: string;
+  /** User's photo URL for presence */
+  photoUrl?: string;
+  /** User's purpose for presence */
+  purpose?: string;
+  /** Whether user is checked in at this cafe */
+  isCheckedIn?: boolean;
+}
+
+export function useCafeUsers(cafeId: string, options: UseCafeUsersOptions = {}) {
+  const { user } = useAuth();
   const [users, setUsers] = useState<CafeUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [presenceMap, setPresenceMap] = useState<Map<string, PresenceState>>(new Map());
+  
+  const presenceChannelRef = useRef<RealtimeChannel | null>(null);
+  const dbChannelRef = useRef<RealtimeChannel | null>(null);
 
-  const fetchActiveUsers = async () => {
-    // First get active check-ins.
-    // IMPORTANT: Do not use client-side timestamps (device clock/timezone can be wrong).
-    // We rely on the database RLS policy (expiry_time > now()) to return only active rows.
+  // Fetch check-ins from database (source of truth for who is checked in)
+  const fetchActiveUsers = useCallback(async () => {
+    if (!cafeId) return;
+
+    // Get active check-ins from DB (RLS filters for expiry_time > now())
     const { data: checkInsData, error: checkInsError } = await supabase
       .from('check_ins')
       .select('id, check_in_time, user_id, last_active_at')
@@ -43,10 +71,11 @@ export function useCafeUsers(cafeId: string) {
       return;
     }
 
-    // Filter out inactive users (no activity in last 15 minutes)
+    // Filter out inactive users (no DB activity in last 15 minutes)
+    // This is a fallback - presence heartbeat is the primary activity indicator
     const now = Date.now();
     const activeCheckIns = checkInsData.filter((checkIn) => {
-      if (!checkIn.last_active_at) return true; // Legacy check-ins without last_active_at
+      if (!checkIn.last_active_at) return true;
       const lastActive = new Date(checkIn.last_active_at).getTime();
       return now - lastActive < INACTIVITY_TIMEOUT_MS;
     });
@@ -57,10 +86,9 @@ export function useCafeUsers(cafeId: string) {
       return;
     }
 
-    // Get the user_ids from active check-ins
     const userIds = activeCheckIns.map((c) => c.user_id);
 
-    // Fetch profiles for those users
+    // Fetch profiles
     const { data: profilesData, error: profilesError } = await supabase
       .from('profiles')
       .select('id, user_id, name, display_name, age, bio, photo_url, purpose, allow_dms, is_visible')
@@ -72,21 +100,19 @@ export function useCafeUsers(cafeId: string) {
       return;
     }
 
-    // Map profiles by user_id for quick lookup
-    const profileMap = new Map(
-      (profilesData || []).map((p) => [p.user_id, p])
-    );
+    const profileMap = new Map((profilesData || []).map((p) => [p.user_id, p]));
 
-    // Map check-ins by user_id for quick lookup
-    const checkInMap = new Map(
-      activeCheckIns.map((c) => [c.user_id, c])
-    );
-
-    // Build the active users list - ALL checked-in users are visible regardless of is_visible setting
+    // Build users list, using presence for activity if available
     const activeUsers: CafeUser[] = activeCheckIns
       .map((checkIn) => {
         const profile = profileMap.get(checkIn.user_id);
         if (!profile) return null;
+
+        // Get activity from presence if available, otherwise fall back to DB
+        const presence = presenceMap.get(checkIn.user_id);
+        const lastActiveAt = presence?.online_at 
+          ? new Date(presence.online_at)
+          : new Date(checkIn.last_active_at || checkIn.check_in_time);
 
         return {
           id: profile.id,
@@ -100,23 +126,102 @@ export function useCafeUsers(cafeId: string) {
           allowDMs: profile.allow_dms,
           isVisible: profile.is_visible ?? true,
           checkedInAt: new Date(checkIn.check_in_time),
-          lastActiveAt: new Date(checkIn.last_active_at || checkIn.check_in_time),
+          lastActiveAt,
         };
       })
       .filter((u): u is CafeUser => u !== null);
 
     setUsers(activeUsers);
     setLoading(false);
-  };
+  }, [cafeId, presenceMap]);
 
+  // Setup presence channel for real-time activity tracking
+  useEffect(() => {
+    if (!cafeId) return;
+
+    const channel = supabase.channel(`cafe-presence-${cafeId}`, {
+      config: {
+        presence: {
+          key: user?.id || 'anonymous',
+        },
+      },
+    });
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState<PresenceState>();
+        const newPresenceMap = new Map<string, PresenceState>();
+        
+        // Flatten presence state into a map by user_id
+        Object.values(state).flat().forEach((presence) => {
+          if (presence.user_id) {
+            newPresenceMap.set(presence.user_id, presence);
+          }
+        });
+        
+        setPresenceMap(newPresenceMap);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED' && options.joinPresence && options.isCheckedIn && user) {
+          // Track this user's presence with heartbeat
+          await channel.track({
+            user_id: user.id,
+            display_name: options.displayName || '',
+            photo_url: options.photoUrl || '',
+            purpose: options.purpose || 'chat',
+            online_at: new Date().toISOString(),
+          });
+        }
+      });
+
+    presenceChannelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+      presenceChannelRef.current = null;
+    };
+  }, [cafeId, user, options.joinPresence, options.isCheckedIn, options.displayName, options.photoUrl, options.purpose]);
+
+  // Heartbeat: update presence every 30 seconds while checked in
+  useEffect(() => {
+    if (!options.joinPresence || !options.isCheckedIn || !user || !presenceChannelRef.current) {
+      return;
+    }
+
+    const sendHeartbeat = async () => {
+      if (presenceChannelRef.current) {
+        await presenceChannelRef.current.track({
+          user_id: user.id,
+          display_name: options.displayName || '',
+          photo_url: options.photoUrl || '',
+          purpose: options.purpose || 'chat',
+          online_at: new Date().toISOString(),
+        });
+      }
+    };
+
+    // Send heartbeat every 30 seconds
+    const interval = setInterval(sendHeartbeat, 30000);
+
+    return () => clearInterval(interval);
+  }, [user, options.joinPresence, options.isCheckedIn, options.displayName, options.photoUrl, options.purpose]);
+
+  // Disconnect presence on checkout
+  useEffect(() => {
+    if (!options.isCheckedIn && presenceChannelRef.current) {
+      // Untrack presence when checked out
+      presenceChannelRef.current.untrack();
+    }
+  }, [options.isCheckedIn]);
+
+  // Subscribe to DB changes for check-in/check-out events
   useEffect(() => {
     if (!cafeId) return;
 
     fetchActiveUsers();
 
-    // Subscribe to realtime changes
-    const channel: RealtimeChannel = supabase
-      .channel(`cafe-${cafeId}`)
+    const channel = supabase
+      .channel(`cafe-db-${cafeId}`)
       .on(
         'postgres_changes',
         {
@@ -131,14 +236,20 @@ export function useCafeUsers(cafeId: string) {
       )
       .subscribe();
 
-    // Refresh every minute to filter out inactive users
-    const refreshInterval = setInterval(fetchActiveUsers, 60000);
+    dbChannelRef.current = channel;
 
     return () => {
       supabase.removeChannel(channel);
-      clearInterval(refreshInterval);
+      dbChannelRef.current = null;
     };
-  }, [cafeId]);
+  }, [cafeId, fetchActiveUsers]);
+
+  // Re-fetch when presence map changes (to update lastActiveAt)
+  useEffect(() => {
+    if (presenceMap.size > 0) {
+      fetchActiveUsers();
+    }
+  }, [presenceMap, fetchActiveUsers]);
 
   return { users, loading, refetch: fetchActiveUsers };
 }

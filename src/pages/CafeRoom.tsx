@@ -31,10 +31,19 @@ interface SelectedUser {
 export default function CafeRoom() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { cafes, loading: cafesLoading } = useCafes();
   const { isCheckedIn, loading: checkInLoading, verifyingLocation, checkIn, checkOut } = useCheckIn(id || '');
-  const { users: activeUsers, loading: usersLoading } = useCafeUsers(id || '');
+  
+  // Pass presence options to useCafeUsers - user joins presence when checked in
+  const { users: activeUsers, loading: usersLoading } = useCafeUsers(id || '', {
+    joinPresence: true,
+    isCheckedIn,
+    displayName: profile?.display_name || '',
+    photoUrl: profile?.photo_url || '',
+    purpose: profile?.purpose || 'chat',
+  });
+  
   const { sendWave, hasWavedAt, hasReceivedWaveFrom } = useWaves();
   const { hasMatchWith, getMatchConversation, createConversationForMatch, matches } = useMatches();
   
