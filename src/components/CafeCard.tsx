@@ -1,7 +1,8 @@
 import { Cafe } from '@/types';
 import { cn } from '@/lib/utils';
-import { MapPin, Star, Users, Clock } from 'lucide-react';
+import { MapPin, Users, Clock } from 'lucide-react';
 import { getCafeStatus, getStatusColors } from '@/lib/openingHours';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface CafeCardProps {
   cafe: Cafe;
@@ -11,9 +12,21 @@ interface CafeCardProps {
 }
 
 export function CafeCard({ cafe, onClick, className, style }: CafeCardProps) {
+  const { t } = useI18n();
+  
   // Get live status from opening hours
   const hoursStatus = getCafeStatus(cafe.openingHours);
   const statusColors = getStatusColors(hoursStatus.status);
+
+  // Get localized status text
+  const getStatusText = () => {
+    switch (hoursStatus.status) {
+      case 'open': return t.cafeStatus.open;
+      case 'closing-soon': return t.cafeStatus.closingSoon;
+      case 'closed': return t.cafeStatus.closed;
+      default: return t.cafeStatus.hoursUnknown;
+    }
+  };
 
   return (
     <button
@@ -46,7 +59,7 @@ export function CafeCard({ cafe, onClick, className, style }: CafeCardProps) {
         {cafe.activeUsers > 0 && (
           <div className="absolute top-3 right-3 bg-primary text-primary-foreground px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
             <Users className="w-3 h-3" />
-            {cafe.activeUsers} here
+            {cafe.activeUsers} {t.common.here}
           </div>
         )}
         {/* Status badge */}
@@ -60,21 +73,13 @@ export function CafeCard({ cafe, onClick, className, style }: CafeCardProps) {
           {hoursStatus.status === 'closing-soon' && (
             <Clock className="w-3 h-3 animate-pulse" />
           )}
-          {hoursStatus.status === 'open' ? 'Open' : 
-           hoursStatus.status === 'closing-soon' ? 'Closing soon' : 
-           hoursStatus.status === 'closed' ? 'Closed' : 'Hours unknown'}
+          {getStatusText()}
         </div>
       </div>
 
       {/* Content */}
       <div className="p-4">
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="font-semibold text-foreground">{cafe.name}</h3>
-          <div className="flex items-center gap-1 text-sm">
-            <Star className="w-4 h-4 fill-primary text-primary" />
-            <span className="font-medium">{cafe.rating}</span>
-          </div>
-        </div>
+        <h3 className="font-semibold text-foreground mb-2">{cafe.name}</h3>
 
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
           {cafe.distance && (

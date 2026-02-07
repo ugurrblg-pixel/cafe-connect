@@ -23,7 +23,6 @@ export interface Cafe {
   distance: string;
   imageUrl: string;
   activeUsers: number;
-  rating: number;
   isOpen: boolean;
   openingHours?: string | null; // OSM opening_hours format
 }

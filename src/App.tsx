@@ -7,6 +7,8 @@ import { BottomNav } from "@/components/BottomNav";
 import { CheckInStatusBar } from "@/components/CheckInStatusBar";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
+import { I18nProvider } from "@/contexts/I18nContext";
+import { LocationProvider } from "@/contexts/LocationContext";
 import Discover from "./pages/Discover";
 import CafeRoom from "./pages/CafeRoom";
 import Messages from "./pages/Messages";
@@ -148,11 +150,15 @@ const App = () => (
       <Toaster />
       <Sonner position="top-center" />
       <BrowserRouter>
-        <AuthProvider>
-          <NotificationProvider>
-            <AppRoutes />
-          </NotificationProvider>
-        </AuthProvider>
+        <I18nProvider>
+          <LocationProvider>
+            <AuthProvider>
+              <NotificationProvider>
+                <AppRoutes />
+              </NotificationProvider>
+            </AuthProvider>
+          </LocationProvider>
+        </I18nProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

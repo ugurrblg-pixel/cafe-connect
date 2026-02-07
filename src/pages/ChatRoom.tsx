@@ -8,8 +8,9 @@ import { useBlocking } from '@/hooks/useBlocking';
 import { useMatches } from '@/hooks/useMatches';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Send, MoreVertical, Flag, Ban, Loader2, ShieldAlert } from 'lucide-react';
+import { Send, MoreVertical, Flag, Ban, Loader2, ShieldAlert, ChevronLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { TypingIndicator } from '@/components/chat/TypingIndicator';
@@ -32,6 +33,7 @@ export default function ChatRoom() {
   const { conversationId } = useParams<{ conversationId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useI18n();
   const { messages, loading, sending, sendMessage } = useChat(conversationId || '');
   const { blockUser, reportUser } = useBlocking();
   const { hasMatchWith, loading: matchesLoading } = useMatches();
@@ -77,7 +79,7 @@ export default function ChatRoom() {
       if (profile) {
         setOtherUser({
           userId: profile.user_id,
-          displayName: profile.display_name || 'Anonim',
+          displayName: profile.display_name || 'Anonymous',
           photoUrl: profile.photo_url || '',
         });
       }
@@ -158,15 +160,15 @@ export default function ChatRoom() {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <div className="fixed top-0 left-0 right-0 z-50 glass-effect border-b border-border">
-          <div className="flex items-center gap-3 px-4 py-3">
+          <div className="flex items-center gap-3 px-4 py-4">
             <Skeleton className="w-10 h-10 rounded-full" />
             <Skeleton className="h-5 w-32" />
           </div>
         </div>
-        <div className="flex-1 pt-20 p-4">
-          <Skeleton className="h-12 w-48 mb-3" />
-          <Skeleton className="h-12 w-40 ml-auto mb-3" />
-          <Skeleton className="h-12 w-52 mb-3" />
+        <div className="flex-1 pt-24 p-4">
+          <Skeleton className="h-12 w-48 mb-3 rounded-2xl" />
+          <Skeleton className="h-12 w-40 ml-auto mb-3 rounded-2xl" />
+          <Skeleton className="h-12 w-52 mb-3 rounded-2xl" />
         </div>
       </div>
     );
@@ -177,32 +179,33 @@ export default function ChatRoom() {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <div className="fixed top-0 left-0 right-0 z-50 glass-effect border-b border-border">
-          <div className="flex items-center gap-3 px-4 py-3">
-            <button onClick={() => navigate('/messages')} className="p-2 -ml-2">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+          <div className="flex items-center gap-3 px-4 py-4">
+            <button 
+              onClick={() => navigate('/messages')} 
+              className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors"
+            >
+              <ChevronLeft className="w-6 h-6" />
             </button>
-            <span className="font-semibold text-foreground">Sohbet</span>
+            <span className="font-semibold text-foreground">{t.chat.title}</span>
           </div>
         </div>
         
         <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
-          <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
-            <ShieldAlert className="w-8 h-8 text-destructive" />
+          <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center mb-6">
+            <ShieldAlert className="w-10 h-10 text-destructive" />
           </div>
-          <h3 className="font-semibold text-lg text-foreground mb-2">
-            Sohbet Kullanılamıyor
+          <h3 className="font-semibold text-xl text-foreground mb-3">
+            {t.chat.chatUnavailable}
           </h3>
-          <p className="text-muted-foreground text-sm max-w-xs">
-            Bu kullanıcıyla eşleşmeniz artık aktif değil. Mesajlaşma için karşılıklı eşleşme gereklidir.
+          <p className="text-muted-foreground text-sm max-w-xs leading-relaxed">
+            {t.chat.chatUnavailableDesc}
           </p>
           <Button 
             onClick={() => navigate('/messages')} 
-            className="mt-6"
+            className="mt-8"
             variant="secondary"
           >
-            Mesajlara Dön
+            {t.chat.backToMessages}
           </Button>
         </div>
       </div>
@@ -211,14 +214,15 @@ export default function ChatRoom() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header with user info and menu */}
-      <div className="fixed top-0 left-0 right-0 z-50 glass-effect border-b border-border">
+      {/* Header - cleaner, more minimal */}
+      <div className="fixed top-0 left-0 right-0 z-50 glass-effect border-b border-border/50">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/messages')} className="p-2 -ml-2">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+            <button 
+              onClick={() => navigate('/messages')} 
+              className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors"
+            >
+              <ChevronLeft className="w-6 h-6" />
             </button>
             
             {otherUser && (
@@ -227,15 +231,23 @@ export default function ChatRoom() {
                   <img
                     src={otherUser.photoUrl}
                     alt={otherUser.displayName}
-                    className="w-10 h-10 rounded-full object-cover"
+                    className="w-10 h-10 rounded-full object-cover ring-2 ring-background"
                   />
                 ) : (
-                  <InitialsAvatar name={otherUser.displayName} size="sm" className="rounded-full" />
+                  <InitialsAvatar 
+                    name={otherUser.displayName} 
+                    size="sm" 
+                    className="rounded-full ring-2 ring-background" 
+                  />
                 )}
                 <div className="flex flex-col">
-                  <span className="font-semibold text-foreground">{otherUser.displayName}</span>
+                  <span className="font-semibold text-foreground leading-tight">
+                    {otherUser.displayName}
+                  </span>
                   {isOtherUserTyping && (
-                    <span className="text-xs text-primary animate-pulse">yazıyor...</span>
+                    <span className="text-xs text-primary font-medium">
+                      {t.chat.typing}
+                    </span>
                   )}
                 </div>
               </div>
@@ -244,30 +256,36 @@ export default function ChatRoom() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="p-2">
+              <button className="p-2 rounded-full hover:bg-secondary transition-colors">
                 <MoreVertical className="w-5 h-5 text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-card border border-border">
-              <DropdownMenuItem onClick={() => setShowReportDialog(true)} className="text-destructive">
+              <DropdownMenuItem 
+                onClick={() => setShowReportDialog(true)} 
+                className="text-destructive focus:text-destructive"
+              >
                 <Flag className="w-4 h-4 mr-2" />
-                Kullanıcıyı Şikayet Et
+                {t.chat.reportUser}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowBlockDialog(true)} className="text-destructive">
+              <DropdownMenuItem 
+                onClick={() => setShowBlockDialog(true)} 
+                className="text-destructive focus:text-destructive"
+              >
                 <Ban className="w-4 h-4 mr-2" />
-                Kullanıcıyı Engelle
+                {t.chat.blockUser}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 pt-20 pb-32 px-4 overflow-y-auto">
+      {/* Messages - improved spacing and layout */}
+      <div className="flex-1 pt-20 pb-24 px-4 overflow-y-auto">
         {messages.length === 0 ? (
-          <EmptyChat otherUserName={otherUser?.displayName || 'Kullanıcı'} />
+          <EmptyChat otherUserName={otherUser?.displayName || 'User'} />
         ) : (
-          <div className="space-y-0.5">
+          <div className="py-4">
             {groupedMessages.map((message) => {
               const isOwn = message.senderId === user?.id;
               return (
@@ -285,7 +303,7 @@ export default function ChatRoom() {
             
             {/* Typing indicator */}
             {isOtherUserTyping && (
-              <TypingIndicator userName={otherUser?.displayName || 'Kullanıcı'} />
+              <TypingIndicator userName={otherUser?.displayName || 'User'} />
             )}
             
             <div ref={messagesEndRef} />
@@ -293,23 +311,24 @@ export default function ChatRoom() {
         )}
       </div>
 
-      {/* Input */}
-      <div className="fixed bottom-16 left-0 right-0 p-4 glass-effect border-t border-border">
-        <div className="flex items-center gap-2">
+      {/* Input - more refined */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 pb-6 glass-effect border-t border-border/50">
+        <div className="flex items-center gap-3">
           <Input
             ref={inputRef}
             value={messageInput}
             onChange={handleInputChange}
             onKeyPress={handleKeyPress}
             onBlur={() => setTyping(false)}
-            placeholder="Mesaj yaz..."
-            className="flex-1"
+            placeholder={t.chat.typeMessage}
+            className="flex-1 rounded-full px-5 py-3 h-12 bg-secondary/50 border-0 focus-visible:ring-1 focus-visible:ring-primary/30"
             maxLength={500}
           />
           <Button
             onClick={handleSend}
             disabled={!messageInput.trim() || sending}
             size="icon"
+            className="w-12 h-12 rounded-full shrink-0"
           >
             {sending ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -324,7 +343,7 @@ export default function ChatRoom() {
       <BlockDialog
         open={showBlockDialog}
         onOpenChange={setShowBlockDialog}
-        userName={otherUser?.displayName || 'Kullanıcı'}
+        userName={otherUser?.displayName || 'User'}
         onConfirm={handleBlock}
       />
 
@@ -332,7 +351,7 @@ export default function ChatRoom() {
       <ReportDialog
         open={showReportDialog}
         onOpenChange={setShowReportDialog}
-        userName={otherUser?.displayName || 'Kullanıcı'}
+        userName={otherUser?.displayName || 'User'}
         onConfirm={handleReport}
       />
     </div>

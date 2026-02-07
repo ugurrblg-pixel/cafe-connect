@@ -26,51 +26,50 @@ export function MessageBubble({
         'flex',
         isOwn ? 'justify-end' : 'justify-start',
         !isLastInGroup && 'mb-0.5',
-        isLastInGroup && 'mb-2'
+        isLastInGroup && 'mb-3'
       )}
     >
       <div
         className={cn(
-          'max-w-[75%] px-4 py-2',
+          'max-w-[80%] px-4 py-2.5 transition-all',
+          // Bubble colors - calmer palette
           isOwn
-            ? 'bg-primary text-primary-foreground'
+            ? 'bg-primary/90 text-primary-foreground'
             : 'bg-secondary text-secondary-foreground',
-          // Bubble shape based on position in group
-          isOwn && isFirstInGroup && isLastInGroup && 'rounded-2xl rounded-br-md',
-          isOwn && isFirstInGroup && !isLastInGroup && 'rounded-2xl rounded-br-md rounded-tr-2xl',
-          isOwn && !isFirstInGroup && isLastInGroup && 'rounded-2xl rounded-br-md rounded-tr-md',
-          isOwn && !isFirstInGroup && !isLastInGroup && 'rounded-xl rounded-r-md',
-          !isOwn && isFirstInGroup && isLastInGroup && 'rounded-2xl rounded-bl-md',
-          !isOwn && isFirstInGroup && !isLastInGroup && 'rounded-2xl rounded-bl-md rounded-tl-2xl',
-          !isOwn && !isFirstInGroup && isLastInGroup && 'rounded-2xl rounded-bl-md rounded-tl-md',
-          !isOwn && !isFirstInGroup && !isLastInGroup && 'rounded-xl rounded-l-md'
+          // Bubble shape based on position in group - softer corners
+          isOwn && isFirstInGroup && isLastInGroup && 'rounded-[20px] rounded-br-lg',
+          isOwn && isFirstInGroup && !isLastInGroup && 'rounded-[20px] rounded-br-lg',
+          isOwn && !isFirstInGroup && isLastInGroup && 'rounded-[20px] rounded-br-lg rounded-tr-lg',
+          isOwn && !isFirstInGroup && !isLastInGroup && 'rounded-[18px] rounded-r-lg',
+          !isOwn && isFirstInGroup && isLastInGroup && 'rounded-[20px] rounded-bl-lg',
+          !isOwn && isFirstInGroup && !isLastInGroup && 'rounded-[20px] rounded-bl-lg',
+          !isOwn && !isFirstInGroup && isLastInGroup && 'rounded-[20px] rounded-bl-lg rounded-tl-lg',
+          !isOwn && !isFirstInGroup && !isLastInGroup && 'rounded-[18px] rounded-l-lg'
         )}
       >
-        <p className="text-sm whitespace-pre-wrap break-words">{content}</p>
+        {/* Message content with better typography */}
+        <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
+          {content}
+        </p>
         
+        {/* Timestamp and read status - more subtle */}
         {showTimestamp && isLastInGroup && (
           <div className={cn(
-            'flex items-center gap-1 mt-1',
+            'flex items-center gap-1.5 mt-1.5',
             isOwn ? 'justify-end' : 'justify-start'
           )}>
             <span className={cn(
-              'text-[10px]',
-              isOwn ? 'text-primary-foreground/60' : 'text-muted-foreground'
+              'text-[11px] font-medium',
+              isOwn ? 'text-primary-foreground/50' : 'text-muted-foreground/70'
             )}>
               {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
             
             {isOwn && (
               isRead ? (
-                <CheckCheck className={cn(
-                  'w-3.5 h-3.5',
-                  'text-primary-foreground/60'
-                )} />
+                <CheckCheck className="w-3.5 h-3.5 text-primary-foreground/50" />
               ) : (
-                <Check className={cn(
-                  'w-3.5 h-3.5',
-                  'text-primary-foreground/60'
-                )} />
+                <Check className="w-3.5 h-3.5 text-primary-foreground/50" />
               )
             )}
           </div>
