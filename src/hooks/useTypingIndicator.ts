@@ -5,7 +5,7 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 
 // Timing constants for natural typing feel
 const TYPING_SHOW_DELAY_MS = 400;    // Wait before showing typing
-const TYPING_HIDE_DELAY_MS = 1200;   // Wait before hiding after stop
+const TYPING_HIDE_DELAY_MS = 1500;   // Wait 1.5s before hiding after stop
 const TYPING_BROADCAST_THROTTLE_MS = 2000; // Auto-stop after inactivity
 
 interface UseTypingIndicatorReturn {
