@@ -5,26 +5,29 @@ interface TypingIndicatorProps {
   className?: string;
 }
 
-export function TypingIndicator({ userName, className }: TypingIndicatorProps) {
+export function TypingIndicator({ className }: TypingIndicatorProps) {
   return (
-    <div className={cn('flex justify-start mb-3', className)}>
-      <div className="bg-secondary/80 rounded-[20px] rounded-bl-lg px-4 py-3">
-        <div className="flex items-center gap-1.5">
-          {/* Animated dots */}
-          <div className="flex gap-1">
-            <span 
-              className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" 
-              style={{ animationDelay: '0ms', animationDuration: '1s' }}
-            />
-            <span 
-              className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" 
-              style={{ animationDelay: '150ms', animationDuration: '1s' }}
-            />
-            <span 
-              className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" 
-              style={{ animationDelay: '300ms', animationDuration: '1s' }}
-            />
-          </div>
+    <div 
+      className={cn(
+        'flex justify-start animate-in fade-in-0 slide-in-from-bottom-1 duration-200',
+        className
+      )}
+    >
+      <div className="bg-secondary/70 rounded-2xl rounded-bl-md px-4 py-3 min-h-[40px]">
+        <div className="flex items-center gap-1">
+          {/* Soft pulsing dots */}
+          <span 
+            className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-pulse" 
+            style={{ animationDelay: '0ms', animationDuration: '1.2s' }}
+          />
+          <span 
+            className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-pulse" 
+            style={{ animationDelay: '200ms', animationDuration: '1.2s' }}
+          />
+          <span 
+            className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-pulse" 
+            style={{ animationDelay: '400ms', animationDuration: '1.2s' }}
+          />
         </div>
       </div>
     </div>
