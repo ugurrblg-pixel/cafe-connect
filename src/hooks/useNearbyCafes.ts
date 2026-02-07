@@ -37,12 +37,12 @@ export function useNearbyCafes(): UseNearbyCafesResult {
     setError(null);
 
     try {
-      // Call the edge function
+      // Call the edge function with expanded search radius (3km)
       const { data, error: fnError } = await supabase.functions.invoke('nearby-cafes', {
         body: {
           latitude: coords.latitude,
           longitude: coords.longitude,
-          radius: 1000,
+          radius: 3000,
         },
       });
 

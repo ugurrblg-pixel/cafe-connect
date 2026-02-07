@@ -224,7 +224,7 @@ export default function Discover() {
                 <p className="text-muted-foreground text-sm mb-4">
                   {showOpenOnly 
                     ? 'Şu an açık kafe yok. Kapalı kafeleri de görmek için filtreyi kaldırın.'
-                    : '1 km çevresinde kayıtlı kafe yok.'}
+                    : '3 km çevresinde kayıtlı kafe yok.'}
                 </p>
                 {showOpenOnly && closedCount > 0 && (
                   <Button 
