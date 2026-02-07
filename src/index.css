@@ -27,6 +27,9 @@
     --accent: 145 35% 45%;
     --accent-foreground: 0 0% 100%;
 
+    --warning: 25 95% 53%;
+    --warning-foreground: 0 0% 100%;
+
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
@@ -93,6 +96,9 @@
 
     --accent: 145 35% 50%;
     --accent-foreground: 0 0% 100%;
+
+    --warning: 25 95% 58%;
+    --warning-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
