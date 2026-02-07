@@ -80,7 +80,7 @@ export const translations = {
     // Chat
     chat: {
       title: 'Chat',
-      typeMessage: 'Type a message...',
+      typeMessage: 'Write something...',
       typing: 'typing...',
       chatUnavailable: 'Chat Unavailable',
       chatUnavailableDesc: 'Your match with this user is no longer active. A mutual match is required to message.',
@@ -232,7 +232,7 @@ export const translations = {
     // Chat
     chat: {
       title: 'Sohbet',
-      typeMessage: 'Mesaj yaz...',
+      typeMessage: 'Bir şey yaz...',
       typing: 'yazıyor...',
       chatUnavailable: 'Sohbet Kullanılamıyor',
       chatUnavailableDesc: 'Bu kullanıcıyla eşleşmeniz artık aktif değil. Mesajlaşma için karşılıklı eşleşme gereklidir.',

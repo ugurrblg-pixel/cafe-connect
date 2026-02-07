@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useChat } from '@/hooks/useConversations';
 import { useBlocking } from '@/hooks/useBlocking';
 import { useMatches } from '@/hooks/useMatches';
@@ -16,6 +15,7 @@ import { TypingIndicator } from '@/components/chat/TypingIndicator';
 import { EmptyChat } from '@/components/chat/EmptyChat';
 import { ChatHeader } from '@/components/chat/ChatHeader';
 import { BlockDialog, ReportDialog } from '@/components/BlockReportDialog';
+import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,7 +45,7 @@ export default function ChatRoom() {
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [hasMatch, setHasMatch] = useState<boolean | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Typing indicator with debouncing
   const { isOtherUserTyping, setTyping, hideTypingImmediately } = useTypingIndicator(
@@ -125,28 +125,42 @@ export default function ChatRoom() {
   }, [messages, user?.id, hideTypingImmediately]);
 
   // Handle input change with typing indicator
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessageInput(e.target.value);
     setTyping(e.target.value.length > 0);
   }, [setTyping]);
 
   const handleSend = useCallback(async () => {
-    if (!messageInput.trim()) return;
+    if (!messageInput.trim() || sending) return;
     
     setTyping(false);
     const success = await sendMessage(messageInput);
     if (success) {
       setMessageInput('');
-      inputRef.current?.focus();
+      // Reset textarea height
+      if (inputRef.current) {
+        inputRef.current.style.height = 'auto';
+        inputRef.current.focus();
+      }
     }
-  }, [messageInput, sendMessage, setTyping]);
+  }, [messageInput, sending, sendMessage, setTyping]);
 
-  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
+    // Shift + Enter will naturally insert a new line
   }, [handleSend]);
+
+  // Auto-resize textarea with max 3 lines
+  const handleTextareaResize = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const textarea = e.target;
+    textarea.style.height = 'auto';
+    const lineHeight = 24; // Approximate line height
+    const maxHeight = lineHeight * 3 + 16; // 3 lines + padding
+    textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
+  }, []);
 
   const handleBlock = async () => {
     if (!otherUser) return;
@@ -325,22 +339,32 @@ export default function ChatRoom() {
 
       {/* Message input - refined and warm */}
       <div className="fixed bottom-0 left-0 right-0 px-4 py-3 bg-background/95 backdrop-blur-md border-t border-border">
-        <div className="flex items-center gap-3">
-          <Input
+        <div className="flex items-end gap-3">
+          <textarea
             ref={inputRef}
             value={messageInput}
-            onChange={handleInputChange}
-            onKeyPress={handleKeyPress}
+            onChange={(e) => {
+              handleInputChange(e);
+              handleTextareaResize(e);
+            }}
+            onKeyDown={handleKeyDown}
             onBlur={() => setTyping(false)}
             placeholder={t.chat.typeMessage}
-            className="flex-1 rounded-full px-5 py-3 h-11 bg-secondary/60 border-0 focus-visible:ring-1 focus-visible:ring-primary/40 placeholder:text-muted-foreground/60"
-            maxLength={500}
+            rows={1}
+            className="flex-1 resize-none rounded-2xl px-4 py-3 text-sm bg-secondary/60 border-0 focus:outline-none focus:ring-1 focus:ring-primary/40 placeholder:text-muted-foreground/60 leading-6 max-h-[88px] overflow-y-auto scrollbar-thin"
+            maxLength={2000}
           />
           <Button
             onClick={handleSend}
             disabled={!messageInput.trim() || sending}
             size="icon"
-            className="w-11 h-11 rounded-full shrink-0 shadow-sm"
+            className={cn(
+              "w-11 h-11 rounded-full shrink-0 transition-all duration-200",
+              messageInput.trim() && !sending
+                ? "bg-primary text-primary-foreground shadow-md scale-100 opacity-100"
+                : "bg-muted text-muted-foreground shadow-none scale-95 opacity-60",
+              "active:scale-90"
+            )}
           >
             {sending ? (
               <Loader2 className="w-5 h-5 animate-spin" />
