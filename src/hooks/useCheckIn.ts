@@ -61,26 +61,6 @@ export function useCheckIn(cafeId: string) {
     checkExistingCheckIn();
   }, [user, cafeId]);
 
-  // Periodically update last_active_at while checked in
-  useEffect(() => {
-    if (!isCheckedIn || !currentCheckIn) return;
-
-    const updateActivity = async () => {
-      await supabase
-        .from('check_ins')
-        .update({ last_active_at: new Date().toISOString() })
-        .eq('id', currentCheckIn.id);
-    };
-
-    // Update immediately on mount
-    updateActivity();
-
-    // Then update every 5 minutes
-    const interval = setInterval(updateActivity, ACTIVITY_PING_INTERVAL_MS);
-
-    return () => clearInterval(interval);
-  }, [isCheckedIn, currentCheckIn?.id]);
-
   // Fetch cafe location
   const getCafeLocation = useCallback(async (): Promise<CafeLocation | null> => {
     const { data, error } = await supabase
@@ -135,6 +115,52 @@ export function useCheckIn(cafeId: string) {
       };
     }
   }, [getCafeLocation]);
+
+  // Periodically update last_active_at while checked in and verify location
+  useEffect(() => {
+    if (!isCheckedIn || !currentCheckIn) return;
+
+    const updateActivityAndVerifyLocation = async () => {
+      // First, verify user is still within cafe radius
+      const locationResult = await verifyLocation();
+      
+      if (!locationResult.valid && locationResult.distance !== undefined) {
+        // User has left the cafe - auto checkout
+        toast.info('Kafeden ayrıldın, otomatik check-out yapıldı', {
+          description: `${formatDistance(locationResult.distance)} uzaklaştın`,
+        });
+        
+        await supabase
+          .from('check_ins')
+          .delete()
+          .eq('id', currentCheckIn.id);
+        
+        setCurrentCheckIn(null);
+        setIsCheckedIn(false);
+        return;
+      }
+
+      // User is still in range - update activity timestamp
+      await supabase
+        .from('check_ins')
+        .update({ last_active_at: new Date().toISOString() })
+        .eq('id', currentCheckIn.id);
+    };
+
+    // Update immediately on mount (skip location check on first run)
+    const initialUpdate = async () => {
+      await supabase
+        .from('check_ins')
+        .update({ last_active_at: new Date().toISOString() })
+        .eq('id', currentCheckIn.id);
+    };
+    initialUpdate();
+
+    // Then update every 5 minutes with location verification
+    const interval = setInterval(updateActivityAndVerifyLocation, ACTIVITY_PING_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, [isCheckedIn, currentCheckIn?.id, verifyLocation]);
 
   const checkIn = async () => {
     if (!user) {
