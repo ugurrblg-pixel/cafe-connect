@@ -4,6 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { INACTIVITY_TIMEOUT_MS } from '@/lib/geolocation';
 
+type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'reconnecting';
+
 interface PresenceState {
   user_id: string;
   display_name: string;
@@ -11,6 +13,11 @@ interface PresenceState {
   purpose: string;
   online_at: string; // ISO timestamp of last presence heartbeat
 }
+
+// Reconnection config
+const RECONNECT_BASE_DELAY = 1000;
+const RECONNECT_MAX_DELAY = 30000;
+const RECONNECT_JITTER = 0.3;
 
 interface CafeUser {
   id: string;
@@ -45,6 +52,12 @@ export function useCafeUsers(cafeId: string, options: UseCafeUsersOptions = {}) 
   const [users, setUsers] = useState<CafeUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [presenceMap, setPresenceMap] = useState<Map<string, PresenceState>>(new Map());
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
+  
+  // Optimistic state: keep previous presence during reconnection
+  const lastKnownPresenceRef = useRef<Map<string, PresenceState>>(new Map());
+  const reconnectAttemptRef = useRef(0);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const presenceChannelRef = useRef<RealtimeChannel | null>(null);
   const dbChannelRef = useRef<RealtimeChannel | null>(null);
@@ -135,52 +148,107 @@ export function useCafeUsers(cafeId: string, options: UseCafeUsersOptions = {}) 
     setLoading(false);
   }, [cafeId, presenceMap]);
 
-  // Setup presence channel for real-time activity tracking
+  // Calculate reconnect delay with exponential backoff + jitter
+  const getReconnectDelay = useCallback(() => {
+    const baseDelay = Math.min(
+      RECONNECT_BASE_DELAY * Math.pow(2, reconnectAttemptRef.current),
+      RECONNECT_MAX_DELAY
+    );
+    const jitter = baseDelay * RECONNECT_JITTER * (Math.random() * 2 - 1);
+    return baseDelay + jitter;
+  }, []);
+
+  // Setup presence channel for real-time activity tracking with graceful reconnection
   useEffect(() => {
     if (!cafeId) return;
 
-    const channel = supabase.channel(`cafe-presence-${cafeId}`, {
-      config: {
-        presence: {
-          key: user?.id || 'anonymous',
+    const setupChannel = () => {
+      setConnectionStatus('connecting');
+      
+      const channel = supabase.channel(`cafe-presence-${cafeId}`, {
+        config: {
+          presence: {
+            key: user?.id || 'anonymous',
+          },
         },
-      },
-    });
-
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState<PresenceState>();
-        const newPresenceMap = new Map<string, PresenceState>();
-        
-        // Flatten presence state into a map by user_id
-        Object.values(state).flat().forEach((presence) => {
-          if (presence.user_id) {
-            newPresenceMap.set(presence.user_id, presence);
-          }
-        });
-        
-        setPresenceMap(newPresenceMap);
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED' && options.joinPresence && options.isCheckedIn && user) {
-          // Track this user's presence with heartbeat
-          await channel.track({
-            user_id: user.id,
-            display_name: options.displayName || '',
-            photo_url: options.photoUrl || '',
-            purpose: options.purpose || 'chat',
-            online_at: new Date().toISOString(),
-          });
-        }
       });
 
-    presenceChannelRef.current = channel;
+      channel
+        .on('presence', { event: 'sync' }, () => {
+          const state = channel.presenceState<PresenceState>();
+          const newPresenceMap = new Map<string, PresenceState>();
+          
+          // Flatten presence state into a map by user_id
+          Object.values(state).flat().forEach((presence) => {
+            if (presence.user_id) {
+              newPresenceMap.set(presence.user_id, presence);
+            }
+          });
+          
+          // Update optimistic cache
+          lastKnownPresenceRef.current = newPresenceMap;
+          setPresenceMap(newPresenceMap);
+          
+          // Reset reconnect counter on successful sync
+          reconnectAttemptRef.current = 0;
+          setConnectionStatus('connected');
+        })
+        .subscribe(async (status, err) => {
+          if (status === 'SUBSCRIBED') {
+            setConnectionStatus('connected');
+            reconnectAttemptRef.current = 0;
+            
+            if (options.joinPresence && options.isCheckedIn && user) {
+              // Track this user's presence with heartbeat
+              await channel.track({
+                user_id: user.id,
+                display_name: options.displayName || '',
+                photo_url: options.photoUrl || '',
+                purpose: options.purpose || 'chat',
+                online_at: new Date().toISOString(),
+              });
+            }
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            console.warn('Presence channel error, scheduling reconnect:', err);
+            setConnectionStatus('reconnecting');
+            
+            // Use optimistic state during reconnection (no flicker)
+            if (lastKnownPresenceRef.current.size > 0) {
+              setPresenceMap(lastKnownPresenceRef.current);
+            }
+            
+            // Schedule debounced reconnect
+            if (reconnectTimeoutRef.current) {
+              clearTimeout(reconnectTimeoutRef.current);
+            }
+            
+            const delay = getReconnectDelay();
+            reconnectAttemptRef.current++;
+            
+            reconnectTimeoutRef.current = setTimeout(() => {
+              supabase.removeChannel(channel);
+              setupChannel();
+            }, delay);
+          } else if (status === 'CLOSED') {
+            setConnectionStatus('disconnected');
+          }
+        });
+
+      presenceChannelRef.current = channel;
+      
+      return channel;
+    };
+
+    const channel = setupChannel();
 
     return () => {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
       supabase.removeChannel(channel);
       presenceChannelRef.current = null;
     };
-  }, [cafeId, user, options.joinPresence, options.isCheckedIn, options.displayName, options.photoUrl, options.purpose]);
+  }, [cafeId, user, options.joinPresence, options.isCheckedIn, options.displayName, options.photoUrl, options.purpose, getReconnectDelay]);
 
   // Heartbeat: update presence every 30 seconds while checked in
   useEffect(() => {
@@ -251,5 +319,5 @@ export function useCafeUsers(cafeId: string, options: UseCafeUsersOptions = {}) 
     }
   }, [presenceMap, fetchActiveUsers]);
 
-  return { users, loading, refetch: fetchActiveUsers };
+  return { users, loading, connectionStatus, refetch: fetchActiveUsers };
 }
