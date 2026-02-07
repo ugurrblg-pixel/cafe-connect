@@ -9,8 +9,12 @@ const corsHeaders = {
 interface OverpassElement {
   type: string;
   id: number;
-  lat: number;
-  lon: number;
+  lat?: number;
+  lon?: number;
+  center?: {
+    lat: number;
+    lon: number;
+  };
   tags?: {
     name?: string;
     'addr:street'?: string;
@@ -24,6 +28,17 @@ interface OverpassElement {
 
 interface OverpassResponse {
   elements: OverpassElement[];
+}
+
+// Helper to get coordinates from element (handles both node and way types)
+function getElementCoords(element: OverpassElement): { lat: number; lon: number } | null {
+  if (element.lat !== undefined && element.lon !== undefined) {
+    return { lat: element.lat, lon: element.lon };
+  }
+  if (element.center) {
+    return { lat: element.center.lat, lon: element.center.lon };
+  }
+  return null;
 }
 
 // Grid cell size for caching (approximately 1km at equator)
@@ -182,17 +197,23 @@ Deno.serve(async (req) => {
     // Transform and upsert cafes from Overpass into our database
     const cafesToUpsert = (overpassData.elements || [])
       .filter(element => element.tags?.name) // Only include named cafes
-      .map((element) => ({
-        google_place_id: generateOsmId(element), // Reuse column for OSM ID
-        name: element.tags?.name || 'Unnamed Cafe',
-        address: buildAddress(element.tags),
-        latitude: element.lat,
-        longitude: element.lon,
-        rating: 4.5, // Default rating (OSM doesn't have ratings)
-        is_open: true, // Default to open (would need separate API for hours)
-        image_url: '', // OSM doesn't provide images
-        last_synced_at: new Date().toISOString(),
-      }));
+      .map((element) => {
+        const coords = getElementCoords(element);
+        return {
+          google_place_id: generateOsmId(element), // Reuse column for OSM ID
+          name: element.tags?.name || 'Unnamed Cafe',
+          address: buildAddress(element.tags),
+          latitude: coords?.lat ?? null,
+          longitude: coords?.lon ?? null,
+          rating: 4.5, // Default rating (OSM doesn't have ratings)
+          is_open: true, // Default to open (would need separate API for hours)
+          image_url: '', // OSM doesn't provide images
+          last_synced_at: new Date().toISOString(),
+        };
+      })
+      .filter(cafe => cafe.latitude !== null && cafe.longitude !== null); // Only keep cafes with valid coords
+    
+    console.log(`Processing ${cafesToUpsert.length} cafes with valid coordinates`);
 
     if (cafesToUpsert.length > 0) {
       // Upsert using google_place_id (which now holds OSM ID) as the conflict key
