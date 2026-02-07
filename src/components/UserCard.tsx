@@ -2,8 +2,8 @@ import { User } from '@/types';
 import { PurposeBadge } from './PurposeBadge';
 import { InitialsAvatar } from './InitialsAvatar';
 import { cn } from '@/lib/utils';
-import { MessageCircle, Hand, Check, Loader2, Heart } from 'lucide-react';
-import { formatLastActive, isActiveNow } from '@/lib/activityTime';
+import { MessageCircle, Hand, Check, Loader2, Heart, Clock } from 'lucide-react';
+import { formatLastActive, getActivityLabel } from '@/lib/activityTime';
 
 type WaveState = 'none' | 'waved' | 'received' | 'matched';
 
@@ -24,7 +24,7 @@ export function UserCard({ user, onMessage, onInteraction, onTap, waveState = 'n
     : 0;
 
   const displayName = user.displayName || user.name;
-  const isActive = isActiveNow(user.lastActiveAt);
+  const activity = getActivityLabel(user.lastActiveAt);
   const activityText = formatLastActive(user.lastActiveAt);
 
   return (
@@ -51,8 +51,10 @@ export function UserCard({ user, onMessage, onInteraction, onTap, waveState = 'n
         {/* Activity indicator dot */}
         <div 
           className={cn(
-            'absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-card',
-            isActive ? 'bg-accent' : 'bg-muted-foreground/50'
+            'absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-card transition-colors',
+            activity.isActive && 'bg-accent',
+            activity.urgency === 'recent' && 'bg-warning',
+            activity.urgency === 'stale' && 'bg-muted-foreground/50'
           )} 
         />
       </div>
@@ -69,11 +71,17 @@ export function UserCard({ user, onMessage, onInteraction, onTap, waveState = 'n
           {user.bio}
         </p>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className={cn(isActive && 'text-accent font-medium')}>
+          <span className={cn(
+            'flex items-center gap-1 transition-colors',
+            activity.isActive && 'text-accent font-medium',
+            activity.urgency === 'recent' && 'text-warning',
+            activity.urgency === 'stale' && 'text-muted-foreground'
+          )}>
+            {!activity.isActive && <Clock className="w-3 h-3" />}
             {activityText}
           </span>
           <span className="opacity-50">·</span>
-          <span>Here for {timeAgo} min</span>
+          <span>Here for {timeAgo}m</span>
         </div>
       </div>
 
