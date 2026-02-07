@@ -92,6 +92,7 @@ export const translations = {
       suggestion1: "What are you having?",
       suggestion2: "Is this your favorite cafe?",
       suggestion3: "How's your day going?",
+      failedToSend: "Failed to send – tap to retry",
     },
 
     // Profile
@@ -247,6 +248,7 @@ export const translations = {
       suggestion1: 'Burada ne içiyorsun?',
       suggestion2: 'Bu kafe favorin mi?',
       suggestion3: 'Bugün nasıl geçiyor?',
+      failedToSend: 'Gönderilemedi – tekrar dene',
     },
 
     // Profile

@@ -1,16 +1,19 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { sendMessageNotification } from '@/lib/pushNotifications';
 
-interface Message {
+export interface Message {
   id: string;
   conversationId: string;
   senderId: string;
   content: string;
   createdAt: Date;
   readAt: Date | null;
+  // Optimistic update states
+  status?: 'sending' | 'sent' | 'failed';
+  tempId?: string;
 }
 
 interface Conversation {
@@ -169,7 +172,6 @@ export function useChat(conversationId: string) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
   const [conversationMeta, setConversationMeta] = useState<ConversationMeta | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
@@ -196,6 +198,7 @@ export function useChat(conversationId: string) {
         content: m.content,
         createdAt: new Date(m.created_at),
         readAt: m.read_at ? new Date(m.read_at) : null,
+        status: 'sent' as const,
       }))
     );
     setLoading(false);
@@ -259,17 +262,42 @@ export function useChat(conversationId: string) {
         },
         (payload) => {
           const newMsg = payload.new as any;
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: newMsg.id,
-              conversationId: newMsg.conversation_id,
-              senderId: newMsg.sender_id,
-              content: newMsg.content,
-              createdAt: new Date(newMsg.created_at),
-              readAt: newMsg.read_at ? new Date(newMsg.read_at) : null,
-            },
-          ]);
+          
+          setMessages((prev) => {
+            // Check if this message already exists (optimistic update)
+            const existingIndex = prev.findIndex(
+              m => m.tempId && m.content === newMsg.content && m.senderId === newMsg.sender_id
+            );
+            
+            if (existingIndex !== -1) {
+              // Replace optimistic message with real one
+              const updated = [...prev];
+              updated[existingIndex] = {
+                id: newMsg.id,
+                conversationId: newMsg.conversation_id,
+                senderId: newMsg.sender_id,
+                content: newMsg.content,
+                createdAt: new Date(newMsg.created_at),
+                readAt: newMsg.read_at ? new Date(newMsg.read_at) : null,
+                status: 'sent',
+              };
+              return updated;
+            }
+            
+            // New message from other user
+            return [
+              ...prev,
+              {
+                id: newMsg.id,
+                conversationId: newMsg.conversation_id,
+                senderId: newMsg.sender_id,
+                content: newMsg.content,
+                createdAt: new Date(newMsg.created_at),
+                readAt: newMsg.read_at ? new Date(newMsg.read_at) : null,
+                status: 'sent',
+              },
+            ];
+          });
 
           // Mark as read if not sender
           if (user && newMsg.sender_id !== user.id) {
@@ -289,7 +317,7 @@ export function useChat(conversationId: string) {
     };
   }, [conversationId, user]);
 
-  const sendMessage = async (content: string): Promise<boolean> => {
+  const sendMessage = useCallback(async (content: string, tempId?: string): Promise<boolean> => {
     const trimmedContent = content.trim();
     
     // Client-side validation for message length
@@ -300,7 +328,30 @@ export function useChat(conversationId: string) {
       return false;
     }
 
-    setSending(true);
+    const messageId = tempId || `temp-${Date.now()}`;
+
+    // Add optimistic message if not retrying
+    if (!tempId) {
+      const optimisticMessage: Message = {
+        id: messageId,
+        tempId: messageId,
+        conversationId,
+        senderId: user.id,
+        content: trimmedContent,
+        createdAt: new Date(),
+        readAt: null,
+        status: 'sending',
+      };
+
+      setMessages((prev) => [...prev, optimisticMessage]);
+    } else {
+      // Mark existing message as sending again
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.tempId === tempId ? { ...m, status: 'sending' as const } : m
+        )
+      );
+    }
 
     const { error } = await supabase
       .from('messages')
@@ -310,10 +361,14 @@ export function useChat(conversationId: string) {
         content: trimmedContent,
       });
 
-    setSending(false);
-
     if (error) {
       console.error('Error sending message:', error);
+      // Mark message as failed
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.tempId === messageId ? { ...m, status: 'failed' as const } : m
+        )
+      );
       return false;
     }
 
@@ -328,7 +383,11 @@ export function useChat(conversationId: string) {
     }
 
     return true;
-  };
+  }, [user, conversationId, conversationMeta]);
 
-  return { messages, loading, sending, sendMessage, refetch: fetchMessages };
+  const retryMessage = useCallback((tempId: string, content: string) => {
+    sendMessage(content, tempId);
+  }, [sendMessage]);
+
+  return { messages, loading, sendMessage, retryMessage, refetch: fetchMessages };
 }
