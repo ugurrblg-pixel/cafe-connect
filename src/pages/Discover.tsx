@@ -67,8 +67,8 @@ export default function Discover() {
             {position ? (
               <p className="font-semibold text-foreground">
                 Yakındaki kafeler
-                {source === 'google_places' && (
-                  <span className="text-xs text-muted-foreground ml-2">(Google Places)</span>
+                {(source === 'google_places' || source === 'openstreetmap') && (
+                  <span className="text-xs text-muted-foreground ml-2">({source === 'openstreetmap' ? 'OpenStreetMap' : 'Google Places'})</span>
                 )}
               </p>
             ) : locationError ? (

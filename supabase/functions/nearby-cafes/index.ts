@@ -5,29 +5,55 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface GooglePlace {
-  place_id: string;
-  name: string;
-  vicinity: string;
-  geometry: {
-    location: {
-      lat: number;
-      lng: number;
-    };
+// OpenStreetMap Overpass API response types
+interface OverpassElement {
+  type: string;
+  id: number;
+  lat: number;
+  lon: number;
+  tags?: {
+    name?: string;
+    'addr:street'?: string;
+    'addr:housenumber'?: string;
+    'addr:city'?: string;
+    opening_hours?: string;
+    cuisine?: string;
+    website?: string;
   };
-  rating?: number;
-  opening_hours?: {
-    open_now?: boolean;
-  };
-  photos?: Array<{
-    photo_reference: string;
-  }>;
 }
 
-interface GooglePlacesResponse {
-  results: GooglePlace[];
-  status: string;
-  error_message?: string;
+interface OverpassResponse {
+  elements: OverpassElement[];
+}
+
+// Grid cell size for caching (approximately 1km at equator)
+const GRID_CELL_SIZE = 0.009; // ~1km in degrees
+
+function getGridCell(lat: number, lng: number): { gridLat: number; gridLng: number } {
+  return {
+    gridLat: Math.floor(lat / GRID_CELL_SIZE) * GRID_CELL_SIZE,
+    gridLng: Math.floor(lng / GRID_CELL_SIZE) * GRID_CELL_SIZE,
+  };
+}
+
+function generateOsmId(element: OverpassElement): string {
+  return `osm_${element.type}_${element.id}`;
+}
+
+function buildAddress(tags: OverpassElement['tags']): string {
+  if (!tags) return '';
+  const parts = [];
+  if (tags['addr:street']) {
+    if (tags['addr:housenumber']) {
+      parts.push(`${tags['addr:street']} ${tags['addr:housenumber']}`);
+    } else {
+      parts.push(tags['addr:street']);
+    }
+  }
+  if (tags['addr:city']) {
+    parts.push(tags['addr:city']);
+  }
+  return parts.join(', ');
 }
 
 Deno.serve(async (req) => {
@@ -37,11 +63,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const GOOGLE_PLACES_API_KEY = Deno.env.get('GOOGLE_PLACES_API_KEY');
-    if (!GOOGLE_PLACES_API_KEY) {
-      throw new Error('GOOGLE_PLACES_API_KEY is not configured');
-    }
-
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
@@ -64,18 +85,24 @@ Deno.serve(async (req) => {
     // Create Supabase client with service role for inserting cafes
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // First, check existing cached cafes in the area
-    // We'll use a simple bounding box approach for initial filtering
-    const latDelta = radius / 111000; // ~111km per degree of latitude
-    const lngDelta = radius / (111000 * Math.cos(latitude * Math.PI / 180));
+    // Calculate grid cell for cache lookup
+    const { gridLat, gridLng } = getGridCell(latitude, longitude);
+    
+    // Calculate bounding box for the grid cell (slightly larger to catch edge cases)
+    const latDelta = GRID_CELL_SIZE * 1.5;
+    const lngDelta = GRID_CELL_SIZE * 1.5 / Math.cos(latitude * Math.PI / 180);
 
+    // Check for recently cached cafes in this grid area
+    const cacheThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // 24 hours
+    
     const { data: cachedCafes, error: cacheError } = await supabase
       .from('cafes')
       .select('*')
-      .gte('latitude', latitude - latDelta)
-      .lte('latitude', latitude + latDelta)
-      .gte('longitude', longitude - lngDelta)
-      .lte('longitude', longitude + lngDelta);
+      .gte('latitude', gridLat - latDelta)
+      .lte('latitude', gridLat + latDelta + GRID_CELL_SIZE)
+      .gte('longitude', gridLng - lngDelta)
+      .lte('longitude', gridLng + lngDelta + GRID_CELL_SIZE)
+      .gte('last_synced_at', cacheThreshold);
 
     if (cacheError) {
       console.error('Error fetching cached cafes:', cacheError);
@@ -92,14 +119,14 @@ Deno.serve(async (req) => {
       activeUserCounts[checkIn.cafe_id] = (activeUserCounts[checkIn.cafe_id] || 0) + 1;
     });
 
-    // If we have enough cached cafes (at least 5), return them
+    // If we have enough recent cached cafes (at least 3), return them
     const cachedCafesWithCounts = (cachedCafes || []).map(cafe => ({
       ...cafe,
       activeUsers: activeUserCounts[cafe.id] || 0,
     }));
 
-    if (cachedCafesWithCounts.length >= 5) {
-      console.log(`Returning ${cachedCafesWithCounts.length} cached cafes`);
+    if (cachedCafesWithCounts.length >= 3) {
+      console.log(`Returning ${cachedCafesWithCounts.length} cached cafes from grid`);
       return new Response(
         JSON.stringify({ 
           cafes: cachedCafesWithCounts, 
@@ -110,22 +137,31 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Not enough cached cafes, fetch from Google Places
-    console.log('Fetching from Google Places API...');
+    // Not enough cached cafes, fetch from Overpass API
+    console.log('Fetching from OpenStreetMap Overpass API...');
     
-    const googleUrl = new URL('https://maps.googleapis.com/maps/api/place/nearbysearch/json');
-    googleUrl.searchParams.set('location', `${latitude},${longitude}`);
-    googleUrl.searchParams.set('radius', String(radius));
-    googleUrl.searchParams.set('type', 'cafe');
-    googleUrl.searchParams.set('key', GOOGLE_PLACES_API_KEY);
+    // Build Overpass QL query for cafes within radius
+    const radiusMeters = Math.min(radius, 2000); // Cap at 2km for performance
+    const overpassQuery = `
+      [out:json][timeout:25];
+      (
+        node["amenity"="cafe"](around:${radiusMeters},${latitude},${longitude});
+        way["amenity"="cafe"](around:${radiusMeters},${latitude},${longitude});
+      );
+      out center;
+    `;
 
-    const googleResponse = await fetch(googleUrl.toString());
-    const googleData: GooglePlacesResponse = await googleResponse.json();
+    const overpassUrl = 'https://overpass-api.de/api/interpreter';
+    const overpassResponse = await fetch(overpassUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `data=${encodeURIComponent(overpassQuery)}`,
+    });
 
-    if (googleData.status !== 'OK' && googleData.status !== 'ZERO_RESULTS') {
-      console.error('Google Places API error:', googleData.status, googleData.error_message);
+    if (!overpassResponse.ok) {
+      console.error('Overpass API error:', overpassResponse.status);
       
-      // Return cached cafes if available, even if incomplete
+      // Return cached cafes if available, even if stale
       if (cachedCafesWithCounts.length > 0) {
         return new Response(
           JSON.stringify({ 
@@ -137,28 +173,29 @@ Deno.serve(async (req) => {
         );
       }
       
-      throw new Error(`Google Places API error: ${googleData.status}`);
+      throw new Error(`Overpass API error: ${overpassResponse.status}`);
     }
 
-    console.log(`Google returned ${googleData.results?.length || 0} places`);
+    const overpassData: OverpassResponse = await overpassResponse.json();
+    console.log(`Overpass returned ${overpassData.elements?.length || 0} cafes`);
 
-    // Upsert cafes from Google Places into our database
-    const cafesToUpsert = (googleData.results || []).map((place) => ({
-      google_place_id: place.place_id,
-      name: place.name,
-      address: place.vicinity || '',
-      latitude: place.geometry.location.lat,
-      longitude: place.geometry.location.lng,
-      rating: place.rating || 4.5,
-      is_open: place.opening_hours?.open_now ?? true,
-      image_url: place.photos?.[0]?.photo_reference 
-        ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${place.photos[0].photo_reference}&key=${GOOGLE_PLACES_API_KEY}`
-        : '',
-      last_synced_at: new Date().toISOString(),
-    }));
+    // Transform and upsert cafes from Overpass into our database
+    const cafesToUpsert = (overpassData.elements || [])
+      .filter(element => element.tags?.name) // Only include named cafes
+      .map((element) => ({
+        google_place_id: generateOsmId(element), // Reuse column for OSM ID
+        name: element.tags?.name || 'Unnamed Cafe',
+        address: buildAddress(element.tags),
+        latitude: element.lat,
+        longitude: element.lon,
+        rating: 4.5, // Default rating (OSM doesn't have ratings)
+        is_open: true, // Default to open (would need separate API for hours)
+        image_url: '', // OSM doesn't provide images
+        last_synced_at: new Date().toISOString(),
+      }));
 
     if (cafesToUpsert.length > 0) {
-      // Upsert using google_place_id as the conflict key
+      // Upsert using google_place_id (which now holds OSM ID) as the conflict key
       const { error: upsertError } = await supabase
         .from('cafes')
         .upsert(cafesToUpsert, { 
@@ -169,7 +206,7 @@ Deno.serve(async (req) => {
       if (upsertError) {
         console.error('Error upserting cafes:', upsertError);
       } else {
-        console.log(`Upserted ${cafesToUpsert.length} cafes`);
+        console.log(`Upserted ${cafesToUpsert.length} cafes from OSM`);
       }
     }
 
@@ -177,10 +214,10 @@ Deno.serve(async (req) => {
     const { data: allCafes, error: fetchError } = await supabase
       .from('cafes')
       .select('*')
-      .gte('latitude', latitude - latDelta)
-      .lte('latitude', latitude + latDelta)
-      .gte('longitude', longitude - lngDelta)
-      .lte('longitude', longitude + lngDelta);
+      .gte('latitude', latitude - (radius / 111000))
+      .lte('latitude', latitude + (radius / 111000))
+      .gte('longitude', longitude - (radius / (111000 * Math.cos(latitude * Math.PI / 180))))
+      .lte('longitude', longitude + (radius / (111000 * Math.cos(latitude * Math.PI / 180))));
 
     if (fetchError) {
       throw new Error(`Error fetching cafes: ${fetchError.message}`);
@@ -192,12 +229,12 @@ Deno.serve(async (req) => {
       activeUsers: activeUserCounts[cafe.id] || 0,
     }));
 
-    console.log(`Returning ${finalCafes.length} cafes (hybrid)`);
+    console.log(`Returning ${finalCafes.length} cafes (from OSM)`);
 
     return new Response(
       JSON.stringify({ 
         cafes: finalCafes, 
-        source: 'google_places',
+        source: 'openstreetmap',
         count: finalCafes.length 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
