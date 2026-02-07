@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { InitialsAvatar } from '@/components/InitialsAvatar';
+import { PageLayout } from '@/components/PageLayout';
 import { useWaves } from '@/hooks/useWaves';
 import { useMatches } from '@/hooks/useMatches';
 import { useCafes } from '@/hooks/useCafes';
@@ -66,8 +67,9 @@ export default function Notifications() {
   const pendingWaves = incomingWaves.filter(wave => !hasWavedAt(wave.fromUserId, wave.cafeId));
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <Header title="Notifications" />
+    <PageLayout>
+      <div className="min-h-screen bg-background pb-24">
+        <Header title="Notifications" />
 
       <main className="pt-16">
         <Tabs defaultValue="waves" className="w-full">
@@ -249,6 +251,7 @@ export default function Notifications() {
           </TabsContent>
         </Tabs>
       </main>
-    </div>
+      </div>
+    </PageLayout>
   );
 }

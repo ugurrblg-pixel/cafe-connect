@@ -2,8 +2,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
+import { CheckInStatusBar } from "@/components/CheckInStatusBar";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import Discover from "./pages/Discover";
@@ -44,6 +45,13 @@ function ProtectedRoute({ children, requireProfileComplete = true }: { children:
 
 function AppRoutes() {
   const { user, loading } = useAuth();
+  const location = useLocation();
+
+  // Hide status bar on certain pages
+  const hideStatusBar = 
+    location.pathname.startsWith('/cafe/') || 
+    location.pathname.startsWith('/chat/') ||
+    location.pathname === '/auth';
 
   if (loading) {
     return (
@@ -55,6 +63,9 @@ function AppRoutes() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Check-in Status Bar - shown when user is checked in */}
+      {user && !hideStatusBar && <CheckInStatusBar />}
+      
       <Routes>
         <Route 
           path="/auth" 

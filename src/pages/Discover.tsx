@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { CafeCard } from '@/components/CafeCard';
+import { PageLayout } from '@/components/PageLayout';
 import { useNearbyCafes } from '@/hooks/useNearbyCafes';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { MapPin, Coffee, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
@@ -49,8 +50,9 @@ export default function Discover() {
   const otherCafes = cafes.filter((cafe) => cafe.activeUsers === 0 || !cafe.isOpen);
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <Header title="Keşfet" />
+    <PageLayout>
+      <div className="min-h-screen bg-background pb-24">
+        <Header title="Keşfet" />
 
       <main className="pt-16 px-4">
         {/* Location Banner */}
@@ -185,6 +187,7 @@ export default function Discover() {
           </>
         )}
       </main>
-    </div>
+      </div>
+    </PageLayout>
   );
 }
