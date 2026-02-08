@@ -54,6 +54,7 @@ export const translations = {
       beFirst: 'Be the first to check in!',
       autoCheckout: 'Auto check-out',
       autoCheckoutDesc: "You'll be automatically checked out after 60 minutes for your safety.",
+      someoneJoined: 'Someone joined the cafe',
     },
 
     // Check-in
@@ -102,6 +103,9 @@ export const translations = {
       copied: "Copied",
       cafeMatch: "You matched at {cafe}",
       sameCafeMatch: "You matched at the same cafe",
+      youreFirstHere: "You're the first one here. Say hi 👋",
+      someoneJoined: "Someone joined the cafe",
+      someoneTyping: "Someone is typing…",
     },
 
     // Notifications
@@ -230,6 +234,7 @@ export const translations = {
       beFirst: 'İlk check-in yapan sen ol!',
       autoCheckout: 'Otomatik çıkış',
       autoCheckoutDesc: 'Güvenliğin için 60 dakika sonra otomatik olarak çıkış yapılacak.',
+      someoneJoined: 'Biri kafeye katıldı',
     },
 
     // Check-in
@@ -278,6 +283,9 @@ export const translations = {
       copied: 'Kopyalandı',
       cafeMatch: '{cafe} kafesinde eşleştiniz',
       sameCafeMatch: 'Aynı kafede eşleştiniz',
+      youreFirstHere: 'İlk sen buradasın. Selam ver 👋',
+      someoneJoined: 'Biri kafeye katıldı',
+      someoneTyping: 'Biri yazıyor…',
     },
 
     // Notifications

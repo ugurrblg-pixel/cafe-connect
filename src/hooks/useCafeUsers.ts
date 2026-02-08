@@ -19,6 +19,9 @@ const RECONNECT_BASE_DELAY = 1000;
 const RECONNECT_MAX_DELAY = 30000;
 const RECONNECT_JITTER = 0.3;
 
+// Join notification throttle (5 minutes)
+const JOIN_NOTIFICATION_THROTTLE_MS = 5 * 60 * 1000;
+
 interface CafeUser {
   id: string;
   name: string;
@@ -45,6 +48,8 @@ interface UseCafeUsersOptions {
   purpose?: string;
   /** Whether user is checked in at this cafe */
   isCheckedIn?: boolean;
+  /** Callback when someone joins (throttled to once every 5 minutes) */
+  onUserJoined?: () => void;
 }
 
 export function useCafeUsers(cafeId: string, options: UseCafeUsersOptions = {}) {
@@ -58,6 +63,8 @@ export function useCafeUsers(cafeId: string, options: UseCafeUsersOptions = {}) 
   const lastKnownPresenceRef = useRef<Map<string, PresenceState>>(new Map());
   const reconnectAttemptRef = useRef(0);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastJoinNotificationRef = useRef<number>(0);
+  const knownUserIdsRef = useRef<Set<string>>(new Set());
   
   const presenceChannelRef = useRef<RealtimeChannel | null>(null);
   const dbChannelRef = useRef<RealtimeChannel | null>(null);
@@ -184,6 +191,27 @@ export function useCafeUsers(cafeId: string, options: UseCafeUsersOptions = {}) 
               newPresenceMap.set(presence.user_id, presence);
             }
           });
+          
+          // Detect new joins (throttled)
+          if (options.onUserJoined && options.isCheckedIn) {
+            const now = Date.now();
+            const timeSinceLastNotification = now - lastJoinNotificationRef.current;
+            
+            // Check if there are new user IDs we haven't seen before
+            for (const userId of newPresenceMap.keys()) {
+              if (userId !== user?.id && !knownUserIdsRef.current.has(userId)) {
+                // New user joined! Notify if throttle allows
+                if (timeSinceLastNotification >= JOIN_NOTIFICATION_THROTTLE_MS) {
+                  lastJoinNotificationRef.current = now;
+                  options.onUserJoined();
+                  break; // Only notify once per throttle window
+                }
+              }
+            }
+          }
+          
+          // Update known user IDs
+          knownUserIdsRef.current = new Set(newPresenceMap.keys());
           
           // Update optimistic cache
           lastKnownPresenceRef.current = newPresenceMap;

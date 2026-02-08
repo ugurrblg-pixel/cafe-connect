@@ -64,7 +64,7 @@ export default function ChatRoom() {
     otherUser?.userId || ''
   );
 
-  // Smart scroll behavior
+  // Smart scroll behavior with rejoin support
   const latestMessage = messages[messages.length - 1];
   const {
     containerRef,
@@ -77,6 +77,7 @@ export default function ChatRoom() {
     messagesCount: messages.length,
     userId: user?.id,
     latestSenderId: latestMessage?.senderId,
+    conversationId, // Pass for rejoin scroll position restoration
   });
 
   // Clear message badge when entering chat
