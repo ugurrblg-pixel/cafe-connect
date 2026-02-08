@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { PurposeBadge } from '@/components/PurposeBadge';
-import { InitialsAvatar } from '@/components/InitialsAvatar';
 import { PageLayout } from '@/components/PageLayout';
 import { PremiumBadge } from '@/components/PremiumBadge';
+import { ProfilePhotoCarousel } from '@/components/ProfilePhotoCarousel';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { usePremium } from '@/hooks/usePremium';
@@ -180,35 +180,39 @@ export default function Profile() {
         <main className="pt-16 px-4">
         {/* Profile Header */}
         <div className="flex flex-col items-center py-6 animate-scale-in">
-          <div className="relative mb-4">
-            {profile.photo_url ? (
-              <img
-                src={profile.photo_url}
-                alt={displayName}
-                className="w-28 h-28 rounded-full object-cover border-4 border-card shadow-lg"
-              />
-            ) : (
-              <div className="w-28 h-28 rounded-full bg-primary flex items-center justify-center border-4 border-card shadow-lg">
-                <span className="text-3xl font-bold text-primary-foreground">
-                  {getInitials(displayName)}
-                </span>
-              </div>
-            )}
-            {/* Visibility indicator */}
-            <div className={`absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center border-2 border-card ${profile.is_visible ? 'bg-accent' : 'bg-muted'}`}>
-              {profile.is_visible ? (
-                <Eye className="w-4 h-4 text-accent-foreground" />
-              ) : (
-                <EyeOff className="w-4 h-4 text-muted-foreground" />
-              )}
-            </div>
-          </div>
+          {/* Profile Photo Carousel */}
+          <ProfilePhotoCarousel
+            photos={profile.photo_url ? [profile.photo_url] : []}
+            isPremium={isPremium}
+            name={displayName}
+            size="lg"
+            className="mb-4"
+          />
+          
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-2xl font-bold text-foreground">
               {displayName}{profile.age ? `, ${profile.age}` : ''}
             </h1>
             {isPremium && <PremiumBadge size="sm" />}
           </div>
+          
+          {/* Visibility Badge */}
+          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs mb-2 ${
+            profile.is_visible ? 'bg-accent/20 text-accent-foreground' : 'bg-muted text-muted-foreground'
+          }`}>
+            {profile.is_visible ? (
+              <>
+                <Eye className="w-3 h-3" />
+                <span>Görünür</span>
+              </>
+            ) : (
+              <>
+                <EyeOff className="w-3 h-3" />
+                <span>Gizli</span>
+              </>
+            )}
+          </div>
+          
           <PurposeBadge purpose={profile.purpose} />
           <button
             onClick={() => navigate('/profile/edit')}
