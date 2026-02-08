@@ -21,6 +21,7 @@ import Notifications from "./pages/Notifications";
 import Auth from "./pages/Auth";
 import Subscription from "./pages/Subscription";
 import ProfileViewers from "./pages/ProfileViewers";
+import Boost from "./pages/Boost";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -153,6 +154,14 @@ function AppRoutes() {
             element={
               <ProtectedRoute>
                 <ProfileViewers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/boost"
+            element={
+              <ProtectedRoute>
+                <Boost />
               </ProtectedRoute>
             }
           />
