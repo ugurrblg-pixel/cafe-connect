@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Coffee, MapPin, MessageCircle, Shield, Users, ChevronRight, Smartphone } from 'lucide-react';
+import { Coffee, MapPin, MessageCircle, Shield, Users, ChevronRight, Smartphone, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type OnboardingStep = 'splash' | 'slides' | 'location' | 'auth';
+
+const ONBOARDING_COMPLETE_KEY = 'cafemeet_onboarding_complete';
 
 export default function Onboarding() {
   const navigate = useNavigate();
@@ -13,6 +15,19 @@ export default function Onboarding() {
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [isRequestingLocation, setIsRequestingLocation] = useState(false);
+  
+  // Prevent re-triggering location request
+  const locationRequestedRef = useRef(false);
+
+  // Check if onboarding was already completed
+  useEffect(() => {
+    const isComplete = localStorage.getItem(ONBOARDING_COMPLETE_KEY);
+    if (isComplete === 'true') {
+      navigate('/auth', { replace: true });
+    }
+  }, [navigate]);
 
   // Auto-transition from splash after 1.5 seconds
   useEffect(() => {
@@ -84,15 +99,55 @@ export default function Onboarding() {
   };
 
   const handleLocationAllow = async () => {
+    // Prevent re-triggering on tab switch or double-click
+    if (locationRequestedRef.current || isRequestingLocation) return;
+    
+    locationRequestedRef.current = true;
+    setIsRequestingLocation(true);
+    setLocationError(null);
+
     try {
-      await navigator.geolocation.getCurrentPosition(() => {});
-    } catch {
-      // Permission denied or error
+      await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000,
+        });
+      });
+      // Success - proceed to auth
+      completeOnboarding();
+    } catch (error) {
+      const geoError = error as GeolocationPositionError;
+      
+      // Handle different error types gracefully
+      switch (geoError.code) {
+        case geoError.PERMISSION_DENIED:
+          setLocationError('Location access denied. You can enable it later in settings.');
+          break;
+        case geoError.POSITION_UNAVAILABLE:
+          setLocationError('Unable to determine your location. Please try again.');
+          break;
+        case geoError.TIMEOUT:
+          setLocationError('Location request timed out. Please try again.');
+          break;
+        default:
+          setLocationError('Something went wrong. You can enable location later.');
+      }
+      
+      // Reset to allow retry
+      locationRequestedRef.current = false;
+    } finally {
+      setIsRequestingLocation(false);
     }
-    setStep('auth');
   };
 
   const handleLocationSkip = () => {
+    completeOnboarding();
+  };
+
+  const completeOnboarding = () => {
+    // Mark onboarding as complete so it's shown only once
+    localStorage.setItem(ONBOARDING_COMPLETE_KEY, 'true');
     setStep('auth');
   };
 
@@ -111,7 +166,7 @@ export default function Onboarding() {
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-20 left-10 w-32 h-32 bg-primary/5 rounded-full blur-3xl animate-pulse" />
           <div className="absolute bottom-40 right-10 w-40 h-40 bg-amber-500/5 rounded-full blur-3xl animate-pulse delay-500" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/3 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/[0.03] rounded-full blur-3xl" />
         </div>
 
         {/* Logo */}
@@ -279,23 +334,42 @@ export default function Onboarding() {
           <p className="text-sm text-muted-foreground/70 text-center max-w-xs">
             Your location is only shared when you check in to a cafe.
           </p>
+
+          {/* Error message */}
+          {locationError && (
+            <div className="mt-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20 flex items-start gap-3 max-w-xs">
+              <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+              <p className="text-sm text-destructive">{locationError}</p>
+            </div>
+          )}
         </div>
 
         {/* Buttons */}
         <div className="p-8 pb-12 space-y-3">
           <Button 
             onClick={handleLocationAllow}
+            disabled={isRequestingLocation}
             className="w-full h-14 text-lg font-medium rounded-2xl"
           >
-            <MapPin className="w-5 h-5 mr-2" />
-            Allow location access
+            {isRequestingLocation ? (
+              <>
+                <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin mr-2" />
+                Requesting access...
+              </>
+            ) : (
+              <>
+                <MapPin className="w-5 h-5 mr-2" />
+                Allow location access
+              </>
+            )}
           </Button>
           <Button 
             variant="ghost"
             onClick={handleLocationSkip}
+            disabled={isRequestingLocation}
             className="w-full h-12 text-muted-foreground"
           >
-            Not now
+            {locationError ? 'Continue without location' : 'Not now'}
           </Button>
         </div>
       </div>
