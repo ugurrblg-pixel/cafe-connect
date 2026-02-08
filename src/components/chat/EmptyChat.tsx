@@ -1,13 +1,14 @@
-import { MessageCircle, Sparkles } from 'lucide-react';
+import { MessageCircle, Sparkles, MapPin } from 'lucide-react';
 import { useI18n } from '@/contexts/I18nContext';
 
 interface EmptyChatProps {
   otherUserName: string;
+  cafeName?: string;
   onSuggestionTap?: (text: string) => void;
 }
 
-export function EmptyChat({ otherUserName, onSuggestionTap }: EmptyChatProps) {
-  const { t } = useI18n();
+export function EmptyChat({ otherUserName, cafeName, onSuggestionTap }: EmptyChatProps) {
+  const { t, locale } = useI18n();
 
   const suggestions = [
     t.chat.suggestion1,
@@ -15,8 +16,22 @@ export function EmptyChat({ otherUserName, onSuggestionTap }: EmptyChatProps) {
     t.chat.suggestion3,
   ];
 
+  const cafeMessage = cafeName
+    ? locale === 'tr' 
+      ? `${cafeName} kafesinden eşleştiniz`
+      : `You matched at ${cafeName}`
+    : locale === 'tr'
+      ? 'Aynı kafeden eşleştiniz'
+      : "You matched at the same cafe";
+
   return (
     <div className="flex flex-col items-center justify-center h-full min-h-[50vh] px-6 text-center animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
+      {/* Cafe context hint */}
+      <div className="flex items-center gap-1.5 mb-6 px-3 py-1.5 rounded-full bg-secondary/60">
+        <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+        <span className="text-xs text-muted-foreground">{cafeMessage}</span>
+      </div>
+
       {/* Soft icon */}
       <div className="relative mb-5">
         <div className="w-16 h-16 bg-secondary/60 rounded-full flex items-center justify-center">
@@ -29,7 +44,7 @@ export function EmptyChat({ otherUserName, onSuggestionTap }: EmptyChatProps) {
       
       {/* Heading */}
       <h3 className="font-medium text-base text-foreground mb-1.5">
-        {t.chat.letsChat}
+        {t.chat.letsChat} 👋
       </h3>
       
       {/* Subtext */}

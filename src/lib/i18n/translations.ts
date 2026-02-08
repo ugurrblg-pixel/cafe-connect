@@ -94,6 +94,12 @@ export const translations = {
       suggestion3: "How's your day going?",
       failedToSend: "Failed to send – tap to retry",
       newMessages: "New messages",
+      today: "Today",
+      yesterday: "Yesterday",
+      messageDeleted: "Message deleted",
+      copyMessage: "Copy",
+      deleteMessage: "Delete",
+      copied: "Copied",
     },
 
     // Profile
@@ -251,6 +257,12 @@ export const translations = {
       suggestion3: 'Bugün nasıl geçiyor?',
       failedToSend: 'Gönderilemedi – tekrar dene',
       newMessages: 'Yeni mesajlar',
+      today: 'Bugün',
+      yesterday: 'Dün',
+      messageDeleted: 'Mesaj silindi',
+      copyMessage: 'Kopyala',
+      deleteMessage: 'Sil',
+      copied: 'Kopyalandı',
     },
 
     // Profile
