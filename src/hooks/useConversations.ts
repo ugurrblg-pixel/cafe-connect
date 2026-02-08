@@ -347,13 +347,14 @@ export function useChat(conversationId: string) {
         (payload) => {
           const updatedMsg = payload.new as any;
           
-          // Update read status for messages
+          // Update read status and deletion status for messages
           setMessages((prev) =>
             prev.map((m) =>
               m.id === updatedMsg.id
                 ? {
                     ...m,
                     readAt: updatedMsg.read_at ? new Date(updatedMsg.read_at) : null,
+                    deletedAt: updatedMsg.deleted_at ? new Date(updatedMsg.deleted_at) : null,
                   }
                 : m
             )

@@ -8,6 +8,7 @@ import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { useChatScroll } from '@/hooks/useChatScroll';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { useNotifications } from '@/contexts/NotificationContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Send, MoreVertical, Flag, Ban, Loader2, ShieldAlert, ChevronLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -46,6 +47,7 @@ export default function ChatRoom() {
   const { messages, loading, sendMessage, retryMessage, softDeleteMessage } = useChat(conversationId || '');
   const { blockUser, reportUser } = useBlocking();
   const { hasMatchWith, loading: matchesLoading } = useMatches();
+  const { resetUnreadCount } = useNotifications();
   
   const [messageInput, setMessageInput] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -76,6 +78,13 @@ export default function ChatRoom() {
     userId: user?.id,
     latestSenderId: latestMessage?.senderId,
   });
+
+  // Clear message badge when entering chat
+  useEffect(() => {
+    if (conversationId) {
+      resetUnreadCount('messages');
+    }
+  }, [conversationId, resetUnreadCount]);
 
   // Fetch other user's info, cafe info, and verify match
   useEffect(() => {
@@ -210,7 +219,7 @@ export default function ChatRoom() {
 
   const handleReport = async (reason: 'spam' | 'harassment' | 'inappropriate', description?: string) => {
     if (!otherUser) return;
-    await reportUser(otherUser.userId, reason, description);
+    await reportUser(otherUser.userId, reason, description, conversationId);
     setShowReportDialog(false);
   };
 

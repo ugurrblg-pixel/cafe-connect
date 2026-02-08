@@ -1,10 +1,7 @@
-/// <reference lib="webworker" />
-
 // Service Worker for Push Notifications
-const sw = self as unknown as ServiceWorkerGlobalScope;
 
 // Handle push events
-sw.addEventListener('push', (event) => {
+self.addEventListener('push', (event) => {
   console.log('Push event received:', event);
   
   let data = {
@@ -30,7 +27,7 @@ sw.addEventListener('push', (event) => {
     console.error('Error parsing push data:', e);
   }
 
-  const options: NotificationOptions = {
+  const options = {
     body: data.body,
     icon: data.icon,
     badge: data.badge,
@@ -41,12 +38,12 @@ sw.addEventListener('push', (event) => {
   };
 
   event.waitUntil(
-    sw.registration.showNotification(data.title, options)
+    self.registration.showNotification(data.title, options)
   );
 });
 
 // Handle notification click
-sw.addEventListener('notificationclick', (event) => {
+self.addEventListener('notificationclick', (event) => {
   console.log('Notification clicked:', event);
   
   event.notification.close();
@@ -54,33 +51,31 @@ sw.addEventListener('notificationclick', (event) => {
   const url = event.notification.data?.url || '/';
   
   event.waitUntil(
-    sw.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
         // Try to focus existing window
         for (const client of clientList) {
-          if (client.url.includes(sw.location.origin) && 'focus' in client) {
+          if (client.url.includes(self.location.origin) && 'focus' in client) {
             client.navigate(url);
             return client.focus();
           }
         }
         // Open new window if none exists
-        if (sw.clients.openWindow) {
-          return sw.clients.openWindow(url);
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(url);
         }
       })
   );
 });
 
 // Handle service worker activation
-sw.addEventListener('activate', (event) => {
+self.addEventListener('activate', (event) => {
   console.log('Service Worker activated');
-  event.waitUntil(sw.clients.claim());
+  event.waitUntil(self.clients.claim());
 });
 
 // Handle service worker installation
-sw.addEventListener('install', (event) => {
+self.addEventListener('install', (event) => {
   console.log('Service Worker installed');
-  event.waitUntil(sw.skipWaiting());
+  event.waitUntil(self.skipWaiting());
 });
-
-export {};
