@@ -19,6 +19,7 @@ import ProfileEdit from "./pages/ProfileEdit";
 import Search from "./pages/Search";
 import Notifications from "./pages/Notifications";
 import Auth from "./pages/Auth";
+import Onboarding from "./pages/Onboarding";
 import Subscription from "./pages/Subscription";
 import ProfileViewers from "./pages/ProfileViewers";
 import Boost from "./pages/Boost";
@@ -73,6 +74,10 @@ function AppRoutes() {
       {user && !hideStatusBar && <CheckInStatusBar />}
       
       <Routes>
+        <Route 
+          path="/onboarding" 
+          element={user ? <Navigate to="/" replace /> : <Onboarding />} 
+        />
         <Route 
           path="/auth" 
           element={user ? <Navigate to="/" replace /> : <Auth />} 
