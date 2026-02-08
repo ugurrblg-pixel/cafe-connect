@@ -1,35 +1,97 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Eye, Crown, Lock } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  Eye, 
+  Lock, 
+  Crown,
+  MapPin,
+  Sparkles
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { InitialsAvatar } from '@/components/InitialsAvatar';
-import { PurposeBadge } from '@/components/PurposeBadge';
-import { PaywallModal } from '@/components/PaywallModal';
-import { useProfileViews } from '@/hooks/useProfileViews';
-import { usePremium } from '@/hooks/usePremium';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Purpose } from '@/types';
-import { formatDistanceToNow } from 'date-fns';
-import { tr } from 'date-fns/locale';
+
+// Mock blurred profiles for display
+const MOCK_VIEWERS = [
+  { id: 1 },
+  { id: 2 },
+  { id: 3 },
+  { id: 4 },
+  { id: 5 },
+  { id: 6 },
+  { id: 7 },
+  { id: 8 },
+];
+
+function BlurredProfileCard({ index }: { index: number }) {
+  // Different placeholder colors for variety
+  const gradients = [
+    'from-rose-300 to-pink-400',
+    'from-amber-300 to-orange-400',
+    'from-violet-300 to-purple-400',
+    'from-sky-300 to-blue-400',
+    'from-emerald-300 to-teal-400',
+    'from-fuchsia-300 to-pink-400',
+    'from-yellow-300 to-amber-400',
+    'from-indigo-300 to-violet-400',
+  ];
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl bg-card border border-border shadow-sm">
+      {/* Shimmer animation overlay */}
+      <div className="absolute inset-0 z-20 overflow-hidden pointer-events-none">
+        <div 
+          className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent"
+          style={{ 
+            animation: `shimmer 2.5s infinite`,
+            animationDelay: `${index * 200}ms` 
+          }}
+        />
+      </div>
+
+      {/* Blur overlay */}
+      <div className="absolute inset-0 backdrop-blur-xl z-10 bg-white/40 dark:bg-black/40" />
+      
+      {/* Content (blurred) */}
+      <div className="relative p-3">
+        {/* Avatar */}
+        <div className={`w-full aspect-square rounded-xl bg-gradient-to-br ${gradients[index % gradients.length]} mb-3`} />
+        
+        {/* Name & Age placeholder */}
+        <div className="space-y-2">
+          <div className="h-4 bg-muted rounded-full w-3/4" />
+          <div className="h-3 bg-muted/70 rounded-full w-1/2" />
+        </div>
+
+        {/* Cafe badge placeholder */}
+        <div className="flex items-center gap-1 mt-3">
+          <MapPin className="w-3 h-3 text-muted-foreground/50" />
+          <div className="h-2.5 bg-muted/50 rounded-full w-16" />
+        </div>
+      </div>
+
+      {/* Lock icon overlay */}
+      <div className="absolute inset-0 z-30 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center shadow-lg">
+          <Lock className="w-5 h-5 text-muted-foreground" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function ProfileViewers() {
   const navigate = useNavigate();
-  const { views, viewCount, loading } = useProfileViews();
-  const { isPremium } = usePremium();
-  const [showPaywall, setShowPaywall] = useState(false);
-
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2) || 'U';
-  };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
+    <div className="min-h-screen bg-background pb-24">
+      {/* Shimmer animation keyframe */}
+      <style>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(200%); }
+        }
+      `}</style>
+
+      {/* Header Navigation */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="flex items-center gap-3 px-4 py-3">
           <button 
@@ -38,125 +100,85 @@ export default function ProfileViewers() {
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div className="flex items-center gap-2">
-            <Eye className="w-5 h-5 text-primary" />
-            <h1 className="text-lg font-semibold">Profil Görüntüleyenler</h1>
-          </div>
-          {isPremium && (
-            <span className="ml-auto text-sm text-muted-foreground">
-              {viewCount} kişi
-            </span>
-          )}
+          <h1 className="text-lg font-semibold">Profilime Bakanlar</h1>
         </div>
       </div>
 
-      <div className="px-4 py-6">
-        {loading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center gap-4 p-4 bg-card rounded-2xl">
-                <Skeleton className="w-14 h-14 rounded-full" />
-                <div className="flex-1">
-                  <Skeleton className="h-5 w-32 mb-2" />
-                  <Skeleton className="h-4 w-24" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : !isPremium ? (
-          // Locked state for non-premium users
-          <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
-              <Lock className="w-10 h-10 text-primary" />
+      <div className="px-4 py-6 space-y-6 max-w-md mx-auto">
+        {/* Hero Section */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-400 via-rose-400 to-purple-500 p-6">
+          {/* Decorative elements */}
+          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full blur-2xl translate-y-1/2 -translate-x-1/4" />
+          
+          <div className="relative z-10 text-center">
+            {/* Icon */}
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm mb-4">
+              <Eye className="w-7 h-7 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-foreground mb-2">
-              Profilini kim görüntüledi?
-            </h2>
-            <p className="text-muted-foreground mb-6 max-w-xs">
-              Premium üyelikle seni görüntüleyen herkesi görebilirsin
-            </p>
             
-            {/* Blurred preview */}
-            <div className="w-full max-w-sm space-y-3 mb-6 blur-sm opacity-50">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center gap-4 p-4 bg-card rounded-2xl">
-                  <div className="w-14 h-14 rounded-full bg-secondary" />
-                  <div className="flex-1">
-                    <div className="h-5 w-32 bg-secondary rounded mb-2" />
-                    <div className="h-4 w-24 bg-secondary rounded" />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <Button onClick={() => setShowPaywall(true)} className="w-full max-w-xs">
-              <Crown className="w-5 h-5 mr-2" />
-              Premium'a Geç
-            </Button>
+            <h2 className="text-2xl font-bold text-white">Profilime Bakanlar</h2>
+            <p className="text-white/90 mt-1 text-[15px]">Seni merak edenler</p>
           </div>
-        ) : views.length === 0 ? (
-          // Empty state
-          <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-            <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mb-6">
-              <Eye className="w-10 h-10 text-muted-foreground" />
+        </div>
+
+        {/* Blurred Profile Grid */}
+        <div className="grid grid-cols-2 gap-3">
+          {MOCK_VIEWERS.map((viewer, index) => (
+            <BlurredProfileCard key={viewer.id} index={index} />
+          ))}
+        </div>
+
+        {/* Hint Text */}
+        <div className="text-center py-2">
+          <p className="text-sm text-muted-foreground">
+            Son 24 saat içinde profilini <span className="font-semibold text-foreground">7 kişi</span> görüntüledi 👀
+          </p>
+        </div>
+
+        {/* Premium Unlock Card */}
+        <div className="relative p-5 rounded-2xl bg-gradient-to-br from-primary/5 to-primary/10 border-2 border-primary/30 shadow-lg overflow-hidden">
+          {/* Glow effect */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent pointer-events-none" />
+          <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/20 rounded-full blur-2xl" />
+          
+          <div className="relative z-10 text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary/20 mb-3">
+              <Crown className="w-6 h-6 text-primary" />
             </div>
-            <h2 className="text-xl font-bold text-foreground mb-2">
-              Henüz görüntüleme yok
-            </h2>
-            <p className="text-muted-foreground max-w-xs">
-              Bir kafeye check-in yaparak profilini daha fazla kişiye göster
+            
+            <h3 className="font-bold text-foreground text-lg">Kimlerin baktığını gör</h3>
+            <p className="text-sm text-muted-foreground mt-2 max-w-[240px] mx-auto">
+              Premium ile profilini ziyaret edenleri anında öğren.
             </p>
           </div>
-        ) : (
-          // Viewer list
-          <div className="space-y-3">
-            {views.map((view) => (
-              <div
-                key={view.id}
-                className="flex items-center gap-4 p-4 bg-card rounded-2xl"
-              >
-                {view.viewer_profile?.photo_url ? (
-                  <img
-                    src={view.viewer_profile.photo_url}
-                    alt={view.viewer_profile.display_name || 'User'}
-                    className="w-14 h-14 rounded-full object-cover"
-                  />
-                ) : (
-                  <InitialsAvatar 
-                    name={view.viewer_profile?.display_name || 'Anonymous'} 
-                    size="md" 
-                  />
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-foreground truncate">
-                      {view.viewer_profile?.display_name || 'Anonymous'}
-                    </h3>
-                    {view.viewer_profile?.purpose && (
-                      <PurposeBadge 
-                        purpose={view.viewer_profile.purpose as Purpose} 
-                        size="sm" 
-                      />
-                    )}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {formatDistanceToNow(new Date(view.viewed_at), { 
-                      addSuffix: true,
-                      locale: tr 
-                    })}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+        </div>
 
-      <PaywallModal
-        isOpen={showPaywall}
-        onClose={() => setShowPaywall(false)}
-        trigger="profile_views"
-      />
+        {/* CTA Button */}
+        <div className="space-y-3">
+          <Button
+            disabled
+            className="w-full h-14 rounded-2xl text-lg font-semibold bg-muted text-muted-foreground cursor-not-allowed opacity-70"
+          >
+            <Lock className="w-5 h-5 mr-2" />
+            Premium Yakında
+          </Button>
+
+          <p className="text-sm text-muted-foreground text-center">
+            Bu özellik Premium üyeler içindir.
+          </p>
+        </div>
+
+        {/* Trust / Info Text */}
+        <div className="pt-2 pb-2">
+          <div className="flex items-center justify-center gap-2">
+            <Sparkles className="w-4 h-4 text-muted-foreground/60" />
+            <p className="text-xs text-muted-foreground/70">
+              Ziyaret edenler anonimdir, bildirim gitmez.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
