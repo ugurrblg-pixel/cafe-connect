@@ -3,16 +3,37 @@ import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { InitialsAvatar } from '@/components/InitialsAvatar';
 import { PageLayout } from '@/components/PageLayout';
+import { MatchActionSheet } from '@/components/MatchActionSheet';
 import { useWaves } from '@/hooks/useWaves';
 import { useMatches } from '@/hooks/useMatches';
 import { useCafes } from '@/hooks/useCafes';
-import { Hand, Heart, Loader2, MessageSquare, Coffee, Sparkles, Crown, Lightbulb } from 'lucide-react';
+import { useLongPress } from '@/hooks/useLongPress';
+import { Hand, Heart, Loader2, MessageSquare, Coffee, Sparkles, Crown, Lightbulb, UserMinus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+
+// Match type for state
+interface MatchData {
+  id: string;
+  user1Id: string;
+  user2Id: string;
+  cafeId: string;
+  conversationId: string | null;
+  createdAt: Date;
+  otherUser?: {
+    userId: string;
+    displayName: string;
+    photoUrl: string;
+  };
+  cafe?: {
+    name: string;
+  };
+}
 
 export default function Notifications() {
   const navigate = useNavigate();
@@ -21,6 +42,12 @@ export default function Notifications() {
   const { cafes } = useCafes();
   const [processingWave, setProcessingWave] = useState<string | null>(null);
   const [processingMatch, setProcessingMatch] = useState<string | null>(null);
+  
+  // Match deletion state
+  const [selectedMatch, setSelectedMatch] = useState<MatchData | null>(null);
+  const [showMatchActionSheet, setShowMatchActionSheet] = useState(false);
+  // Track deleted matches locally (UI only)
+  const [deletedMatches, setDeletedMatches] = useState<Set<string>>(new Set());
 
   const loading = wavesLoading || matchesLoading;
 
@@ -63,8 +90,29 @@ export default function Notifications() {
     }
   };
 
+  const handleLongPressMatch = (match: MatchData) => {
+    setSelectedMatch(match);
+    setShowMatchActionSheet(true);
+  };
+
+  const handleUnmatch = () => {
+    if (!selectedMatch) return;
+    
+    // Add to deleted set (UI only)
+    setDeletedMatches(prev => new Set(prev).add(selectedMatch.id));
+    
+    toast.success('Eşleşme kaldırıldı', {
+      description: `${selectedMatch.otherUser?.displayName || 'Kullanıcı'} ile eşleşme silindi`,
+    });
+    
+    setSelectedMatch(null);
+  };
+
   // Filter out waves from users we've already waved back at (they become matches)
   const pendingWaves = incomingWaves.filter(wave => !hasWavedAt(wave.fromUserId, wave.cafeId));
+  
+  // Filter out deleted matches
+  const visibleMatches = matches.filter(m => !deletedMatches.has(m.id));
 
   return (
     <PageLayout>
@@ -86,9 +134,9 @@ export default function Notifications() {
               <TabsTrigger value="matches" className="flex items-center gap-2">
                 <Heart className="w-4 h-4" />
                 Eşleşmeler
-                {matches.length > 0 && (
+                {visibleMatches.length > 0 && (
                   <span className="ml-1 px-1.5 py-0.5 bg-accent text-accent-foreground text-xs rounded-full">
-                    {matches.length}
+                    {visibleMatches.length}
                   </span>
                 )}
               </TabsTrigger>
@@ -169,64 +217,17 @@ export default function Notifications() {
                     <Skeleton key={i} className="h-24 w-full rounded-xl" />
                   ))}
                 </div>
-              ) : matches.length > 0 ? (
+              ) : visibleMatches.length > 0 ? (
                 <div className="space-y-3">
-                  {matches.map((match, index) => (
-                    <div
+                  {visibleMatches.map((match, index) => (
+                    <MatchCard
                       key={match.id}
-                      className="card-elevated p-4 animate-slide-up"
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
-                      <div className="flex items-center gap-4">
-                        {/* Avatar */}
-                        <div className="flex-shrink-0 relative">
-                          {match.otherUser?.photoUrl ? (
-                            <img
-                              src={match.otherUser.photoUrl}
-                              alt={match.otherUser.displayName}
-                              className="w-14 h-14 rounded-full object-cover"
-                            />
-                          ) : (
-                            <InitialsAvatar
-                              name={match.otherUser?.displayName || 'Biri'}
-                              size="md"
-                              className="rounded-full w-14 h-14"
-                            />
-                          )}
-                          <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-accent rounded-full flex items-center justify-center border-2 border-card">
-                            <Heart className="w-3 h-3 text-accent-foreground" />
-                          </div>
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-foreground">
-                            {match.otherUser?.displayName || 'Biri'} ile eşleştin!
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {match.cafe?.name || 'bir kafede'} • {formatDistanceToNow(match.createdAt, { addSuffix: true, locale: tr })}
-                          </p>
-                        </div>
-
-                        {/* Chat button */}
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => handleOpenChat(match)}
-                          disabled={processingMatch === match.id}
-                          className="flex-shrink-0"
-                        >
-                          {processingMatch === match.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <>
-                              <MessageSquare className="w-4 h-4 mr-1" />
-                              Sohbet
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
+                      match={match}
+                      index={index}
+                      isProcessing={processingMatch === match.id}
+                      onOpenChat={() => handleOpenChat(match)}
+                      onLongPress={() => handleLongPressMatch(match)}
+                    />
                   ))}
                 </div>
               ) : (
@@ -235,8 +236,100 @@ export default function Notifications() {
             </TabsContent>
           </Tabs>
         </main>
+
+        {/* Match Action Sheet */}
+        <MatchActionSheet
+          open={showMatchActionSheet}
+          onOpenChange={setShowMatchActionSheet}
+          userName={selectedMatch?.otherUser?.displayName || ''}
+          onUnmatch={handleUnmatch}
+        />
       </div>
     </PageLayout>
+  );
+}
+
+// Match Card component with long press support
+function MatchCard({
+  match,
+  index,
+  isProcessing,
+  onOpenChat,
+  onLongPress,
+}: {
+  match: MatchData;
+  index: number;
+  isProcessing: boolean;
+  onOpenChat: () => void;
+  onLongPress: () => void;
+}) {
+  const longPressHandlers = useLongPress({
+    onLongPress,
+    delay: 500,
+  });
+
+  return (
+    <div
+      {...longPressHandlers}
+      className={cn(
+        "card-elevated p-4 animate-slide-up select-none cursor-pointer",
+        "active:scale-[0.98] transition-transform"
+      )}
+      style={{ animationDelay: `${index * 50}ms` }}
+    >
+      <div className="flex items-center gap-4">
+        {/* Avatar */}
+        <div className="flex-shrink-0 relative">
+          {match.otherUser?.photoUrl ? (
+            <img
+              src={match.otherUser.photoUrl}
+              alt={match.otherUser.displayName}
+              className="w-14 h-14 rounded-full object-cover"
+            />
+          ) : (
+            <InitialsAvatar
+              name={match.otherUser?.displayName || 'Biri'}
+              size="md"
+              className="rounded-full w-14 h-14"
+            />
+          )}
+          <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-accent rounded-full flex items-center justify-center border-2 border-card">
+            <Heart className="w-3 h-3 text-accent-foreground" />
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-foreground">
+            {match.otherUser?.displayName || 'Biri'} ile eşleştin!
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {match.cafe?.name || 'bir kafede'} • {formatDistanceToNow(match.createdAt, { addSuffix: true, locale: tr })}
+          </p>
+        </div>
+
+        {/* Chat button */}
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenChat();
+          }}
+          disabled={isProcessing}
+          className="flex-shrink-0"
+        >
+          {isProcessing ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <>
+              <MessageSquare className="w-4 h-4 mr-1" />
+              Sohbet
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
   );
 }
 

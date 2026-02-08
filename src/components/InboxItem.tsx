@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils';
 import { InitialsAvatar } from '@/components/InitialsAvatar';
 import { useI18n } from '@/contexts/I18nContext';
 import { isActiveNow } from '@/lib/activityTime';
+import { useLongPress } from '@/hooks/useLongPress';
 import { Loader2, Zap, Crown } from 'lucide-react';
 
 interface InboxItemProps {
@@ -17,6 +18,7 @@ interface InboxItemProps {
   isLoading?: boolean;
   isPremiumUser?: boolean;
   onClick: () => void;
+  onLongPress?: () => void;
 }
 
 // Smart timestamp formatting
@@ -49,22 +51,32 @@ export function InboxItem({
   isLoading,
   isPremiumUser = false,
   onClick,
+  onLongPress,
 }: InboxItemProps) {
   const { t } = useI18n();
   const isOnline = isActiveNow(lastActiveAt);
   const hasUnread = unreadCount > 0;
 
+  const longPressHandlers = useLongPress({
+    onLongPress: () => onLongPress?.(),
+    onClick: onClick,
+    delay: 500,
+  });
+
   return (
-    <button
-      onClick={onClick}
-      disabled={isLoading}
+    <div
+      {...longPressHandlers}
+      role="button"
+      tabIndex={0}
+      aria-disabled={isLoading}
       className={cn(
-        'w-full flex items-center gap-3 px-4 py-3',
+        'w-full flex items-center gap-3 px-4 py-3 select-none cursor-pointer',
         'transition-all duration-150 ease-out',
         'hover:bg-secondary/60 active:bg-secondary/80 active:scale-[0.99]',
         hasUnread && 'bg-secondary/30',
         // Premium user highlight
-        isPremiumUser && hasUnread && 'bg-amber-500/5'
+        isPremiumUser && hasUnread && 'bg-amber-500/5',
+        isLoading && 'pointer-events-none opacity-60'
       )}
     >
       {/* Avatar with online indicator and premium ring */}
@@ -173,6 +185,6 @@ export function InboxItem({
           </span>
         ) : null}
       </div>
-    </button>
+    </div>
   );
 }

@@ -4,20 +4,28 @@ import { Header } from '@/components/Header';
 import { PageLayout } from '@/components/PageLayout';
 import { InboxItem } from '@/components/InboxItem';
 import { ProfileGateModal } from '@/components/ProfileGateModal';
-import { useInboxData } from '@/hooks/useInboxData';
+import { ConversationActionSheet } from '@/components/ConversationActionSheet';
+import { useInboxData, InboxConversation } from '@/hooks/useInboxData';
 import { useProfileCompletion } from '@/hooks/useProfileCompletion';
 import { useI18n } from '@/contexts/I18nContext';
 import { MessageCircle, Coffee, MapPin, Hand, Sparkles, Crown, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 export default function Messages() {
   const navigate = useNavigate();
   const { t } = useI18n();
-  const { conversations, loading, createConversation } = useInboxData();
+  const { conversations, loading, createConversation, refetch } = useInboxData();
   const { isComplete: isProfileComplete } = useProfileCompletion();
   const [openingChat, setOpeningChat] = useState<string | null>(null);
   const [showProfileGate, setShowProfileGate] = useState(false);
+  
+  // Chat deletion state
+  const [selectedConversation, setSelectedConversation] = useState<InboxConversation | null>(null);
+  const [showActionSheet, setShowActionSheet] = useState(false);
+  // Track deleted conversations locally (UI only)
+  const [deletedConversations, setDeletedConversations] = useState<Set<string>>(new Set());
 
   const handleOpenChat = async (matchId: string, conversationId: string | null) => {
     // Gate messaging behind profile completion
@@ -41,6 +49,29 @@ export default function Messages() {
     }
   };
 
+  const handleLongPress = (conversation: InboxConversation) => {
+    setSelectedConversation(conversation);
+    setShowActionSheet(true);
+  };
+
+  const handleDeleteConversation = () => {
+    if (!selectedConversation) return;
+    
+    // Add to deleted set (UI only)
+    setDeletedConversations(prev => new Set(prev).add(selectedConversation.matchId));
+    
+    toast.success('Sohbet silindi', {
+      description: `${selectedConversation.otherUserName} ile sohbet kaldırıldı`,
+    });
+    
+    setSelectedConversation(null);
+  };
+
+  // Filter out deleted conversations
+  const visibleConversations = conversations.filter(
+    c => !deletedConversations.has(c.matchId)
+  );
+
   return (
     <PageLayout>
       <div className="min-h-screen bg-background pb-24">
@@ -59,9 +90,9 @@ export default function Messages() {
                 </div>
               ))}
             </div>
-          ) : conversations.length > 0 ? (
+          ) : visibleConversations.length > 0 ? (
             <div className="divide-y divide-border/50">
-              {conversations.map((conversation) => (
+              {visibleConversations.map((conversation) => (
                 <InboxItem
                   key={conversation.matchId}
                   id={conversation.matchId}
@@ -74,6 +105,7 @@ export default function Messages() {
                   lastActiveAt={conversation.lastActiveAt}
                   isLoading={openingChat === conversation.matchId}
                   onClick={() => handleOpenChat(conversation.matchId, conversation.conversationId)}
+                  onLongPress={() => handleLongPress(conversation)}
                 />
               ))}
             </div>
@@ -87,6 +119,14 @@ export default function Messages() {
           open={showProfileGate}
           onOpenChange={setShowProfileGate}
           action="message"
+        />
+
+        {/* Conversation Action Sheet */}
+        <ConversationActionSheet
+          open={showActionSheet}
+          onOpenChange={setShowActionSheet}
+          userName={selectedConversation?.otherUserName || ''}
+          onDelete={handleDeleteConversation}
         />
       </div>
     </PageLayout>
