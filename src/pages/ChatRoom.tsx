@@ -6,11 +6,12 @@ import { useBlocking } from '@/hooks/useBlocking';
 import { useMatches } from '@/hooks/useMatches';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { useChatScroll } from '@/hooks/useChatScroll';
+import { usePremium } from '@/hooks/usePremium';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Send, MoreVertical, Flag, Ban, Loader2, ShieldAlert, ChevronLeft } from 'lucide-react';
+import { Send, MoreVertical, Flag, Ban, Loader2, ShieldAlert, ChevronLeft, Sparkles } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { TypingIndicator } from '@/components/chat/TypingIndicator';
@@ -19,6 +20,7 @@ import { ChatHeader } from '@/components/chat/ChatHeader';
 import { NewMessagesButton } from '@/components/chat/NewMessagesButton';
 import { DateSeparator, isDifferentDay } from '@/components/chat/DateSeparator';
 import { BlockDialog, ReportDialog } from '@/components/BlockReportDialog';
+import { ChatLimitBanner } from '@/components/chat/ChatLimitBanner';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -32,6 +34,7 @@ interface OtherUser {
   displayName: string;
   photoUrl: string;
   lastActiveAt?: Date;
+  isPremium?: boolean;
 }
 
 interface CafeInfo {
@@ -48,6 +51,7 @@ export default function ChatRoom() {
   const { blockUser, reportUser } = useBlocking();
   const { hasMatchWith, loading: matchesLoading } = useMatches();
   const { resetUnreadCount } = useNotifications();
+  const { isPremium } = usePremium();
   
   const [messageInput, setMessageInput] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -105,8 +109,8 @@ export default function ChatRoom() {
 
       const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id;
 
-      // Fetch profile, check-in, and cafe info
-      const [profileRes, checkInRes, cafeRes] = await Promise.all([
+      // Fetch profile, check-in, cafe info, and premium status
+      const [profileRes, checkInRes, cafeRes, subscriptionRes] = await Promise.all([
         supabase
           .from('profiles')
           .select('user_id, display_name, photo_url')
@@ -123,11 +127,21 @@ export default function ChatRoom() {
           .select('id, name')
           .eq('id', conv.cafe_id)
           .maybeSingle(),
+        supabase
+          .from('subscriptions')
+          .select('status, expires_at')
+          .eq('user_id', otherUserId)
+          .maybeSingle(),
       ]);
 
       const profile = profileRes.data;
       const checkIn = checkInRes.data;
       const cafe = cafeRes.data;
+      const subscription = subscriptionRes.data;
+      
+      // Check if other user is premium
+      const isOtherUserPremium = subscription?.status === 'active' && 
+        (!subscription?.expires_at || new Date(subscription.expires_at) > new Date());
 
       if (profile) {
         setOtherUser({
@@ -135,6 +149,7 @@ export default function ChatRoom() {
           displayName: profile.display_name || 'Anonymous',
           photoUrl: profile.photo_url || '',
           lastActiveAt: checkIn?.last_active_at ? new Date(checkIn.last_active_at) : undefined,
+          isPremium: isOtherUserPremium,
         });
       }
 
@@ -330,7 +345,7 @@ export default function ChatRoom() {
 
   return (
     <div className="min-h-screen bg-secondary/20 flex flex-col">
-      {/* Header with online status */}
+      {/* Header with online status and premium badge */}
       <ChatHeader
         userName={otherUser?.displayName || 'User'}
         userPhotoUrl={otherUser?.photoUrl}
@@ -338,6 +353,7 @@ export default function ChatRoom() {
         isTyping={isOtherUserTyping}
         typingText={t.chat.typing}
         onBack={() => navigate('/messages')}
+        isPremium={otherUser?.isPremium}
         actions={
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -400,12 +416,15 @@ export default function ChatRoom() {
                     timestamp={message.createdAt}
                     isOwn={isOwn}
                     isRead={!!message.readAt}
+                    readAt={message.readAt}
                     isFirstInGroup={message.isFirstInGroup}
                     isLastInGroup={message.isLastInGroup}
                     isLastOwnMessage={message.id === lastOwnMessageId}
                     isFirstMessage={message.isFirstMessage}
                     isDeleted={!!message.deletedAt}
                     status={message.status}
+                    isPremiumSender={!isOwn && otherUser?.isPremium}
+                    isPremiumViewer={isPremium}
                     onRetry={message.status === 'failed' && message.clientId ? () => retryMessage(message.clientId!, message.content) : undefined}
                     onDelete={isOwn && !message.deletedAt ? () => softDeleteMessage(message.id) : undefined}
                   />
@@ -430,8 +449,20 @@ export default function ChatRoom() {
         label={t.chat.newMessages}
       />
 
-      {/* Message input - refined and warm */}
+      {/* Chat limit banner for free users */}
+      <div className="fixed bottom-20 left-0 right-0 z-40">
+        <ChatLimitBanner />
+      </div>
+
+      {/* Message input - refined and warm with Premium hint */}
       <div className="fixed bottom-0 left-0 right-0 px-4 py-3 bg-background/95 backdrop-blur-md border-t border-border">
+        {/* Premium visibility hint */}
+        {isPremium && (
+          <div className="flex items-center justify-center gap-1.5 mb-2 text-xs text-amber-600 dark:text-amber-400">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Mesajların daha görünür</span>
+          </div>
+        )}
         <div className="flex items-end gap-3">
           <textarea
             ref={inputRef}
@@ -442,9 +473,14 @@ export default function ChatRoom() {
             }}
             onKeyDown={handleKeyDown}
             onBlur={() => setTyping(false)}
-            placeholder={t.chat.typeMessage}
+            placeholder={isPremium ? "Mesajın daha görünür ✨" : t.chat.typeMessage}
             rows={1}
-            className="flex-1 resize-none rounded-2xl px-4 py-3 text-sm bg-secondary/60 border-0 focus:outline-none focus:ring-1 focus:ring-primary/40 placeholder:text-muted-foreground/60 leading-6 max-h-[88px] overflow-y-auto scrollbar-thin"
+            className={cn(
+              "flex-1 resize-none rounded-2xl px-4 py-3 text-sm border-0 focus:outline-none focus:ring-1 leading-6 max-h-[88px] overflow-y-auto scrollbar-thin",
+              isPremium 
+                ? "bg-amber-500/5 focus:ring-amber-500/40 placeholder:text-amber-600/60 dark:placeholder:text-amber-400/60" 
+                : "bg-secondary/60 focus:ring-primary/40 placeholder:text-muted-foreground/60"
+            )}
             maxLength={2000}
           />
           <Button

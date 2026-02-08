@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils';
 import { InitialsAvatar } from '@/components/InitialsAvatar';
 import { useI18n } from '@/contexts/I18nContext';
 import { isActiveNow } from '@/lib/activityTime';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Zap, Crown } from 'lucide-react';
 
 interface InboxItemProps {
   id: string;
@@ -15,6 +15,7 @@ interface InboxItemProps {
   isTyping?: boolean;
   lastActiveAt?: Date;
   isLoading?: boolean;
+  isPremiumUser?: boolean;
   onClick: () => void;
 }
 
@@ -46,6 +47,7 @@ export function InboxItem({
   isTyping,
   lastActiveAt,
   isLoading,
+  isPremiumUser = false,
   onClick,
 }: InboxItemProps) {
   const { t } = useI18n();
@@ -60,27 +62,40 @@ export function InboxItem({
         'w-full flex items-center gap-3 px-4 py-3',
         'transition-all duration-150 ease-out',
         'hover:bg-secondary/60 active:bg-secondary/80 active:scale-[0.99]',
-        hasUnread && 'bg-secondary/30'
+        hasUnread && 'bg-secondary/30',
+        // Premium user highlight
+        isPremiumUser && hasUnread && 'bg-amber-500/5'
       )}
     >
-      {/* Avatar with online indicator */}
+      {/* Avatar with online indicator and premium ring */}
       <div className="relative flex-shrink-0">
-        {userPhotoUrl ? (
-          <img
-            src={userPhotoUrl}
-            alt={userName}
-            className="w-12 h-12 rounded-full object-cover"
-          />
-        ) : (
-          <InitialsAvatar 
-            name={userName} 
-            size="md" 
-            className="w-12 h-12"
-          />
-        )}
+        <div className={cn(
+          "rounded-full",
+          isPremiumUser && "ring-2 ring-amber-500/50"
+        )}>
+          {userPhotoUrl ? (
+            <img
+              src={userPhotoUrl}
+              alt={userName}
+              className="w-12 h-12 rounded-full object-cover"
+            />
+          ) : (
+            <InitialsAvatar 
+              name={userName} 
+              size="md" 
+              className="w-12 h-12"
+            />
+          )}
+        </div>
         {/* Online indicator */}
         {isOnline && (
           <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-background" />
+        )}
+        {/* Premium crown badge */}
+        {isPremiumUser && !isOnline && (
+          <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center border-2 border-background">
+            <Crown className="w-2.5 h-2.5 text-white" />
+          </div>
         )}
       </div>
 
@@ -88,12 +103,17 @@ export function InboxItem({
       <div className="flex-1 min-w-0 text-left">
         {/* Top row: Name + Time */}
         <div className="flex items-center justify-between gap-2 mb-0.5">
-          <span className={cn(
-            'text-[15px] truncate',
-            hasUnread ? 'font-semibold text-foreground' : 'font-medium text-foreground'
-          )}>
-            {userName}
-          </span>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className={cn(
+              'text-[15px] truncate',
+              hasUnread ? 'font-semibold text-foreground' : 'font-medium text-foreground'
+            )}>
+              {userName}
+            </span>
+            {isPremiumUser && (
+              <Crown className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+            )}
+          </div>
           <span className="text-xs text-muted-foreground flex-shrink-0">
             {formatSmartTime(lastMessageTime, t)}
           </span>
@@ -101,6 +121,10 @@ export function InboxItem({
 
         {/* Middle row: Last message or typing */}
         <div className="flex items-center gap-2">
+          {/* Priority lightning for premium unread messages */}
+          {isPremiumUser && hasUnread && !isTyping && (
+            <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500 flex-shrink-0" />
+          )}
           {isTyping ? (
             <span className="text-sm text-primary italic flex items-center gap-1">
               {t.chat.typing}
@@ -139,7 +163,12 @@ export function InboxItem({
         {isLoading ? (
           <Loader2 className="w-4 h-4 animate-spin text-primary" />
         ) : hasUnread ? (
-          <span className="min-w-5 h-5 px-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-full flex items-center justify-center">
+          <span className={cn(
+            "min-w-5 h-5 px-1.5 text-xs font-semibold rounded-full flex items-center justify-center",
+            isPremiumUser 
+              ? "bg-amber-500 text-white" 
+              : "bg-primary text-primary-foreground"
+          )}>
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         ) : null}
