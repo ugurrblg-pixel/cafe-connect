@@ -4,9 +4,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
 // Timing constants for natural typing feel
-const TYPING_SHOW_DELAY_MS = 400;    // Wait before showing typing
-const TYPING_HIDE_DELAY_MS = 1500;   // Wait 1.5s before hiding after stop
-const TYPING_BROADCAST_THROTTLE_MS = 2000; // Auto-stop after inactivity
+const TYPING_SHOW_DELAY_MS = 300;    // Wait before showing typing (reduced for faster response)
+const TYPING_HIDE_DELAY_MS = 2000;   // Wait 2s before hiding after stop
+const TYPING_BROADCAST_THROTTLE_MS = 1500; // Auto-stop after inactivity
+const TYPING_SEND_DEBOUNCE_MS = 300; // Debounce typing broadcasts
 
 interface UseTypingIndicatorReturn {
   isOtherUserTyping: boolean;
@@ -20,11 +21,13 @@ export function useTypingIndicator(conversationId: string, otherUserId: string):
   
   const channelRef = useRef<RealtimeChannel | null>(null);
   const lastTypingRef = useRef<boolean>(false);
+  const lastBroadcastTimeRef = useRef<number>(0);
   
   // Timers for debouncing
   const showTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
   const autoStopTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const sendDebounceRef = useRef<NodeJS.Timeout | null>(null);
   
   // Internal state to track raw typing signal
   const rawTypingRef = useRef<boolean>(false);
@@ -87,43 +90,59 @@ export function useTypingIndicator(conversationId: string, otherUserId: string):
         }, TYPING_HIDE_DELAY_MS);
       }
     }
-  }, [isOtherUserTyping, clearAllTimers]);
+  }, [isOtherUserTyping]);
 
-  // Send typing status (debounced)
+  // Send typing status (debounced and throttled)
   const setTyping = useCallback((isTyping: boolean) => {
     if (!channelRef.current || !user) return;
     
-    // Only send if status changed
-    if (lastTypingRef.current === isTyping) return;
-    lastTypingRef.current = isTyping;
-
-    channelRef.current.send({
-      type: 'broadcast',
-      event: 'typing',
-      payload: { userId: user.id, isTyping },
-    });
-
-    // Auto-stop typing after throttle period
-    if (isTyping) {
-      if (autoStopTimerRef.current) {
-        clearTimeout(autoStopTimerRef.current);
-      }
-      autoStopTimerRef.current = setTimeout(() => {
-        if (channelRef.current && user && lastTypingRef.current) {
-          channelRef.current.send({
-            type: 'broadcast',
-            event: 'typing',
-            payload: { userId: user.id, isTyping: false },
-          });
-          lastTypingRef.current = false;
-        }
-      }, TYPING_BROADCAST_THROTTLE_MS);
-    } else {
-      if (autoStopTimerRef.current) {
-        clearTimeout(autoStopTimerRef.current);
-        autoStopTimerRef.current = null;
-      }
+    // Clear previous debounce timer
+    if (sendDebounceRef.current) {
+      clearTimeout(sendDebounceRef.current);
     }
+    
+    // Debounce the typing broadcast
+    sendDebounceRef.current = setTimeout(() => {
+      // Only send if status changed
+      if (lastTypingRef.current === isTyping) return;
+      
+      // Throttle broadcasts (don't send more than once per TYPING_SEND_DEBOUNCE_MS)
+      const now = Date.now();
+      if (isTyping && now - lastBroadcastTimeRef.current < TYPING_SEND_DEBOUNCE_MS) {
+        return;
+      }
+      
+      lastTypingRef.current = isTyping;
+      lastBroadcastTimeRef.current = now;
+
+      channelRef.current?.send({
+        type: 'broadcast',
+        event: 'typing',
+        payload: { userId: user.id, isTyping },
+      });
+
+      // Auto-stop typing after throttle period
+      if (isTyping) {
+        if (autoStopTimerRef.current) {
+          clearTimeout(autoStopTimerRef.current);
+        }
+        autoStopTimerRef.current = setTimeout(() => {
+          if (channelRef.current && user && lastTypingRef.current) {
+            channelRef.current.send({
+              type: 'broadcast',
+              event: 'typing',
+              payload: { userId: user.id, isTyping: false },
+            });
+            lastTypingRef.current = false;
+          }
+        }, TYPING_BROADCAST_THROTTLE_MS);
+      } else {
+        if (autoStopTimerRef.current) {
+          clearTimeout(autoStopTimerRef.current);
+          autoStopTimerRef.current = null;
+        }
+      }
+    }, 50); // Small debounce to batch rapid input changes
   }, [user]);
 
   useEffect(() => {
@@ -146,6 +165,9 @@ export function useTypingIndicator(conversationId: string, otherUserId: string):
       clearAllTimers();
       if (autoStopTimerRef.current) {
         clearTimeout(autoStopTimerRef.current);
+      }
+      if (sendDebounceRef.current) {
+        clearTimeout(sendDebounceRef.current);
       }
       
       if (channelRef.current) {
