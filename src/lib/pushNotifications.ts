@@ -2,20 +2,35 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface SendPushParams {
   userId: string;
-  type: 'wave' | 'match' | 'message';
-  title: string;
-  body: string;
+  type: 'wave' | 'match' | 'message' | 'activity_spike';
   data?: {
     url?: string;
     conversationId?: string;
     fromUserId?: string;
+    cafeId?: string;
   };
+  // Timezone offset in minutes (from Date.getTimezoneOffset())
+  timezoneOffset?: number;
+}
+
+/**
+ * Get user's timezone offset in minutes
+ * Negative values = ahead of UTC (e.g., UTC+2 = -120)
+ */
+function getTimezoneOffset(): number {
+  return new Date().getTimezoneOffset();
 }
 
 export async function sendPushNotification(params: SendPushParams): Promise<boolean> {
   try {
+    // Include timezone offset for quiet hours calculation
+    const payload = {
+      ...params,
+      timezoneOffset: params.timezoneOffset ?? getTimezoneOffset(),
+    };
+
     const { data, error } = await supabase.functions.invoke('send-push-notification', {
-      body: params,
+      body: payload,
     });
 
     if (error) {
@@ -23,7 +38,11 @@ export async function sendPushNotification(params: SendPushParams): Promise<bool
       return false;
     }
 
-    console.log('Push notification sent:', data);
+    // Log skip reasons for debugging
+    if (data?.skipped) {
+      console.log(`Push skipped: ${data.reason}`);
+    }
+
     return data?.success ?? false;
   } catch (error) {
     console.error('Error invoking push function:', error);
@@ -31,30 +50,35 @@ export async function sendPushNotification(params: SendPushParams): Promise<bool
   }
 }
 
-// Helper functions for specific notification types
+// ============= Privacy-safe notification helpers =============
+// These do NOT expose sender name or message content in the push payload
+// The edge function uses predefined copy for privacy
+
+/**
+ * Send wave notification (privacy-safe - no sender name exposed)
+ */
 export async function sendWaveNotification(
   toUserId: string,
-  fromUserName: string
+  _fromUserName: string // Kept for backward compat, but not sent
 ): Promise<boolean> {
   return sendPushNotification({
     userId: toUserId,
     type: 'wave',
-    title: 'Yeni Wave! 👋',
-    body: `${fromUserName} sana el salladı`,
     data: { url: '/notifications' },
   });
 }
 
+/**
+ * Send match notification (privacy-safe)
+ */
 export async function sendMatchNotification(
   toUserId: string,
-  fromUserName: string,
+  _fromUserName: string, // Not exposed in push
   conversationId?: string
 ): Promise<boolean> {
   return sendPushNotification({
     userId: toUserId,
     type: 'match',
-    title: 'Eşleşme! 🎉',
-    body: `${fromUserName} ile eşleştin`,
     data: { 
       url: conversationId ? `/chat/${conversationId}` : '/messages',
       conversationId,
@@ -62,24 +86,38 @@ export async function sendMatchNotification(
   });
 }
 
+/**
+ * Send message notification (privacy-safe - no message preview)
+ */
 export async function sendMessageNotification(
   toUserId: string,
-  fromUserName: string,
+  _fromUserName: string, // Not exposed in push
   conversationId: string,
-  messagePreview?: string
+  _messagePreview?: string // Not exposed in push
 ): Promise<boolean> {
-  const preview = messagePreview 
-    ? messagePreview.slice(0, 50) + (messagePreview.length > 50 ? '...' : '')
-    : 'Yeni mesajın var';
-
   return sendPushNotification({
     userId: toUserId,
     type: 'message',
-    title: fromUserName,
-    body: preview,
     data: { 
       url: `/chat/${conversationId}`,
       conversationId,
+    },
+  });
+}
+
+/**
+ * Send activity spike notification (max once per day per user)
+ */
+export async function sendActivitySpikeNotification(
+  toUserId: string,
+  cafeId: string
+): Promise<boolean> {
+  return sendPushNotification({
+    userId: toUserId,
+    type: 'activity_spike',
+    data: {
+      url: `/cafe/${cafeId}`,
+      cafeId,
     },
   });
 }
