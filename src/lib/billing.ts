@@ -1,12 +1,15 @@
 /**
  * Google Play Billing Service
  * 
- * This module provides placeholder logic for Google Play Billing integration.
- * When building the Android app with Capacitor, you'll need to:
+ * This module provides the interface for Google Play Billing integration.
+ * When building the Android app with Capacitor, you must:
  * 
- * 1. Install @nicepayment/nicepay-react-native or capacitor-google-play-billing
+ * 1. Install capacitor-google-play-billing or @nicepayment/nicepay-react-native
  * 2. Configure your Google Play Console with in-app products
- * 3. Replace these placeholder functions with actual billing calls
+ * 3. Replace the placeholder functions with actual billing calls
+ * 
+ * IMPORTANT: All purchases MUST go through Google Play Billing.
+ * No simulated purchases are allowed.
  */
 
 import { supabase } from '@/integrations/supabase/client';
@@ -35,8 +38,8 @@ export const PRODUCT_IDS = {
   YEARLY: 'cafe_premium_yearly',
 } as const;
 
-// Mock products for development
-const MOCK_PRODUCTS: BillingProduct[] = [
+// Display products for UI (actual prices come from Google Play)
+const DISPLAY_PRODUCTS: BillingProduct[] = [
   {
     productId: PRODUCT_IDS.MONTHLY,
     title: 'Premium Aylık',
@@ -60,186 +63,263 @@ const MOCK_PRODUCTS: BillingProduct[] = [
 ];
 
 /**
- * Check if billing is available on this device
- * In production, this will check for Google Play availability
+ * Check if Google Play Billing is available
+ * Returns true only when running on Android with proper billing setup
  */
 export async function isBillingAvailable(): Promise<boolean> {
-  // Placeholder: Check if running on Android with Google Play
+  // Check if running on Android
   const isAndroid = /Android/i.test(navigator.userAgent);
   
-  // In development, always return true for testing
-  if (import.meta.env.DEV) {
-    return true;
+  if (!isAndroid) {
+    console.log('Billing not available: Not running on Android');
+    return false;
   }
   
-  return isAndroid;
+  // Check if Capacitor billing plugin is available
+  // This will be true only when the native plugin is properly integrated
+  const hasNativeBilling = typeof (window as any).Capacitor !== 'undefined' && 
+    typeof (window as any).CapacitorGooglePlayBilling !== 'undefined';
+  
+  if (!hasNativeBilling) {
+    console.log('Billing not available: Native Google Play Billing plugin not found');
+    return false;
+  }
+  
+  return true;
+}
+
+/**
+ * Check if billing SDK is ready for purchases
+ */
+export async function isBillingReady(): Promise<boolean> {
+  const available = await isBillingAvailable();
+  if (!available) return false;
+  
+  try {
+    // TODO: Call actual billing SDK to check connection
+    // const billing = (window as any).CapacitorGooglePlayBilling;
+    // return await billing.isReady();
+    return false; // Not ready until native SDK is integrated
+  } catch (error) {
+    console.error('Error checking billing status:', error);
+    return false;
+  }
 }
 
 /**
  * Get available subscription products from Google Play
+ * Returns display products for UI, actual prices come from Google Play
  */
 export async function getProducts(): Promise<BillingProduct[]> {
-  // Placeholder: Return mock products
-  // In production, query Google Play Billing API
+  const billingReady = await isBillingReady();
+  
+  if (!billingReady) {
+    // Return display products for UI even if billing isn't ready
+    // This allows showing the subscription page with "Coming Soon"
+    return DISPLAY_PRODUCTS;
+  }
   
   try {
     // TODO: Replace with actual Google Play Billing call
-    // const products = await GooglePlayBilling.getProducts([
-    //   PRODUCT_IDS.MONTHLY,
-    //   PRODUCT_IDS.YEARLY,
-    // ]);
+    // const billing = (window as any).CapacitorGooglePlayBilling;
+    // const products = await billing.getProducts({
+    //   productIds: [PRODUCT_IDS.MONTHLY, PRODUCT_IDS.YEARLY],
+    //   productType: 'subs'
+    // });
     // return products;
     
-    return MOCK_PRODUCTS;
+    return DISPLAY_PRODUCTS;
   } catch (error) {
-    console.error('Error fetching products:', error);
-    return MOCK_PRODUCTS;
+    console.error('Error fetching products from Google Play:', error);
+    return DISPLAY_PRODUCTS;
   }
 }
 
 /**
- * Initiate a purchase flow for a subscription
+ * Initiate a purchase flow through Google Play Billing
+ * 
+ * IMPORTANT: This MUST use real Google Play Billing.
+ * No simulated or dev purchases are allowed.
  */
 export async function purchaseSubscription(
   productId: string,
   userId: string
 ): Promise<PurchaseResult> {
-  try {
-    // Placeholder: Simulate purchase flow
-    // In production, call Google Play Billing API
-    
-    // TODO: Replace with actual Google Play Billing call
-    // const result = await GooglePlayBilling.purchase(productId, {
-    //   accountId: userId,
-    // });
-    
-    // For development, simulate a successful purchase
-    if (import.meta.env.DEV) {
-      // Create/update subscription in database
-      const expiresAt = productId === PRODUCT_IDS.YEARLY
-        ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-
-      const { error } = await supabase
-        .from('subscriptions')
-        .upsert({
-          user_id: userId,
-          plan_type: productId === PRODUCT_IDS.YEARLY ? 'yearly' : 'monthly',
-          google_play_product_id: productId,
-          google_play_purchase_token: `dev_token_${Date.now()}`,
-          status: 'active',
-          started_at: new Date().toISOString(),
-          expires_at: expiresAt.toISOString(),
-        }, { onConflict: 'user_id' });
-
-      if (error) throw error;
-
-      return {
-        success: true,
-        purchaseToken: `dev_token_${Date.now()}`,
-        productId,
-      };
-    }
-
-    // In production, this would not be reached without actual billing integration
+  const billingReady = await isBillingReady();
+  
+  if (!billingReady) {
     return {
       success: false,
-      error: 'Billing not available. Please update the app.',
+      error: 'Google Play Billing henüz hazır değil. Uygulama güncellemesini bekleyin.',
+    };
+  }
+  
+  try {
+    // TODO: Replace with actual Google Play Billing purchase flow
+    // 
+    // const billing = (window as any).CapacitorGooglePlayBilling;
+    // 
+    // // 1. Launch Google Play purchase UI
+    // const purchaseResult = await billing.purchase({
+    //   productId: productId,
+    //   accountId: userId, // For user-purchase mapping
+    // });
+    // 
+    // if (!purchaseResult.success) {
+    //   return {
+    //     success: false,
+    //     error: purchaseResult.error || 'Satın alma iptal edildi',
+    //   };
+    // }
+    // 
+    // // 2. Send purchase token to backend for verification
+    // const verificationResult = await verifyPurchaseOnBackend(
+    //   purchaseResult.purchaseToken,
+    //   productId,
+    //   userId
+    // );
+    // 
+    // if (!verificationResult.success) {
+    //   return {
+    //     success: false,
+    //     error: 'Satın alma doğrulanamadı. Lütfen tekrar deneyin.',
+    //   };
+    // }
+    // 
+    // // 3. Acknowledge the purchase
+    // await billing.acknowledgePurchase({
+    //   purchaseToken: purchaseResult.purchaseToken,
+    // });
+    // 
+    // return {
+    //   success: true,
+    //   purchaseToken: purchaseResult.purchaseToken,
+    //   productId: productId,
+    // };
+    
+    // Until native SDK is integrated, return not available
+    return {
+      success: false,
+      error: 'Google Play Billing henüz hazır değil. Uygulama güncellemesini bekleyin.',
     };
   } catch (error) {
     console.error('Purchase error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Purchase failed',
+      error: error instanceof Error ? error.message : 'Satın alma başarısız oldu',
     };
   }
 }
 
 /**
- * Restore previous purchases
+ * Verify purchase token with backend
+ * This should call an edge function that verifies with Google Play API
+ */
+async function verifyPurchaseOnBackend(
+  purchaseToken: string,
+  productId: string,
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data, error } = await supabase.functions.invoke('verify-google-purchase', {
+      body: {
+        purchaseToken,
+        productId,
+        userId,
+      },
+    });
+    
+    if (error) {
+      console.error('Backend verification error:', error);
+      return { success: false, error: error.message };
+    }
+    
+    return { success: data?.verified === true };
+  } catch (error) {
+    console.error('Backend verification failed:', error);
+    return { success: false, error: 'Sunucu doğrulaması başarısız' };
+  }
+}
+
+/**
+ * Restore previous purchases from Google Play
  */
 export async function restorePurchases(userId: string): Promise<PurchaseResult> {
-  try {
-    // Placeholder: Query Google Play for purchase history
-    // TODO: Replace with actual Google Play Billing call
-    // const purchases = await GooglePlayBilling.getPurchaseHistory();
-    
-    // Check if user has active subscription in database
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('status', 'active')
-      .maybeSingle();
+  const billingReady = await isBillingReady();
+  
+  if (!billingReady) {
+    // Check database for existing subscription even if billing isn't ready
+    try {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .maybeSingle();
 
-    if (error) throw error;
+      if (error) throw error;
 
-    if (data) {
+      if (data && data.expires_at && new Date(data.expires_at) > new Date()) {
+        return {
+          success: true,
+          productId: data.google_play_product_id || undefined,
+        };
+      }
+
       return {
-        success: true,
-        productId: data.google_play_product_id || undefined,
+        success: false,
+        error: 'Aktif abonelik bulunamadı',
+      };
+    } catch (error) {
+      console.error('Restore error:', error);
+      return {
+        success: false,
+        error: 'Geri yükleme başarısız oldu',
       };
     }
-
+  }
+  
+  try {
+    // TODO: Replace with actual Google Play restore
+    // const billing = (window as any).CapacitorGooglePlayBilling;
+    // const purchases = await billing.getPurchaseHistory({ productType: 'subs' });
+    // 
+    // for (const purchase of purchases) {
+    //   const verification = await verifyPurchaseOnBackend(
+    //     purchase.purchaseToken,
+    //     purchase.productId,
+    //     userId
+    //   );
+    //   
+    //   if (verification.success) {
+    //     return {
+    //       success: true,
+    //       purchaseToken: purchase.purchaseToken,
+    //       productId: purchase.productId,
+    //     };
+    //   }
+    // }
+    
     return {
       success: false,
-      error: 'No active subscription found',
+      error: 'Aktif abonelik bulunamadı',
     };
   } catch (error) {
     console.error('Restore error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Restore failed',
+      error: error instanceof Error ? error.message : 'Geri yükleme başarısız oldu',
     };
   }
 }
 
 /**
  * Cancel subscription
- * Note: This only marks as cancelled locally. User must cancel via Google Play
+ * Note: User must cancel via Google Play Subscriptions
  */
 export async function cancelSubscription(userId: string): Promise<boolean> {
-  try {
-    const { error } = await supabase
-      .from('subscriptions')
-      .update({ status: 'cancelled' })
-      .eq('user_id', userId);
-
-    if (error) throw error;
-    return true;
-  } catch (error) {
-    console.error('Cancel error:', error);
-    return false;
-  }
-}
-
-/**
- * Verify a purchase with Google Play
- * This should be called from a secure backend
- */
-export async function verifyPurchase(
-  purchaseToken: string,
-  productId: string
-): Promise<boolean> {
-  // Placeholder: Verify purchase with Google Play API
-  // In production, this should be done server-side
-  
-  // TODO: Call edge function to verify with Google Play API
-  // const { data } = await supabase.functions.invoke('verify-purchase', {
-  //   body: { purchaseToken, productId }
-  // });
-  
-  console.log('Verify purchase:', { purchaseToken, productId });
-  return true;
-}
-
-/**
- * Acknowledge a purchase (required by Google Play)
- */
-export async function acknowledgePurchase(purchaseToken: string): Promise<boolean> {
-  // Placeholder: Acknowledge purchase with Google Play
-  // TODO: Replace with actual acknowledgement call
-  
-  console.log('Acknowledge purchase:', purchaseToken);
+  // Subscriptions can only be cancelled through Google Play
+  // Open Google Play subscription management
+  window.open('https://play.google.com/store/account/subscriptions', '_blank');
   return true;
 }
