@@ -15,9 +15,12 @@ export interface PremiumFeatures {
   unlimitedChats: boolean;
   profileViews: boolean;
   hideLastSeen: boolean;
+  seeLastSeen: boolean;
   readReceipts: boolean;
   boostProfile: boolean;
   deleteForBoth: boolean;
+  extendedRadius: boolean;
+  priorityVisibility: boolean;
 }
 
 interface PremiumContextType {
@@ -48,9 +51,12 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     unlimitedChats: isPremium,
     profileViews: isPremium,
     hideLastSeen: isPremium,
+    seeLastSeen: isPremium,
     readReceipts: isPremium,
     boostProfile: isPremium,
     deleteForBoth: isPremium,
+    extendedRadius: isPremium,
+    priorityVisibility: isPremium,
   };
 
   const remainingChats = isPremium ? Infinity : Math.max(0, FREE_CHAT_LIMIT - dailyChatCount);

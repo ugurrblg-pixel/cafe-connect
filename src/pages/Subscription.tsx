@@ -1,98 +1,130 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Crown, Check, ExternalLink, RefreshCw, AlertCircle } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  Crown, 
+  Lock, 
+  Eye, 
+  MessageCircle, 
+  MapPin, 
+  Rocket, 
+  TrendingUp, 
+  Clock,
+  Sparkles,
+  Shield
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
 import { usePremium } from '@/hooks/usePremium';
-import { getProducts, purchaseSubscription, restorePurchases, isBillingReady, BillingProduct, PRODUCT_IDS } from '@/lib/billing';
-import { format } from 'date-fns';
-import { tr } from 'date-fns/locale';
+import { PremiumBadge } from '@/components/PremiumBadge';
 
-const FEATURES = [
-  'Sınırsız sohbet başlatma',
-  'Profil görüntüleyenleri gör',
-  'Son görülme gizleme',
-  'Mesaj okundu bilgisi',
-  '30 dakika profil boost',
-  'Her iki taraftan mesaj silme',
+interface PremiumFeature {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  freeValue?: string;
+  premiumValue: string;
+  highlight?: boolean;
+}
+
+const PREMIUM_FEATURES: PremiumFeature[] = [
+  {
+    icon: Eye,
+    title: 'Profilini kim görüntüledi?',
+    description: 'Seni merak edenleri gör, ilk adımı at',
+    freeValue: 'Kilitli',
+    premiumValue: 'Tüm ziyaretçiler',
+    highlight: true,
+  },
+  {
+    icon: MessageCircle,
+    title: 'Sınırsız mesajlaşma',
+    description: 'Günlük sohbet limiti olmadan bağlantı kur',
+    freeValue: '3 sohbet/gün',
+    premiumValue: 'Sınırsız',
+    highlight: true,
+  },
+  {
+    icon: MapPin,
+    title: 'Genişletilmiş keşif alanı',
+    description: 'Daha geniş çevrede kafeleri ve insanları keşfet',
+    freeValue: '1 km',
+    premiumValue: '5 km',
+  },
+  {
+    icon: Rocket,
+    title: 'Profil Boost',
+    description: 'Kafedeki listede öne çık, daha fazla ilgi gör',
+    freeValue: '—',
+    premiumValue: '30 dk/gün',
+    highlight: true,
+  },
+  {
+    icon: TrendingUp,
+    title: 'Öncelikli görünürlük',
+    description: 'Kafe listelerinde üst sıralarda görün',
+    freeValue: 'Standart',
+    premiumValue: 'Öncelikli',
+  },
+  {
+    icon: Clock,
+    title: 'Son görülme kontrolleri',
+    description: 'Son görülme zamanını gizle, başkalarınınkini gör',
+    freeValue: 'Görünür',
+    premiumValue: 'Tam kontrol',
+  },
 ];
+
+function FeatureCard({ feature, index }: { feature: PremiumFeature; index: number }) {
+  const Icon = feature.icon;
+  
+  return (
+    <div 
+      className={`relative p-4 rounded-2xl border transition-all ${
+        feature.highlight 
+          ? 'bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20' 
+          : 'bg-card border-border'
+      }`}
+      style={{ animationDelay: `${index * 50}ms` }}
+    >
+      {/* Lock indicator */}
+      <div className="absolute top-3 right-3">
+        <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center">
+          <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+        </div>
+      </div>
+
+      <div className="flex gap-3">
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${
+          feature.highlight 
+            ? 'bg-primary/20' 
+            : 'bg-secondary'
+        }`}>
+          <Icon className={`w-5 h-5 ${feature.highlight ? 'text-primary' : 'text-muted-foreground'}`} />
+        </div>
+        
+        <div className="flex-1 min-w-0 pr-6">
+          <h3 className="font-semibold text-foreground text-sm">{feature.title}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{feature.description}</p>
+          
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
+              Ücretsiz: {feature.freeValue}
+            </span>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary font-medium">
+              Premium: {feature.premiumValue}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Subscription() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { subscription, isPremium, refreshSubscription, loading: premiumLoading } = usePremium();
-  const [products, setProducts] = useState<BillingProduct[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<string>(PRODUCT_IDS.YEARLY);
-  const [purchasing, setPurchasing] = useState(false);
-  const [restoring, setRestoring] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [billingReady, setBillingReady] = useState(false);
-  const [checkingBilling, setCheckingBilling] = useState(true);
-
-  useEffect(() => {
-    setCheckingBilling(true);
-    Promise.all([
-      isBillingReady(),
-      getProducts()
-    ]).then(([ready, prods]) => {
-      setBillingReady(ready);
-      setProducts(prods);
-      setCheckingBilling(false);
-    });
-  }, []);
-
-  const handlePurchase = async () => {
-    if (!user || !billingReady) return;
-
-    setPurchasing(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const result = await purchaseSubscription(selectedProduct, user.id);
-      
-      if (result.success) {
-        await refreshSubscription();
-        setSuccess('Premium aboneliğiniz aktif edildi! 🎉');
-      } else {
-        setError(result.error || 'Satın alma başarısız oldu');
-      }
-    } catch (err) {
-      setError('Bir hata oluştu. Lütfen tekrar deneyin.');
-    } finally {
-      setPurchasing(false);
-    }
-  };
-
-  const handleRestore = async () => {
-    if (!user) return;
-
-    setRestoring(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const result = await restorePurchases(user.id);
-      
-      if (result.success) {
-        await refreshSubscription();
-        setSuccess('Aboneliğiniz geri yüklendi!');
-      } else {
-        setError(result.error || 'Geri yükleme başarısız oldu');
-      }
-    } catch (err) {
-      setError('Bir hata oluştu. Lütfen tekrar deneyin.');
-    } finally {
-      setRestoring(false);
-    }
-  };
-
-  const monthlyProduct = products.find(p => p.productId === PRODUCT_IDS.MONTHLY);
-  const yearlyProduct = products.find(p => p.productId === PRODUCT_IDS.YEARLY);
+  const { isPremium, subscription } = usePremium();
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="flex items-center gap-3 px-4 py-3">
@@ -107,192 +139,130 @@ export default function Subscription() {
       </div>
 
       <div className="px-4 py-6 space-y-6 max-w-md mx-auto">
-        {/* Current Status */}
-        {isPremium && subscription && (
-          <div className="bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-2xl p-5 border border-amber-500/30">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-                <Crown className="w-6 h-6 text-white" />
+        {/* Hero Section */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500/90 via-orange-500/90 to-primary/90 p-6 text-white">
+          {/* Background decoration */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
+          
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <Crown className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h2 className="font-semibold text-foreground">Premium Aktif</h2>
+                <h2 className="text-xl font-bold">Cafe Premium</h2>
+                <p className="text-white/80 text-sm">Deneyimini bir üst seviyeye taşı</p>
+              </div>
+            </div>
+            
+            <div className="flex flex-wrap gap-2 mt-4">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm text-sm">
+                <Sparkles className="w-4 h-4" />
+                <span>Özel özellikler</span>
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm text-sm">
+                <Shield className="w-4 h-4" />
+                <span>Güvenli ödeme</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Current Status (if premium) */}
+        {isPremium && subscription && (
+          <div className="p-4 rounded-2xl bg-accent/10 border border-accent/20">
+            <div className="flex items-center gap-3">
+              <PremiumBadge size="lg" />
+              <div>
+                <p className="font-semibold text-foreground">Premium Aktif ✨</p>
                 <p className="text-sm text-muted-foreground">
-                  {subscription.plan_type === 'yearly' ? 'Yıllık' : 'Aylık'} Plan
+                  Tüm özelliklerin kilidi açık
                 </p>
               </div>
             </div>
-            {subscription.expires_at && (
-              <p className="text-sm text-muted-foreground">
-                Yenilenme tarihi: {format(new Date(subscription.expires_at), 'd MMMM yyyy', { locale: tr })}
-              </p>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-3 w-full"
-              onClick={() => {
-                // Open Google Play subscription management
-                window.open('https://play.google.com/store/account/subscriptions', '_blank');
-              }}
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Aboneliği Yönet
-            </Button>
           </div>
         )}
 
-        {/* Features */}
+        {/* Features Grid */}
         <div className="space-y-3">
-          <h3 className="font-semibold text-foreground">Premium Özellikleri</h3>
-          <div className="space-y-2">
-            {FEATURES.map((feature, index) => (
-              <div key={index} className="flex items-center gap-3 p-3 bg-secondary/50 rounded-xl">
-                <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                  <Check className="w-4 h-4 text-primary" />
-                </div>
-                <span className="text-sm text-foreground">{feature}</span>
-              </div>
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-foreground">Premium Özellikleri</h3>
+            <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-full">
+              6 özellik
+            </span>
+          </div>
+          
+          <div className="space-y-3">
+            {PREMIUM_FEATURES.map((feature, index) => (
+              <FeatureCard key={index} feature={feature} index={index} />
             ))}
           </div>
         </div>
 
-        {/* Plan Selection (only show if not premium) */}
-        {!isPremium && (
-          <>
-            {/* Coming Soon Notice (when billing not ready) */}
-            {!checkingBilling && !billingReady && (
-              <div className="flex items-start gap-3 p-4 bg-warning/10 rounded-2xl border border-warning/20">
-                <AlertCircle className="w-6 h-6 text-warning flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium text-foreground">Çok Yakında</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Premium abonelik Google Play Billing üzerinden yakında kullanılabilir olacak. 
-                    Uygulama güncellemelerini takip edin.
-                  </p>
-                </div>
+        {/* Pricing Section */}
+        <div className="space-y-3">
+          <h3 className="font-semibold text-foreground">Planlar</h3>
+          
+          {/* Yearly Plan */}
+          <div className="relative p-4 rounded-2xl border-2 border-primary/30 bg-primary/5">
+            <div className="absolute -top-2.5 left-4 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold">
+              EN POPÜLER
+            </div>
+            <div className="flex justify-between items-center">
+              <div>
+                <div className="font-semibold text-foreground">Yıllık Plan</div>
+                <div className="text-sm text-muted-foreground">₺359,99/yıl</div>
               </div>
-            )}
-
-            <div className="space-y-3">
-              <h3 className="font-semibold text-foreground">Plan Seç</h3>
-              
-              {/* Yearly */}
-              <button
-                onClick={() => setSelectedProduct(PRODUCT_IDS.YEARLY)}
-                disabled={!billingReady}
-                className={`w-full p-4 rounded-2xl border-2 transition-all relative overflow-hidden ${
-                  selectedProduct === PRODUCT_IDS.YEARLY
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50'
-                } ${!billingReady ? 'opacity-60 cursor-not-allowed' : ''}`}
-              >
-                <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-bl-xl">
-                  %40 TASARRUF
-                </div>
-                <div className="flex justify-between items-center">
-                  <div className="text-left">
-                    <div className="font-semibold text-foreground">Yıllık Plan</div>
-                    <div className="text-sm text-muted-foreground">
-                      {yearlyProduct?.price || '₺359,99'}/yıl
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-primary">
-                      ₺29,99<span className="text-sm font-normal text-muted-foreground">/ay</span>
-                    </div>
-                  </div>
-                </div>
-              </button>
-
-              {/* Monthly */}
-              <button
-                onClick={() => setSelectedProduct(PRODUCT_IDS.MONTHLY)}
-                disabled={!billingReady}
-                className={`w-full p-4 rounded-2xl border-2 transition-all ${
-                  selectedProduct === PRODUCT_IDS.MONTHLY
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50'
-                } ${!billingReady ? 'opacity-60 cursor-not-allowed' : ''}`}
-              >
-                <div className="flex justify-between items-center">
-                  <div className="text-left">
-                    <div className="font-semibold text-foreground">Aylık Plan</div>
-                    <div className="text-sm text-muted-foreground">Her ay yenilenir</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-foreground">
-                      {monthlyProduct?.price || '₺49,99'}<span className="text-sm font-normal text-muted-foreground">/ay</span>
-                    </div>
-                  </div>
-                </div>
-              </button>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-primary">₺29,99</div>
+                <div className="text-xs text-muted-foreground">/ay</div>
+              </div>
             </div>
-
-            {/* Messages */}
-            {error && (
-              <p className="text-sm text-destructive text-center p-3 bg-destructive/10 rounded-xl">
-                {error}
-              </p>
-            )}
-            {success && (
-              <p className="text-sm text-accent text-center p-3 bg-accent/10 rounded-xl">
-                {success}
-              </p>
-            )}
-
-            {/* Actions */}
-            <div className="space-y-3">
-              <Button
-                onClick={handlePurchase}
-                disabled={purchasing || premiumLoading || checkingBilling || !billingReady}
-                className="w-full h-14 rounded-2xl text-lg font-semibold"
-              >
-                {checkingBilling ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                    Kontrol ediliyor...
-                  </span>
-                ) : purchasing ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                    İşleniyor...
-                  </span>
-                ) : !billingReady ? (
-                  <>
-                    <Crown className="w-5 h-5 mr-2" />
-                    Çok Yakında
-                  </>
-                ) : (
-                  <>
-                    <Crown className="w-5 h-5 mr-2" />
-                    Premium'a Geç
-                  </>
-                )}
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={handleRestore}
-                disabled={restoring}
-                className="w-full"
-              >
-                {restoring ? (
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                )}
-                Satın Alımları Geri Yükle
-              </Button>
+            <div className="mt-2 px-2 py-1 rounded-full bg-accent/20 text-accent text-xs font-medium inline-block">
+              %40 tasarruf
             </div>
+          </div>
 
-            <p className="text-xs text-muted-foreground text-center">
-              {billingReady 
-                ? 'Abonelik Google Play üzerinden yönetilir. İstediğin zaman iptal edebilirsin. Kalan süre için iade yapılmaz.'
-                : 'Abonelik sadece Google Play Billing üzerinden yapılabilir. Native uygulama gereklidir.'
-              }
+          {/* Monthly Plan */}
+          <div className="p-4 rounded-2xl border border-border bg-card">
+            <div className="flex justify-between items-center">
+              <div>
+                <div className="font-semibold text-foreground">Aylık Plan</div>
+                <div className="text-sm text-muted-foreground">Her ay yenilenir</div>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-foreground">₺49,99</div>
+                <div className="text-xs text-muted-foreground">/ay</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* CTA Button - Disabled */}
+        <div className="space-y-3">
+          <Button
+            disabled
+            className="w-full h-14 rounded-2xl text-lg font-semibold bg-secondary text-muted-foreground cursor-not-allowed"
+          >
+            <Lock className="w-5 h-5 mr-2" />
+            Çok Yakında
+          </Button>
+
+          {/* Disclaimer */}
+          <div className="p-4 rounded-xl bg-muted/50 border border-border">
+            <p className="text-xs text-muted-foreground text-center leading-relaxed">
+              <span className="font-medium text-foreground">ℹ️ Bilgilendirme:</span>{' '}
+              Premium özellikler yakında aktif edilecektir. Şu anda uygulama içinde ödeme alınmamaktadır.
             </p>
-          </>
-        )}
+          </div>
+
+          <p className="text-xs text-muted-foreground text-center">
+            Abonelikler Google Play üzerinden yönetilecektir.
+            <br />
+            İstediğin zaman iptal edebilirsin.
+          </p>
+        </div>
       </div>
     </div>
   );
