@@ -339,7 +339,7 @@ export default function ChatRoom() {
                   isLastInGroup={message.isLastInGroup}
                   isLastOwnMessage={message.id === lastOwnMessageId}
                   status={message.status}
-                  onRetry={message.status === 'failed' && message.tempId ? () => retryMessage(message.tempId!, message.content) : undefined}
+                  onRetry={message.status === 'failed' && message.clientId ? () => retryMessage(message.clientId!, message.content) : undefined}
                 />
               );
             })}
