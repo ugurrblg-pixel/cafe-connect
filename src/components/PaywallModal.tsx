@@ -2,14 +2,12 @@ import { useNavigate } from 'react-router-dom';
 import { 
   X, 
   Crown, 
-  MessageCircle, 
+  Zap, 
   Eye, 
-  Clock, 
-  Rocket, 
-  MapPin,
-  TrendingUp,
+  MessageCircle,
+  Star,
   Lock,
-  Sparkles
+  Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -19,7 +17,11 @@ interface PaywallModalProps {
   trigger?: 'chat_limit' | 'profile_views' | 'boost' | 'read_receipts' | 'discovery_radius' | 'general';
 }
 
-const TRIGGER_MESSAGES: Record<string, { title: string; subtitle: string; icon: React.ElementType }> = {
+const TRIGGER_CONFIG: Record<string, { 
+  title: string; 
+  subtitle: string; 
+  icon: React.ElementType;
+}> = {
   chat_limit: {
     title: 'Günlük sohbet limitine ulaştın',
     subtitle: 'Premium ile sınırsız sohbet başlat',
@@ -32,39 +34,43 @@ const TRIGGER_MESSAGES: Record<string, { title: string; subtitle: string; icon: 
   },
   boost: {
     title: 'Profilini öne çıkar',
-    subtitle: 'Premium ile daha fazla kişiye ulaş',
-    icon: Rocket,
+    subtitle: 'Premium ile kafelerde görünür ol',
+    icon: Zap,
   },
   read_receipts: {
     title: 'Mesaj okundu bilgisi',
     subtitle: 'Premium ile mesajlarının okunup okunmadığını gör',
-    icon: Clock,
+    icon: MessageCircle,
   },
   discovery_radius: {
     title: 'Keşif alanını genişlet',
-    subtitle: 'Premium ile 5 km yarıçapında kafeleri keşfet',
-    icon: MapPin,
+    subtitle: 'Premium ile daha uzak kafeleri keşfet',
+    icon: Star,
   },
   general: {
-    title: 'Premium\'a Geç',
-    subtitle: 'Tüm özelliklerin kilidini aç',
+    title: 'Premium ile fark edil',
+    subtitle: 'Kafelerde öne çık, daha çok tanış',
     icon: Crown,
   },
 };
 
-const QUICK_FEATURES = [
-  { icon: MessageCircle, text: 'Sınırsız sohbet' },
-  { icon: Eye, text: 'Profil görüntüleyenler' },
-  { icon: MapPin, text: '5 km keşif alanı' },
-  { icon: Rocket, text: 'Profil boost' },
-  { icon: TrendingUp, text: 'Öncelikli görünürlük' },
-  { icon: Clock, text: 'Son görülme kontrolü' },
-];
+const COMPARISON = {
+  free: [
+    'Normal görünürlük',
+    'Standart listeleme',
+  ],
+  premium: [
+    'Boost',
+    'Öne çıkan rozet',
+    'Kafelerde üst sıralar',
+    'Daha fazla görünürlük',
+  ],
+};
 
 export function PaywallModal({ isOpen, onClose, trigger = 'general' }: PaywallModalProps) {
   const navigate = useNavigate();
-  const message = TRIGGER_MESSAGES[trigger];
-  const TriggerIcon = message.icon;
+  const config = TRIGGER_CONFIG[trigger];
+  const TriggerIcon = config.icon;
 
   const handleViewPlans = () => {
     onClose();
@@ -92,69 +98,70 @@ export function PaywallModal({ isOpen, onClose, trigger = 'general' }: PaywallMo
         </button>
 
         {/* Header with gradient */}
-        <div className="bg-gradient-to-br from-amber-500/90 via-orange-500/80 to-primary/70 pt-10 pb-8 px-6 text-center text-white">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm mb-4">
-            <TriggerIcon className="w-10 h-10 text-white" />
+        <div className="bg-gradient-to-br from-amber-400 via-orange-500 to-purple-600 pt-10 pb-8 px-6 text-center text-white">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm mb-4">
+            <TriggerIcon className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-2xl font-bold">{message.title}</h2>
-          <p className="text-white/80 mt-2">{message.subtitle}</p>
+          <h2 className="text-2xl font-bold">{config.title}</h2>
+          <p className="text-white/80 mt-2">{config.subtitle}</p>
         </div>
 
-        {/* Features grid */}
+        {/* Comparison */}
         <div className="px-6 py-5">
-          <div className="grid grid-cols-2 gap-2">
-            {QUICK_FEATURES.map((feature, index) => (
-              <div 
-                key={index} 
-                className="flex items-center gap-2 p-3 rounded-xl bg-secondary/50"
-              >
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <feature.icon className="w-4 h-4 text-primary" />
-                </div>
-                <span className="text-xs font-medium text-foreground">{feature.text}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Pricing preview */}
-        <div className="px-6 pb-2">
-          <div className="flex items-center justify-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20">
-            <div className="text-center">
-              <div className="text-sm text-muted-foreground">Aylık</div>
-              <div className="text-lg font-bold text-foreground">₺49,99</div>
+          <div className="grid grid-cols-2 gap-3">
+            {/* Free */}
+            <div className="p-3 rounded-xl bg-secondary/50 border border-border">
+              <h4 className="text-xs font-semibold text-muted-foreground mb-2">ÜCRETSİZ</h4>
+              <ul className="space-y-1.5">
+                {COMPARISON.free.map((item, i) => (
+                  <li key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span className="w-1 h-1 rounded-full bg-muted-foreground" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div className="w-px h-10 bg-border" />
-            <div className="text-center">
-              <div className="text-sm text-muted-foreground">Yıllık</div>
-              <div className="text-lg font-bold text-primary">₺29,99<span className="text-sm font-normal">/ay</span></div>
-              <div className="text-xs text-accent font-medium">%40 tasarruf</div>
+
+            {/* Premium */}
+            <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
+              <h4 className="text-xs font-semibold text-primary mb-2 flex items-center gap-1">
+                <Crown className="w-3 h-3" />
+                PREMIUM
+              </h4>
+              <ul className="space-y-1.5">
+                {COMPARISON.premium.map((item, i) => (
+                  <li key={i} className="flex items-center gap-1.5 text-xs text-foreground">
+                    <Check className="w-3 h-3 text-primary" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </div>
 
         {/* Action buttons */}
-        <div className="px-6 pb-6 pt-4 safe-bottom space-y-3">
+        <div className="px-6 pb-6 pt-2 safe-bottom space-y-3">
           <Button
             onClick={handleViewPlans}
             className="w-full h-14 rounded-2xl text-lg font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
           >
-            <Sparkles className="w-5 h-5 mr-2" />
-            Planları İncele
+            <Crown className="w-5 h-5 mr-2" />
+            Premium'a Geç
           </Button>
           
           <button
             onClick={onClose}
             className="w-full py-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            Şimdilik değil
+            Daha sonra
           </button>
 
           {/* Disclaimer */}
           <div className="flex items-center justify-center gap-2 pt-2">
             <Lock className="w-3.5 h-3.5 text-muted-foreground" />
             <p className="text-xs text-muted-foreground">
-              Premium yakında aktif edilecek
+              Ödeme sistemi yakında aktif edilecek
             </p>
           </div>
         </div>

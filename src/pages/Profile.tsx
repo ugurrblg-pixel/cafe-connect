@@ -10,7 +10,7 @@ import { useNotifications } from '@/contexts/NotificationContext';
 import { usePremium } from '@/hooks/usePremium';
 import { supabase } from '@/integrations/supabase/client';
 import { Purpose } from '@/types';
-import { Edit2, Shield, Bell, HelpCircle, LogOut, MessageCircle, Users, Heart, Eye, EyeOff, BellOff, BellRing, Loader2, Crown, ChevronRight } from 'lucide-react';
+import { Edit2, Shield, Bell, HelpCircle, LogOut, MessageCircle, Users, Heart, Eye, EyeOff, BellOff, BellRing, Loader2, Crown, ChevronRight, Zap } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -240,6 +240,25 @@ export default function Profile() {
                 <p className="text-sm text-muted-foreground">
                   {isPremium ? 'Tüm özellikler açık' : 'Sınırsız sohbet ve daha fazlası'}
                 </p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </div>
+        </section>
+
+        {/* Boost Section */}
+        <section 
+          className="card-elevated p-4 mb-4 cursor-pointer hover:bg-secondary/30 transition-colors"
+          onClick={() => navigate('/boost')}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                <Zap className="w-5 h-5 text-white fill-white" />
+              </div>
+              <div>
+                <p className="font-medium text-foreground">Boost</p>
+                <p className="text-sm text-muted-foreground">Kafede öne çık</p>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
