@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { PageLayout } from '@/components/PageLayout';
 import { InboxItem } from '@/components/InboxItem';
+import { ProfileGateModal } from '@/components/ProfileGateModal';
 import { useInboxData } from '@/hooks/useInboxData';
+import { useProfileCompletion } from '@/hooks/useProfileCompletion';
 import { useI18n } from '@/contexts/I18nContext';
 import { MessageCircle, Coffee } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,9 +15,17 @@ export default function Messages() {
   const navigate = useNavigate();
   const { t } = useI18n();
   const { conversations, loading, createConversation } = useInboxData();
+  const { isComplete: isProfileComplete } = useProfileCompletion();
   const [openingChat, setOpeningChat] = useState<string | null>(null);
+  const [showProfileGate, setShowProfileGate] = useState(false);
 
   const handleOpenChat = async (matchId: string, conversationId: string | null) => {
+    // Gate messaging behind profile completion
+    if (!isProfileComplete) {
+      setShowProfileGate(true);
+      return;
+    }
+
     setOpeningChat(matchId);
     
     let convId = conversationId;
@@ -96,6 +106,13 @@ export default function Messages() {
             </div>
           )}
         </main>
+
+        {/* Profile Gate Modal */}
+        <ProfileGateModal
+          open={showProfileGate}
+          onOpenChange={setShowProfileGate}
+          action="message"
+        />
       </div>
     </PageLayout>
   );

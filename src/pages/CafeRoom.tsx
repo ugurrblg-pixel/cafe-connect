@@ -9,12 +9,14 @@ import { ConnectionIndicator } from '@/components/ConnectionIndicator';
 import { CafeImage } from '@/components/CafeImage';
 import { ChatLimitIndicator } from '@/components/ChatLimitIndicator';
 import { PaywallModal } from '@/components/PaywallModal';
+import { ProfileGateModal, GatedAction } from '@/components/ProfileGateModal';
 import { useCheckIn } from '@/hooks/useCheckIn';
 import { useCafeUsers } from '@/hooks/useCafeUsers';
 import { useCafes } from '@/hooks/useCafes';
 import { useWaves } from '@/hooks/useWaves';
 import { useMatches } from '@/hooks/useMatches';
 import { usePremium } from '@/hooks/usePremium';
+import { useProfileCompletion } from '@/hooks/useProfileCompletion';
 import { useI18n } from '@/contexts/I18nContext';
 import { MapPin, Users, Clock, AlertCircle, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -65,12 +67,15 @@ export default function CafeRoom() {
   const { sendWave, hasWavedAt, hasReceivedWaveFrom } = useWaves();
   const { hasMatchWith, getMatchConversation, createConversationForMatch, matches } = useMatches();
   const { canStartChat, incrementChatCount, isPremium } = usePremium();
+  const { isComplete: isProfileComplete } = useProfileCompletion();
   
   const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [intentFilter, setIntentFilter] = useState<FilterOption>('all');
   const [wavingAt, setWavingAt] = useState<string | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showProfileGate, setShowProfileGate] = useState(false);
+  const [gatedAction, setGatedAction] = useState<GatedAction>('check-in');
 
   const cafe = cafes.find((c) => c.id === id);
   
@@ -105,6 +110,13 @@ export default function CafeRoom() {
   }
 
   const handleCheckIn = async () => {
+    // Gate check-in behind profile completion
+    if (!isProfileComplete) {
+      setGatedAction('check-in');
+      setShowProfileGate(true);
+      return;
+    }
+
     const success = await checkIn();
     if (success) {
       toast.success("You're now visible at " + cafe.name, {
@@ -121,6 +133,13 @@ export default function CafeRoom() {
   };
 
   const handleOpenChat = async (userId: string, userName: string) => {
+    // Gate messaging behind profile completion
+    if (!isProfileComplete) {
+      setGatedAction('message');
+      setShowProfileGate(true);
+      return;
+    }
+
     // Check if matched
     if (!hasMatchWith(userId)) {
       toast.info('Wave at each other first to unlock chat');
@@ -370,6 +389,13 @@ export default function CafeRoom() {
         isOpen={showPaywall}
         onClose={() => setShowPaywall(false)}
         trigger="chat_limit"
+      />
+
+      {/* Profile Gate Modal */}
+      <ProfileGateModal
+        open={showProfileGate}
+        onOpenChange={setShowProfileGate}
+        action={gatedAction}
       />
     </div>
   );

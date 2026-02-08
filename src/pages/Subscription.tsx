@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -12,6 +13,8 @@ import {
   Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ProfileGateModal } from '@/components/ProfileGateModal';
+import { useProfileCompletion } from '@/hooks/useProfileCompletion';
 
 interface PremiumFeature {
   icon: React.ElementType;
@@ -91,6 +94,16 @@ function FeatureCard({ feature }: { feature: PremiumFeature }) {
 
 export default function Subscription() {
   const navigate = useNavigate();
+  const { isComplete: isProfileComplete } = useProfileCompletion();
+  const [showProfileGate, setShowProfileGate] = useState(false);
+
+  const handleUpgrade = () => {
+    if (!isProfileComplete) {
+      setShowProfileGate(true);
+      return;
+    }
+    // Premium upgrade logic would go here
+  };
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -184,7 +197,8 @@ export default function Subscription() {
         {/* CTA Section */}
         <div className="space-y-4 pt-2">
           <Button
-            disabled
+            onClick={handleUpgrade}
+            disabled={isProfileComplete}
             className="w-full h-14 rounded-2xl text-lg font-semibold bg-muted text-muted-foreground cursor-not-allowed opacity-70"
           >
             <Lock className="w-5 h-5 mr-2" />
@@ -208,6 +222,13 @@ export default function Subscription() {
           </p>
         </div>
       </div>
+
+      {/* Profile Gate Modal */}
+      <ProfileGateModal
+        open={showProfileGate}
+        onOpenChange={setShowProfileGate}
+        action="premium"
+      />
     </div>
   );
 }
