@@ -24,6 +24,7 @@ interface Profile {
   purpose: Purpose;
   allow_dms: boolean;
   is_visible: boolean;
+  notifications_enabled: boolean;
 }
 
 export default function Profile() {
@@ -57,6 +58,7 @@ export default function Profile() {
           purpose: data.purpose as Purpose,
           allow_dms: data.allow_dms,
           is_visible: data.is_visible ?? true,
+          notifications_enabled: data.notifications_enabled ?? true,
         });
       }
       setLoading(false);
@@ -106,12 +108,20 @@ export default function Profile() {
   };
 
   const handleNotificationToggle = async () => {
+    if (!profile) return;
     setNotificationLoading(true);
+    
     try {
       if (isSubscribed) {
+        // Unsubscribe from browser push AND update DB preference
         await unsubscribe();
+        await supabase.from('profiles').update({ notifications_enabled: false }).eq('id', profile.id);
+        setProfile({ ...profile, notifications_enabled: false });
       } else {
+        // Subscribe to browser push AND update DB preference
         await subscribe();
+        await supabase.from('profiles').update({ notifications_enabled: true }).eq('id', profile.id);
+        setProfile({ ...profile, notifications_enabled: true });
       }
     } finally {
       setNotificationLoading(false);
