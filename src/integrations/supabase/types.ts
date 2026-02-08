@@ -311,6 +311,7 @@ export type Database = {
           id: string
           is_visible: boolean | null
           name: string
+          notifications_enabled: boolean
           photo_url: string | null
           purpose: string
           updated_at: string
@@ -325,6 +326,7 @@ export type Database = {
           id?: string
           is_visible?: boolean | null
           name?: string
+          notifications_enabled?: boolean
           photo_url?: string | null
           purpose?: string
           updated_at?: string
@@ -339,6 +341,7 @@ export type Database = {
           id?: string
           is_visible?: boolean | null
           name?: string
+          notifications_enabled?: boolean
           photo_url?: string | null
           purpose?: string
           updated_at?: string
