@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { X, Crown, MessageCircle, Eye, Clock, CheckCheck, Rocket, Trash2, Sparkles } from 'lucide-react';
+import { X, Crown, MessageCircle, Eye, Clock, CheckCheck, Rocket, Trash2, Sparkles, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { getProducts, purchaseSubscription, BillingProduct, PRODUCT_IDS } from '@/lib/billing';
+import { getProducts, purchaseSubscription, isBillingReady, BillingProduct, PRODUCT_IDS } from '@/lib/billing';
 import { usePremium } from '@/hooks/usePremium';
 
 interface PaywallModalProps {
@@ -50,18 +50,28 @@ export function PaywallModal({ isOpen, onClose, trigger = 'general' }: PaywallMo
   const [selectedProduct, setSelectedProduct] = useState<string>(PRODUCT_IDS.YEARLY);
   const [purchasing, setPurchasing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [billingReady, setBillingReady] = useState(false);
+  const [checkingBilling, setCheckingBilling] = useState(true);
 
   const message = TRIGGER_MESSAGES[trigger];
 
-  // Load products when modal opens
+  // Check billing availability and load products when modal opens
   useEffect(() => {
     if (isOpen) {
-      getProducts().then(setProducts);
+      setCheckingBilling(true);
+      Promise.all([
+        isBillingReady(),
+        getProducts()
+      ]).then(([ready, prods]) => {
+        setBillingReady(ready);
+        setProducts(prods);
+        setCheckingBilling(false);
+      });
     }
   }, [isOpen]);
 
   const handlePurchase = async () => {
-    if (!user) return;
+    if (!user || !billingReady) return;
 
     setPurchasing(true);
     setError(null);
@@ -137,11 +147,12 @@ export function PaywallModal({ isOpen, onClose, trigger = 'general' }: PaywallMo
           {/* Yearly - Best value */}
           <button
             onClick={() => setSelectedProduct(PRODUCT_IDS.YEARLY)}
+            disabled={!billingReady}
             className={`w-full p-4 rounded-2xl border-2 transition-all relative overflow-hidden ${
               selectedProduct === PRODUCT_IDS.YEARLY
                 ? 'border-primary bg-primary/5'
                 : 'border-border hover:border-primary/50'
-            }`}
+            } ${!billingReady ? 'opacity-60' : ''}`}
           >
             <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-bl-xl">
               %40 TASARRUF
@@ -164,11 +175,12 @@ export function PaywallModal({ isOpen, onClose, trigger = 'general' }: PaywallMo
           {/* Monthly */}
           <button
             onClick={() => setSelectedProduct(PRODUCT_IDS.MONTHLY)}
+            disabled={!billingReady}
             className={`w-full p-4 rounded-2xl border-2 transition-all ${
               selectedProduct === PRODUCT_IDS.MONTHLY
                 ? 'border-primary bg-primary/5'
                 : 'border-border hover:border-primary/50'
-            }`}
+            } ${!billingReady ? 'opacity-60' : ''}`}
           >
             <div className="flex justify-between items-center">
               <div className="text-left">
@@ -191,18 +203,40 @@ export function PaywallModal({ isOpen, onClose, trigger = 'general' }: PaywallMo
           </div>
         )}
 
+        {/* Coming Soon Notice (when billing not ready) */}
+        {!checkingBilling && !billingReady && (
+          <div className="px-6 py-2">
+            <div className="flex items-center gap-2 p-3 bg-warning/10 rounded-xl">
+              <AlertCircle className="w-5 h-5 text-warning flex-shrink-0" />
+              <p className="text-sm text-warning">
+                Premium abonelik yakında Google Play üzerinden kullanılabilir olacak.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Purchase button */}
         <div className="px-6 pb-6 pt-2 safe-bottom">
           <Button
             onClick={handlePurchase}
-            disabled={purchasing}
+            disabled={purchasing || checkingBilling || !billingReady}
             className="w-full h-14 rounded-2xl text-lg font-semibold bg-primary hover:bg-primary/90"
           >
-            {purchasing ? (
+            {checkingBilling ? (
+              <span className="flex items-center gap-2">
+                <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                Kontrol ediliyor...
+              </span>
+            ) : purchasing ? (
               <span className="flex items-center gap-2">
                 <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                 İşleniyor...
               </span>
+            ) : !billingReady ? (
+              <>
+                <Crown className="w-5 h-5 mr-2" />
+                Çok Yakında
+              </>
             ) : (
               <>
                 <Crown className="w-5 h-5 mr-2" />
@@ -212,7 +246,10 @@ export function PaywallModal({ isOpen, onClose, trigger = 'general' }: PaywallMo
           </Button>
           
           <p className="text-xs text-muted-foreground text-center mt-3">
-            İstediğin zaman iptal edebilirsin. Abonelik Google Play üzerinden yönetilir.
+            {billingReady 
+              ? 'İstediğin zaman iptal edebilirsin. Abonelik Google Play üzerinden yönetilir.'
+              : 'Abonelik sadece Google Play Billing üzerinden yapılabilir.'
+            }
           </p>
         </div>
       </div>
