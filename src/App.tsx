@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { I18nProvider } from "@/contexts/I18nContext";
 import { LocationProvider } from "@/contexts/LocationContext";
+import { PremiumProvider } from "@/contexts/PremiumContext";
 import Discover from "./pages/Discover";
 import CafeRoom from "./pages/CafeRoom";
 import Messages from "./pages/Messages";
@@ -18,6 +19,8 @@ import ProfileEdit from "./pages/ProfileEdit";
 import Search from "./pages/Search";
 import Notifications from "./pages/Notifications";
 import Auth from "./pages/Auth";
+import Subscription from "./pages/Subscription";
+import ProfileViewers from "./pages/ProfileViewers";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -129,15 +132,31 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/profile/edit"
-          element={
-            <ProtectedRoute requireProfileComplete={false}>
-              <ProfileEdit />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<NotFound />} />
+          <Route
+            path="/profile/edit"
+            element={
+              <ProtectedRoute requireProfileComplete={false}>
+                <ProfileEdit />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/subscription"
+            element={
+              <ProtectedRoute>
+                <Subscription />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile/viewers"
+            element={
+              <ProtectedRoute>
+                <ProfileViewers />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<NotFound />} />
       </Routes>
       {user && <BottomNav />}
     </div>
@@ -153,9 +172,11 @@ const App = () => (
         <I18nProvider>
           <LocationProvider>
             <AuthProvider>
-              <NotificationProvider>
-                <AppRoutes />
-              </NotificationProvider>
+              <PremiumProvider>
+                <NotificationProvider>
+                  <AppRoutes />
+                </NotificationProvider>
+              </PremiumProvider>
             </AuthProvider>
           </LocationProvider>
         </I18nProvider>
