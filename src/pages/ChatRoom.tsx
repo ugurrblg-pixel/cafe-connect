@@ -16,6 +16,7 @@ import { TypingIndicator } from '@/components/chat/TypingIndicator';
 import { EmptyChat } from '@/components/chat/EmptyChat';
 import { ChatHeader } from '@/components/chat/ChatHeader';
 import { NewMessagesButton } from '@/components/chat/NewMessagesButton';
+import { DateSeparator, isDifferentDay } from '@/components/chat/DateSeparator';
 import { BlockDialog, ReportDialog } from '@/components/BlockReportDialog';
 import { cn } from '@/lib/utils';
 import {
@@ -32,18 +33,24 @@ interface OtherUser {
   lastActiveAt?: Date;
 }
 
+interface CafeInfo {
+  id: string;
+  name: string;
+}
+
 export default function ChatRoom() {
   const { conversationId } = useParams<{ conversationId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useI18n();
-  const { messages, loading, sendMessage, retryMessage } = useChat(conversationId || '');
+  const { messages, loading, sendMessage, retryMessage, softDeleteMessage } = useChat(conversationId || '');
   const { blockUser, reportUser } = useBlocking();
   const { hasMatchWith, loading: matchesLoading } = useMatches();
   
   const [messageInput, setMessageInput] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [otherUser, setOtherUser] = useState<OtherUser | null>(null);
+  const [cafeInfo, setCafeInfo] = useState<CafeInfo | null>(null);
   const [showBlockDialog, setShowBlockDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [hasMatch, setHasMatch] = useState<boolean | null>(null);
@@ -70,14 +77,14 @@ export default function ChatRoom() {
     latestSenderId: latestMessage?.senderId,
   });
 
-  // Fetch other user's info and verify match
+  // Fetch other user's info, cafe info, and verify match
   useEffect(() => {
     const fetchConversation = async () => {
       if (!conversationId || !user) return;
 
       const { data: conv } = await supabase
         .from('conversations')
-        .select('user1_id, user2_id')
+        .select('user1_id, user2_id, cafe_id')
         .eq('id', conversationId)
         .maybeSingle();
 
@@ -88,8 +95,8 @@ export default function ChatRoom() {
 
       const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id;
 
-      // Fetch profile and check-in for activity status
-      const [profileRes, checkInRes] = await Promise.all([
+      // Fetch profile, check-in, and cafe info
+      const [profileRes, checkInRes, cafeRes] = await Promise.all([
         supabase
           .from('profiles')
           .select('user_id, display_name, photo_url')
@@ -101,10 +108,16 @@ export default function ChatRoom() {
           .eq('user_id', otherUserId)
           .gt('expiry_time', new Date().toISOString())
           .maybeSingle(),
+        supabase
+          .from('cafes')
+          .select('id, name')
+          .eq('id', conv.cafe_id)
+          .maybeSingle(),
       ]);
 
       const profile = profileRes.data;
       const checkIn = checkInRes.data;
+      const cafe = cafeRes.data;
 
       if (profile) {
         setOtherUser({
@@ -113,6 +126,10 @@ export default function ChatRoom() {
           photoUrl: profile.photo_url || '',
           lastActiveAt: checkIn?.last_active_at ? new Date(checkIn.last_active_at) : undefined,
         });
+      }
+
+      if (cafe) {
+        setCafeInfo({ id: cafe.id, name: cafe.name });
       }
     };
 
@@ -197,7 +214,7 @@ export default function ChatRoom() {
     setShowReportDialog(false);
   };
 
-  // Group messages by sender and find last own message
+  // Group messages by sender, find last own message, and track date boundaries
   const { groupedMessages, lastOwnMessageId } = useMemo(() => {
     let lastOwnId: string | null = null;
     
@@ -221,10 +238,18 @@ export default function ChatRoom() {
       const isFirstInGroup = !prevMessage || prevMessage.senderId !== message.senderId;
       const isLastInGroup = !nextMessage || nextMessage.senderId !== message.senderId;
       
+      // Check if we should show a date separator before this message
+      const showDateSeparator = !prevMessage || isDifferentDay(prevMessage.createdAt, message.createdAt);
+      
+      // Is this the very first message in the conversation?
+      const isFirstMessage = index === 0;
+      
       return {
         ...message,
         isFirstInGroup,
         isLastInGroup,
+        showDateSeparator,
+        isFirstMessage,
       };
     });
 
@@ -338,7 +363,8 @@ export default function ChatRoom() {
       >
         {messages.length === 0 ? (
           <EmptyChat 
-            otherUserName={otherUser?.displayName || 'User'} 
+            otherUserName={otherUser?.displayName || 'User'}
+            cafeName={cafeInfo?.name}
             onSuggestionTap={(text) => {
               setMessageInput(text);
               setTyping(true);
@@ -354,18 +380,26 @@ export default function ChatRoom() {
             {groupedMessages.map((message) => {
               const isOwn = message.senderId === user?.id;
               return (
-                <MessageBubble
-                  key={message.clientId || message.id}
-                  content={message.content}
-                  timestamp={message.createdAt}
-                  isOwn={isOwn}
-                  isRead={!!message.readAt}
-                  isFirstInGroup={message.isFirstInGroup}
-                  isLastInGroup={message.isLastInGroup}
-                  isLastOwnMessage={message.id === lastOwnMessageId}
-                  status={message.status}
-                  onRetry={message.status === 'failed' && message.clientId ? () => retryMessage(message.clientId!, message.content) : undefined}
-                />
+                <div key={message.clientId || message.id}>
+                  {/* Date separator */}
+                  {message.showDateSeparator && (
+                    <DateSeparator date={message.createdAt} />
+                  )}
+                  <MessageBubble
+                    content={message.content}
+                    timestamp={message.createdAt}
+                    isOwn={isOwn}
+                    isRead={!!message.readAt}
+                    isFirstInGroup={message.isFirstInGroup}
+                    isLastInGroup={message.isLastInGroup}
+                    isLastOwnMessage={message.id === lastOwnMessageId}
+                    isFirstMessage={message.isFirstMessage}
+                    isDeleted={!!message.deletedAt}
+                    status={message.status}
+                    onRetry={message.status === 'failed' && message.clientId ? () => retryMessage(message.clientId!, message.content) : undefined}
+                    onDelete={isOwn && !message.deletedAt ? () => softDeleteMessage(message.id) : undefined}
+                  />
+                </div>
               );
             })}
             

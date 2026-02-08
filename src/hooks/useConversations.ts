@@ -11,6 +11,7 @@ export interface Message {
   content: string;
   createdAt: Date;
   readAt: Date | null;
+  deletedAt: Date | null;
   // Optimistic update states
   status?: 'sending' | 'sent' | 'failed';
   clientId?: string; // Client-generated ID for matching optimistic updates
@@ -118,6 +119,7 @@ export function useConversations() {
             content: lastMsgData.content,
             createdAt: new Date(lastMsgData.created_at),
             readAt: lastMsgData.read_at ? new Date(lastMsgData.read_at) : null,
+            deletedAt: lastMsgData.deleted_at ? new Date(lastMsgData.deleted_at) : null,
           } : undefined,
           unreadCount: count || 0,
         };
@@ -204,6 +206,7 @@ export function useChat(conversationId: string) {
         content: m.content,
         createdAt: new Date(m.created_at),
         readAt: m.read_at ? new Date(m.read_at) : null,
+        deletedAt: m.deleted_at ? new Date(m.deleted_at) : null,
         status: 'sent' as const,
         clientId: m.client_id,
       }))
@@ -303,6 +306,7 @@ export function useChat(conversationId: string) {
                 content: newMsg.content,
                 createdAt: new Date(newMsg.created_at),
                 readAt: newMsg.read_at ? new Date(newMsg.read_at) : null,
+                deletedAt: newMsg.deleted_at ? new Date(newMsg.deleted_at) : null,
                 status: 'sent',
                 clientId: newMsg.client_id,
               };
@@ -319,6 +323,7 @@ export function useChat(conversationId: string) {
                 content: newMsg.content,
                 createdAt: new Date(newMsg.created_at),
                 readAt: newMsg.read_at ? new Date(newMsg.read_at) : null,
+                deletedAt: newMsg.deleted_at ? new Date(newMsg.deleted_at) : null,
                 status: 'sent',
                 clientId: newMsg.client_id,
               },
@@ -391,6 +396,7 @@ export function useChat(conversationId: string) {
         content: trimmedContent,
         createdAt: new Date(),
         readAt: null,
+        deletedAt: null,
         status: 'sending',
       };
 
@@ -441,5 +447,36 @@ export function useChat(conversationId: string) {
     sendMessage(content, clientId);
   }, [sendMessage]);
 
-  return { messages, loading, sendMessage, retryMessage, refetch: fetchMessages };
+  // Soft delete a message (only for own messages)
+  const softDeleteMessage = useCallback(async (messageId: string) => {
+    if (!user) return false;
+
+    // Optimistic update
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId ? { ...m, deletedAt: new Date() } : m
+      )
+    );
+
+    const { error } = await supabase
+      .from('messages')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', messageId)
+      .eq('sender_id', user.id); // Only allow deleting own messages
+
+    if (error) {
+      console.error('Error deleting message:', error);
+      // Revert optimistic update
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId ? { ...m, deletedAt: null } : m
+        )
+      );
+      return false;
+    }
+
+    return true;
+  }, [user]);
+
+  return { messages, loading, sendMessage, retryMessage, softDeleteMessage, refetch: fetchMessages };
 }
