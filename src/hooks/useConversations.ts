@@ -179,6 +179,7 @@ export function useChat(conversationId: string) {
   const [loading, setLoading] = useState(true);
   const [conversationMeta, setConversationMeta] = useState<ConversationMeta | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const readChannelRef = useRef<RealtimeChannel | null>(null);
 
   const fetchMessages = async () => {
     if (!conversationId) return;
@@ -204,20 +205,32 @@ export function useChat(conversationId: string) {
         createdAt: new Date(m.created_at),
         readAt: m.read_at ? new Date(m.read_at) : null,
         status: 'sent' as const,
+        clientId: m.client_id,
       }))
     );
     setLoading(false);
 
-    // Mark messages as read
+    // Mark messages as read immediately when opening conversation
     if (user) {
-      await supabase
-        .from('messages')
-        .update({ read_at: new Date().toISOString() })
-        .eq('conversation_id', conversationId)
-        .neq('sender_id', user.id)
-        .is('read_at', null);
+      markMessagesAsRead();
     }
   };
+
+  // Mark unread messages as read
+  const markMessagesAsRead = useCallback(async () => {
+    if (!conversationId || !user) return;
+
+    const { error } = await supabase
+      .from('messages')
+      .update({ read_at: new Date().toISOString() })
+      .eq('conversation_id', conversationId)
+      .neq('sender_id', user.id)
+      .is('read_at', null);
+
+    if (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  }, [conversationId, user]);
 
   // Fetch conversation meta (other user info)
   const fetchConversationMeta = async () => {
@@ -291,7 +304,7 @@ export function useChat(conversationId: string) {
                 createdAt: new Date(newMsg.created_at),
                 readAt: newMsg.read_at ? new Date(newMsg.read_at) : null,
                 status: 'sent',
-                clientId: newMsg.client_id, // Preserve client_id for reference
+                clientId: newMsg.client_id,
               };
               return updated;
             }
@@ -314,11 +327,32 @@ export function useChat(conversationId: string) {
 
           // Mark as read if not sender
           if (user && newMsg.sender_id !== user.id) {
-            supabase
-              .from('messages')
-              .update({ read_at: new Date().toISOString() })
-              .eq('id', newMsg.id);
+            markMessagesAsRead();
           }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const updatedMsg = payload.new as any;
+          
+          // Update read status for messages
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === updatedMsg.id
+                ? {
+                    ...m,
+                    readAt: updatedMsg.read_at ? new Date(updatedMsg.read_at) : null,
+                  }
+                : m
+            )
+          );
         }
       )
       .subscribe();
@@ -327,8 +361,11 @@ export function useChat(conversationId: string) {
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
       }
+      if (readChannelRef.current) {
+        supabase.removeChannel(readChannelRef.current);
+      }
     };
-  }, [conversationId, user]);
+  }, [conversationId, user, markMessagesAsRead]);
 
   const sendMessage = useCallback(async (content: string, retryClientId?: string): Promise<boolean> => {
     const trimmedContent = content.trim();

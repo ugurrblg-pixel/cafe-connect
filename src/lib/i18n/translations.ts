@@ -93,6 +93,7 @@ export const translations = {
       suggestion2: "Is this your favorite cafe?",
       suggestion3: "How's your day going?",
       failedToSend: "Failed to send – tap to retry",
+      newMessages: "New messages",
     },
 
     // Profile
@@ -249,6 +250,7 @@ export const translations = {
       suggestion2: 'Bu kafe favorin mi?',
       suggestion3: 'Bugün nasıl geçiyor?',
       failedToSend: 'Gönderilemedi – tekrar dene',
+      newMessages: 'Yeni mesajlar',
     },
 
     // Profile

@@ -5,6 +5,7 @@ import { useChat } from '@/hooks/useConversations';
 import { useBlocking } from '@/hooks/useBlocking';
 import { useMatches } from '@/hooks/useMatches';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
+import { useChatScroll } from '@/hooks/useChatScroll';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +15,7 @@ import { MessageBubble } from '@/components/chat/MessageBubble';
 import { TypingIndicator } from '@/components/chat/TypingIndicator';
 import { EmptyChat } from '@/components/chat/EmptyChat';
 import { ChatHeader } from '@/components/chat/ChatHeader';
+import { NewMessagesButton } from '@/components/chat/NewMessagesButton';
 import { BlockDialog, ReportDialog } from '@/components/BlockReportDialog';
 import { cn } from '@/lib/utils';
 import {
@@ -45,7 +47,6 @@ export default function ChatRoom() {
   const [showBlockDialog, setShowBlockDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [hasMatch, setHasMatch] = useState<boolean | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Typing indicator with debouncing
@@ -53,6 +54,21 @@ export default function ChatRoom() {
     conversationId || '', 
     otherUser?.userId || ''
   );
+
+  // Smart scroll behavior
+  const latestMessage = messages[messages.length - 1];
+  const {
+    containerRef,
+    messagesEndRef,
+    showNewMessageButton,
+    scrollToBottom,
+    handleScroll,
+    dismissNewMessages,
+  } = useChatScroll({
+    messagesCount: messages.length,
+    userId: user?.id,
+    latestSenderId: latestMessage?.senderId,
+  });
 
   // Fetch other user's info and verify match
   useEffect(() => {
@@ -110,10 +126,9 @@ export default function ChatRoom() {
     }
   }, [otherUser, hasMatchWith, matchesLoading]);
 
-  // Scroll to bottom on new messages and hide typing when message received
+  // Hide typing indicator when message received from other user
   const prevMessageCountRef = useRef(messages.length);
   useEffect(() => {
-    // Hide typing indicator immediately when a new message arrives from other user
     if (messages.length > prevMessageCountRef.current) {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage && lastMessage.senderId !== user?.id) {
@@ -121,8 +136,6 @@ export default function ChatRoom() {
       }
     }
     prevMessageCountRef.current = messages.length;
-    
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, user?.id, hideTypingImmediately]);
 
   // Handle input change with typing indicator
@@ -147,7 +160,10 @@ export default function ChatRoom() {
     
     await sendMessage(contentToSend);
     setIsSending(false);
-  }, [messageInput, isSending, sendMessage, setTyping]);
+    
+    // Scroll to bottom after sending
+    scrollToBottom();
+  }, [messageInput, isSending, sendMessage, setTyping, scrollToBottom]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -185,17 +201,22 @@ export default function ChatRoom() {
   const { groupedMessages, lastOwnMessageId } = useMemo(() => {
     let lastOwnId: string | null = null;
     
-    // Find the last own message
+    // Find the last own message that is sent (not sending/failed)
     for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].senderId === user?.id) {
+      if (messages[i].senderId === user?.id && messages[i].status === 'sent') {
         lastOwnId = messages[i].id;
         break;
       }
     }
 
-    const grouped = messages.map((message, index) => {
-      const prevMessage = index > 0 ? messages[index - 1] : null;
-      const nextMessage = index < messages.length - 1 ? messages[index + 1] : null;
+    // Sort by createdAt to ensure strict order
+    const sortedMessages = [...messages].sort((a, b) => 
+      a.createdAt.getTime() - b.createdAt.getTime()
+    );
+
+    const grouped = sortedMessages.map((message, index) => {
+      const prevMessage = index > 0 ? sortedMessages[index - 1] : null;
+      const nextMessage = index < sortedMessages.length - 1 ? sortedMessages[index + 1] : null;
       
       const isFirstInGroup = !prevMessage || prevMessage.senderId !== message.senderId;
       const isLastInGroup = !nextMessage || nextMessage.senderId !== message.senderId;
@@ -309,8 +330,12 @@ export default function ChatRoom() {
         }
       />
 
-      {/* Messages area with warm off-white background */}
-      <div className="flex-1 pt-16 pb-24 px-4 overflow-y-auto">
+      {/* Messages area with scroll handling */}
+      <div 
+        ref={containerRef}
+        onScroll={handleScroll}
+        className="flex-1 pt-16 pb-24 px-4 overflow-y-auto"
+      >
         {messages.length === 0 ? (
           <EmptyChat 
             otherUserName={otherUser?.displayName || 'User'} 
@@ -330,7 +355,7 @@ export default function ChatRoom() {
               const isOwn = message.senderId === user?.id;
               return (
                 <MessageBubble
-                  key={message.id}
+                  key={message.clientId || message.id}
                   content={message.content}
                   timestamp={message.createdAt}
                   isOwn={isOwn}
@@ -353,6 +378,13 @@ export default function ChatRoom() {
           </div>
         )}
       </div>
+
+      {/* New messages button */}
+      <NewMessagesButton
+        visible={showNewMessageButton}
+        onClick={dismissNewMessages}
+        label={t.chat.newMessages}
+      />
 
       {/* Message input - refined and warm */}
       <div className="fixed bottom-0 left-0 right-0 px-4 py-3 bg-background/95 backdrop-blur-md border-t border-border">
