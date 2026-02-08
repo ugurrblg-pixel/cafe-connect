@@ -4,11 +4,13 @@ import { Header } from '@/components/Header';
 import { PurposeBadge } from '@/components/PurposeBadge';
 import { InitialsAvatar } from '@/components/InitialsAvatar';
 import { PageLayout } from '@/components/PageLayout';
+import { PremiumBadge } from '@/components/PremiumBadge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
+import { usePremium } from '@/hooks/usePremium';
 import { supabase } from '@/integrations/supabase/client';
 import { Purpose } from '@/types';
-import { Edit2, Shield, Bell, HelpCircle, LogOut, MessageCircle, Users, Heart, Eye, EyeOff, BellOff, BellRing, Loader2 } from 'lucide-react';
+import { Edit2, Shield, Bell, HelpCircle, LogOut, MessageCircle, Users, Heart, Eye, EyeOff, BellOff, BellRing, Loader2, Crown, ChevronRight } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -31,6 +33,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const { user, signOut, refreshProfile } = useAuth();
   const { isSubscribed, isSupported, permission, subscribe, unsubscribe } = useNotifications();
+  const { isPremium } = usePremium();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [notificationLoading, setNotificationLoading] = useState(false);
@@ -200,9 +203,12 @@ export default function Profile() {
               )}
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-foreground mb-1">
-            {displayName}{profile.age ? `, ${profile.age}` : ''}
-          </h1>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl font-bold text-foreground">
+              {displayName}{profile.age ? `, ${profile.age}` : ''}
+            </h1>
+            {isPremium && <PremiumBadge size="sm" />}
+          </div>
           <PurposeBadge purpose={profile.purpose} />
           <button
             onClick={() => navigate('/profile/edit')}
@@ -212,6 +218,54 @@ export default function Profile() {
             Edit Profile
           </button>
         </div>
+
+        {/* Premium Section */}
+        <section 
+          className="card-elevated p-4 mb-4 cursor-pointer hover:bg-secondary/30 transition-colors"
+          onClick={() => navigate('/subscription')}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                isPremium 
+                  ? 'bg-gradient-to-br from-amber-400 to-orange-500' 
+                  : 'bg-secondary'
+              }`}>
+                <Crown className={`w-5 h-5 ${isPremium ? 'text-white' : 'text-muted-foreground'}`} />
+              </div>
+              <div>
+                <p className="font-medium text-foreground">
+                  {isPremium ? 'Premium Aktif' : 'Premium\'a Geç'}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {isPremium ? 'Tüm özellikler açık' : 'Sınırsız sohbet ve daha fazlası'}
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </div>
+        </section>
+
+        {/* Profile Viewers - Premium feature */}
+        <section 
+          className="card-elevated p-4 mb-4 cursor-pointer hover:bg-secondary/30 transition-colors"
+          onClick={() => navigate('/profile/viewers')}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+                <Eye className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="font-medium text-foreground">Profil Görüntüleyenler</p>
+                <p className="text-sm text-muted-foreground">
+                  {isPremium ? 'Seni kimlerin görüntülediğini gör' : 'Premium özellik'}
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </div>
+        </section>
 
         {/* Bio Section */}
         <section className="card-elevated p-4 mb-4">

@@ -144,6 +144,33 @@ export type Database = {
           },
         ]
       }
+      daily_chat_starts: {
+        Row: {
+          chat_count: number
+          chat_date: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chat_count?: number
+          chat_date?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chat_count?: number
+          chat_date?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       matches: {
         Row: {
           cafe_id: string
@@ -301,19 +328,43 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_views: {
+        Row: {
+          id: string
+          viewed_at: string
+          viewed_profile_id: string
+          viewer_id: string
+        }
+        Insert: {
+          id?: string
+          viewed_at?: string
+          viewed_profile_id: string
+          viewer_id: string
+        }
+        Update: {
+          id?: string
+          viewed_at?: string
+          viewed_profile_id?: string
+          viewer_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           age: number | null
           allow_dms: boolean
           bio: string | null
+          boosted_until: string | null
           created_at: string
           display_name: string | null
+          hide_last_seen: boolean
           id: string
           is_visible: boolean | null
           name: string
           notifications_enabled: boolean
           photo_url: string | null
           purpose: string
+          show_read_receipts: boolean
           updated_at: string
           user_id: string
         }
@@ -321,14 +372,17 @@ export type Database = {
           age?: number | null
           allow_dms?: boolean
           bio?: string | null
+          boosted_until?: string | null
           created_at?: string
           display_name?: string | null
+          hide_last_seen?: boolean
           id?: string
           is_visible?: boolean | null
           name?: string
           notifications_enabled?: boolean
           photo_url?: string | null
           purpose?: string
+          show_read_receipts?: boolean
           updated_at?: string
           user_id: string
         }
@@ -336,14 +390,17 @@ export type Database = {
           age?: number | null
           allow_dms?: boolean
           bio?: string | null
+          boosted_until?: string | null
           created_at?: string
           display_name?: string | null
+          hide_last_seen?: boolean
           id?: string
           is_visible?: boolean | null
           name?: string
           notifications_enabled?: boolean
           photo_url?: string | null
           purpose?: string
+          show_read_receipts?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -415,6 +472,45 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          google_play_product_id: string | null
+          google_play_purchase_token: string | null
+          id: string
+          plan_type: string
+          started_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          google_play_product_id?: string | null
+          google_play_purchase_token?: string | null
+          id?: string
+          plan_type?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          google_play_product_id?: string | null
+          google_play_purchase_token?: string | null
+          id?: string
+          plan_type?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -505,6 +601,14 @@ export type Database = {
         Args: { user_id: string }
         Returns: number
       }
+      get_daily_chat_starts: {
+        Args: { target_user_id: string }
+        Returns: number
+      }
+      increment_chat_starts: {
+        Args: { target_user_id: string }
+        Returns: number
+      }
       increment_unread_count: {
         Args: { count_type: string; target_user_id: string }
         Returns: undefined
@@ -517,6 +621,7 @@ export type Database = {
         Args: { conv_id: string; user_id: string }
         Returns: boolean
       }
+      is_premium: { Args: { target_user_id: string }; Returns: boolean }
       match_exists: {
         Args: { target_cafe_id: string; user_a: string; user_b: string }
         Returns: boolean

@@ -7,11 +7,14 @@ import { ProfileBottomSheet } from '@/components/ProfileBottomSheet';
 import { IntentFilterChips, FilterOption } from '@/components/IntentFilterChips';
 import { ConnectionIndicator } from '@/components/ConnectionIndicator';
 import { CafeImage } from '@/components/CafeImage';
+import { ChatLimitIndicator } from '@/components/ChatLimitIndicator';
+import { PaywallModal } from '@/components/PaywallModal';
 import { useCheckIn } from '@/hooks/useCheckIn';
 import { useCafeUsers } from '@/hooks/useCafeUsers';
 import { useCafes } from '@/hooks/useCafes';
 import { useWaves } from '@/hooks/useWaves';
 import { useMatches } from '@/hooks/useMatches';
+import { usePremium } from '@/hooks/usePremium';
 import { useI18n } from '@/contexts/I18nContext';
 import { MapPin, Users, Clock, AlertCircle, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -61,11 +64,13 @@ export default function CafeRoom() {
   
   const { sendWave, hasWavedAt, hasReceivedWaveFrom } = useWaves();
   const { hasMatchWith, getMatchConversation, createConversationForMatch, matches } = useMatches();
+  const { canStartChat, incrementChatCount, isPremium } = usePremium();
   
   const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [intentFilter, setIntentFilter] = useState<FilterOption>('all');
   const [wavingAt, setWavingAt] = useState<string | null>(null);
+  const [showPaywall, setShowPaywall] = useState(false);
 
   const cafe = cafes.find((c) => c.id === id);
   
@@ -122,19 +127,32 @@ export default function CafeRoom() {
       return;
     }
 
-    const conversationId = getMatchConversation(userId);
-    if (conversationId) {
-      navigate(`/chat/${conversationId}`);
-    } else {
-      // Find the match and create conversation
-      const match = matches.find(m => 
-        m.otherUser?.userId === userId
-      );
-      if (match) {
-        const newConvoId = await createConversationForMatch(match.id);
-        if (newConvoId) {
-          navigate(`/chat/${newConvoId}`);
-        }
+    // Check existing conversation first - this doesn't count as new chat
+    const existingConversationId = getMatchConversation(userId);
+    if (existingConversationId) {
+      navigate(`/chat/${existingConversationId}`);
+      return;
+    }
+
+    // Check chat limit for new conversation
+    if (!canStartChat) {
+      setShowPaywall(true);
+      return;
+    }
+
+    // Find the match and create conversation
+    const match = matches.find(m => m.otherUser?.userId === userId);
+    if (match) {
+      // Increment chat count before creating conversation
+      const allowed = await incrementChatCount();
+      if (!allowed) {
+        setShowPaywall(true);
+        return;
+      }
+
+      const newConvoId = await createConversationForMatch(match.id);
+      if (newConvoId) {
+        navigate(`/chat/${newConvoId}`);
       }
     }
   };
@@ -233,12 +251,17 @@ export default function CafeRoom() {
           </div>
         </div>
 
-        {/* Intent Filter Chips */}
-        <IntentFilterChips
-          selected={intentFilter}
-          onChange={setIntentFilter}
-          className="mb-4"
-        />
+        {/* Intent Filter & Chat Limit */}
+        <div className="flex items-center gap-3 mb-4">
+          <IntentFilterChips
+            selected={intentFilter}
+            onChange={setIntentFilter}
+            className="flex-1"
+          />
+          {!isPremium && isCheckedIn && (
+            <ChatLimitIndicator onUpgradeClick={() => setShowPaywall(true)} />
+          )}
+        </div>
 
         {/* Active Users */}
         <section>
@@ -340,6 +363,13 @@ export default function CafeRoom() {
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         cafeId={id}
+      />
+
+      {/* Paywall Modal */}
+      <PaywallModal
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        trigger="chat_limit"
       />
     </div>
   );

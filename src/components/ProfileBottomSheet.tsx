@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -13,6 +13,7 @@ import { Purpose } from '@/types';
 import { MapPin, MessageCircle, Ban, Flag, MoreVertical } from 'lucide-react';
 import { useMessageRequests } from '@/hooks/useMessageRequests';
 import { useBlocking } from '@/hooks/useBlocking';
+import { useProfileViews } from '@/hooks/useProfileViews';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   DropdownMenu,
@@ -44,10 +45,19 @@ export function ProfileBottomSheet({ user, open, onOpenChange, cafeId }: Profile
   const { user: currentUser, profile } = useAuth();
   const { sendRequest, presetMessages, sentRequests } = useMessageRequests();
   const { blockUser, reportUser } = useBlocking();
+  const { logProfileView } = useProfileViews();
   
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [showBlockDialog, setShowBlockDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
+
+  // Log profile view when sheet opens
+  useEffect(() => {
+    if (open && user && currentUser && user.id !== currentUser.id) {
+      // Get the profile ID from the user object (it should be the profile ID, not user_id)
+      logProfileView(user.id);
+    }
+  }, [open, user, currentUser, logProfileView]);
 
   if (!user) return null;
 
