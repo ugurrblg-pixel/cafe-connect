@@ -1,5 +1,6 @@
 import { MessageCircle, Sparkles, MapPin } from 'lucide-react';
 import { useI18n } from '@/contexts/I18nContext';
+import { SystemMessage } from './SystemMessage';
 
 interface EmptyChatProps {
   otherUserName: string;
@@ -42,9 +43,9 @@ export function EmptyChat({ otherUserName, cafeName, onSuggestionTap }: EmptyCha
         </div>
       </div>
       
-      {/* Heading */}
+      {/* Heading - Updated to "You're the first one here" */}
       <h3 className="font-medium text-base text-foreground mb-1.5">
-        {t.chat.letsChat} 👋
+        {t.chat.youreFirstHere}
       </h3>
       
       {/* Subtext */}
@@ -69,3 +70,4 @@ export function EmptyChat({ otherUserName, cafeName, onSuggestionTap }: EmptyCha
     </div>
   );
 }
+

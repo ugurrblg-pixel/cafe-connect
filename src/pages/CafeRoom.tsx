@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { UserCard } from '@/components/UserCard';
@@ -12,7 +12,8 @@ import { useCafeUsers } from '@/hooks/useCafeUsers';
 import { useCafes } from '@/hooks/useCafes';
 import { useWaves } from '@/hooks/useWaves';
 import { useMatches } from '@/hooks/useMatches';
-import { MapPin, Users, Clock, AlertCircle } from 'lucide-react';
+import { useI18n } from '@/contexts/I18nContext';
+import { MapPin, Users, Clock, AlertCircle, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
@@ -36,8 +37,17 @@ export default function CafeRoom() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, profile } = useAuth();
+  const { t } = useI18n();
   const { cafes, loading: cafesLoading } = useCafes();
   const { isCheckedIn, loading: checkInLoading, verifyingLocation, checkIn, checkOut } = useCheckIn(id || '');
+  
+  // Throttled join notification callback
+  const handleUserJoined = useCallback(() => {
+    toast(t.cafeRoom.someoneJoined, {
+      icon: <UserPlus className="w-4 h-4 text-primary" />,
+      duration: 3000,
+    });
+  }, [t]);
   
   // Pass presence options to useCafeUsers - user joins presence when checked in
   const { users: activeUsers, loading: usersLoading, connectionStatus } = useCafeUsers(id || '', {
@@ -46,6 +56,7 @@ export default function CafeRoom() {
     displayName: profile?.display_name || '',
     photoUrl: profile?.photo_url || '',
     purpose: profile?.purpose || 'chat',
+    onUserJoined: handleUserJoined,
   });
   
   const { sendWave, hasWavedAt, hasReceivedWaveFrom } = useWaves();
