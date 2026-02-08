@@ -27,8 +27,8 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-function ProtectedRoute({ children, requireProfileComplete = true }: { children: React.ReactNode; requireProfileComplete?: boolean }) {
-  const { user, loading, profileComplete } = useAuth();
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (
@@ -42,11 +42,7 @@ function ProtectedRoute({ children, requireProfileComplete = true }: { children:
     return <Navigate to="/auth" replace />;
   }
 
-  // Redirect to profile edit if profile is incomplete (but allow access to profile-edit page)
-  if (requireProfileComplete && !profileComplete) {
-    return <Navigate to="/profile/edit" replace />;
-  }
-
+  // Allow browsing without complete profile - gating is handled per-action
   return <>{children}</>;
 }
 
@@ -141,7 +137,7 @@ function AppRoutes() {
           <Route
             path="/profile/edit"
             element={
-              <ProtectedRoute requireProfileComplete={false}>
+              <ProtectedRoute>
                 <ProfileEdit />
               </ProtectedRoute>
             }

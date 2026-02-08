@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { CafeCard } from '@/components/CafeCard';
 import { PageLayout } from '@/components/PageLayout';
+import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
 import { useNearbyCafes } from '@/hooks/useNearbyCafes';
 import { useLocation } from '@/contexts/LocationContext';
 import { useI18n } from '@/contexts/I18nContext';
@@ -78,6 +79,9 @@ export default function Discover() {
         <Header title={t.discover.title} />
 
         <main className="pt-16 px-4">
+          {/* Profile Completion Banner */}
+          <ProfileCompletionBanner />
+
           {/* Location Banner */}
           <div className="mb-6 p-4 rounded-2xl bg-terracotta-light flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
