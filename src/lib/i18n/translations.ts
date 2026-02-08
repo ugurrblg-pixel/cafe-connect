@@ -100,6 +100,19 @@ export const translations = {
       copyMessage: "Copy",
       deleteMessage: "Delete",
       copied: "Copied",
+      cafeMatch: "You matched at {cafe}",
+      sameCafeMatch: "You matched at the same cafe",
+    },
+
+    // Notifications
+    notifications: {
+      title: "Notifications",
+      pushEnabled: "Push Notifications",
+      pushEnabledDesc: "Get notified about waves, matches, and messages",
+      pushDisabled: "Enable notifications",
+      browserNotSupported: "Your browser doesn't support this",
+      permissionDenied: "Notifications are blocked",
+      newMessage: "You have a new message",
     },
 
     // Profile
@@ -263,6 +276,19 @@ export const translations = {
       copyMessage: 'Kopyala',
       deleteMessage: 'Sil',
       copied: 'Kopyalandı',
+      cafeMatch: '{cafe} kafesinde eşleştiniz',
+      sameCafeMatch: 'Aynı kafede eşleştiniz',
+    },
+
+    // Notifications
+    notifications: {
+      title: 'Bildirimler',
+      pushEnabled: 'Push Bildirimleri',
+      pushEnabledDesc: 'Wave, match ve mesaj bildirimleri alın',
+      pushDisabled: 'Bildirimleri aktif edin',
+      browserNotSupported: 'Tarayıcınız desteklemiyor',
+      permissionDenied: 'Bildirimler engellendi',
+      newMessage: 'Yeni bir mesajınız var',
     },
 
     // Profile

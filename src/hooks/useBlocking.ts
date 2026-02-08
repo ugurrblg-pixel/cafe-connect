@@ -112,11 +112,34 @@ export function useBlocking() {
   const reportUser = async (
     reportedUserId: string, 
     reason: ReportReason, 
-    description?: string
+    description?: string,
+    conversationId?: string
   ): Promise<boolean> => {
     if (!user) return false;
 
     setLoading(true);
+
+    // Fetch last 10 messages if conversationId provided (for context)
+    let messageSnapshot = null;
+    if (conversationId) {
+      const { data: messagesData } = await supabase
+        .from('messages')
+        .select('id, sender_id, content, created_at')
+        .eq('conversation_id', conversationId)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      if (messagesData && messagesData.length > 0) {
+        // Redact actual content for privacy - just store metadata
+        messageSnapshot = messagesData.map(m => ({
+          id: m.id,
+          senderId: m.sender_id,
+          createdAt: m.created_at,
+          contentLength: m.content.length, // Don't store actual content
+        }));
+      }
+    }
 
     const { error } = await supabase
       .from('reports')
@@ -125,6 +148,7 @@ export function useBlocking() {
         reported_user_id: reportedUserId,
         reason,
         description,
+        message_snapshot: messageSnapshot,
       });
 
     setLoading(false);

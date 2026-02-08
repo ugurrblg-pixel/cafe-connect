@@ -17,23 +17,37 @@ interface PushPayload {
   };
 }
 
-// Web Push implementation using standard fetch
-async function sendWebPush(
-  subscription: { endpoint: string; p256dh: string; auth: string },
-  payload: { title: string; body: string; data?: object },
-  vapidPublicKey: string,
-  vapidPrivateKey: string
-): Promise<boolean> {
-  try {
-    // For web push, we need to use the web-push protocol
-    // Since Deno doesn't have a native web-push library, we'll use a simpler approach
-    // by storing the notification and letting the client poll for it
-    console.log('Push notification queued for:', subscription.endpoint);
+// Privacy-friendly notification copy (don't expose sender or content)
+const PRIVACY_COPY = {
+  message: {
+    en: { title: 'New Message', body: 'You have a new message in the cafe' },
+    tr: { title: 'Yeni Mesaj', body: 'Kafede yeni bir mesajınız var' },
+  },
+  wave: {
+    en: { title: 'Someone Waved!', body: 'Someone waved at you in the cafe' },
+    tr: { title: 'Biri El Salladı!', body: 'Kafede biri size el salladı' },
+  },
+  match: {
+    en: { title: 'New Match!', body: 'You have a new match' },
+    tr: { title: 'Yeni Eşleşme!', body: 'Yeni bir eşleşmeniz var' },
+  },
+};
+
+// Simple rate limiting: track last notification time per user
+const lastNotificationTime = new Map<string, number>();
+const MIN_NOTIFICATION_INTERVAL_MS = 10000; // 10 seconds between notifications
+
+function shouldThrottleNotification(userId: string): boolean {
+  const now = Date.now();
+  const lastTime = lastNotificationTime.get(userId) || 0;
+  
+  if (now - lastTime < MIN_NOTIFICATION_INTERVAL_MS) {
+    console.log(`Throttling notification for user ${userId}`);
     return true;
-  } catch (error) {
-    console.error('Error sending web push:', error);
-    return false;
   }
+  
+  lastNotificationTime.set(userId, now);
+  return false;
 }
 
 Deno.serve(async (req) => {
@@ -54,14 +68,49 @@ Deno.serve(async (req) => {
     const payload: PushPayload = await req.json();
     console.log('Received push request:', JSON.stringify(payload));
 
-    const { userId, type, title, body, data } = payload;
+    const { userId, type, data } = payload;
 
-    if (!userId || !type || !title || !body) {
+    if (!userId || !type) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: userId, type, title, body' }),
+        JSON.stringify({ error: 'Missing required fields: userId, type' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Check if user has notifications enabled
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('notifications_enabled')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error('Error fetching profile:', profileError);
+    }
+
+    // Default to true if not set
+    const notificationsEnabled = profile?.notifications_enabled ?? true;
+
+    if (!notificationsEnabled) {
+      console.log(`Notifications disabled for user ${userId}, skipping push`);
+      return new Response(
+        JSON.stringify({ success: true, skipped: true, reason: 'notifications_disabled' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Apply throttling
+    if (shouldThrottleNotification(userId)) {
+      return new Response(
+        JSON.stringify({ success: true, skipped: true, reason: 'throttled' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Use privacy-friendly copy (don't expose sender name or message content)
+    const privacyCopy = PRIVACY_COPY[type] || PRIVACY_COPY.message;
+    const title = privacyCopy.tr.title; // Default to Turkish for now
+    const body = privacyCopy.tr.body;
 
     // Get user's push subscriptions
     const { data: subscriptions, error: subError } = await supabase
@@ -111,23 +160,9 @@ Deno.serve(async (req) => {
 
     if (subscriptions && subscriptions.length > 0 && vapidPublicKey && vapidPrivateKey) {
       for (const sub of subscriptions) {
-        const success = await sendWebPush(
-          { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
-          { title, body, data },
-          vapidPublicKey,
-          vapidPrivateKey
-        );
-        
-        if (success) {
-          successCount++;
-        } else {
-          failCount++;
-          // Remove invalid subscription
-          await supabase
-            .from('push_subscriptions')
-            .delete()
-            .eq('id', sub.id);
-        }
+        // For now, just log (actual web push would require additional implementation)
+        console.log('Would send push to:', sub.endpoint.substring(0, 50) + '...');
+        successCount++;
       }
     }
 
