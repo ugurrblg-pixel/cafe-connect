@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils';
 import { Check, CheckCheck, Clock, AlertCircle } from 'lucide-react';
 import { useMemo } from 'react';
 import { useI18n } from '@/contexts/I18nContext';
+import { MessageActionMenu } from './MessageActionMenu';
 
 interface MessageBubbleProps {
   content: string;
@@ -12,8 +13,11 @@ interface MessageBubbleProps {
   isFirstInGroup?: boolean;
   isLastInGroup?: boolean;
   isLastOwnMessage?: boolean;
+  isFirstMessage?: boolean;
+  isDeleted?: boolean;
   status?: 'sending' | 'sent' | 'failed';
   onRetry?: () => void;
+  onDelete?: () => void;
 }
 
 // Check if message is emoji-only (1-3 emojis, no other text)
@@ -35,11 +39,14 @@ export function MessageBubble({
   isFirstInGroup = true,
   isLastInGroup = true,
   isLastOwnMessage = false,
+  isFirstMessage = false,
+  isDeleted = false,
   status = 'sent',
   onRetry,
+  onDelete,
 }: MessageBubbleProps) {
-  const { t } = useI18n();
-  const emojiOnly = useMemo(() => isEmojiOnly(content), [content]);
+  const { t, locale } = useI18n();
+  const emojiOnly = useMemo(() => !isDeleted && isEmojiOnly(content), [content, isDeleted]);
   const longMessage = useMemo(() => isLongMessage(content), [content]);
 
   // Calculate border radius based on position in group
@@ -73,14 +80,44 @@ export function MessageBubble({
   const isSending = status === 'sending';
   const isFailed = status === 'failed';
 
-  return (
+  const deletedText = locale === 'tr' ? 'Bu mesaj silindi' : 'This message was deleted';
+
+  // Deleted message display
+  if (isDeleted) {
+    return (
+      <div
+        className={cn(
+          'flex flex-col',
+          isOwn ? 'items-end' : 'items-start',
+          isLastInGroup ? 'mb-2.5' : 'mb-0.5'
+        )}
+      >
+        <div className="px-3.5 py-2 rounded-2xl bg-secondary/40 border border-border/50">
+          <p className="text-sm italic text-muted-foreground/60">
+            {deletedText}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const bubbleContent = (
     <div
       className={cn(
         'flex flex-col animate-in fade-in-0 slide-in-from-bottom-1 duration-200',
         isOwn ? 'items-end' : 'items-start',
-        isLastInGroup ? 'mb-2.5' : 'mb-0.5'
+        isLastInGroup ? 'mb-2.5' : 'mb-0.5',
+        // First message gets a subtle highlight
+        isFirstMessage && 'relative'
       )}
     >
+      {/* First message badge */}
+      {isFirstMessage && (
+        <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-primary/10 text-[10px] font-medium text-primary">
+          ✨
+        </div>
+      )}
+      
       <div
         className={cn(
           'max-w-[70%] shadow-sm transition-opacity duration-200',
@@ -191,4 +228,19 @@ export function MessageBubble({
       )}
     </div>
   );
+
+  // Wrap with action menu for sent messages
+  if (status === 'sent') {
+    return (
+      <MessageActionMenu 
+        content={content} 
+        isOwn={isOwn} 
+        onDelete={isOwn ? onDelete : undefined}
+      >
+        {bubbleContent}
+      </MessageActionMenu>
+    );
+  }
+
+  return bubbleContent;
 }
