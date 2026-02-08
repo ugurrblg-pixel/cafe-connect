@@ -13,7 +13,12 @@ export interface Message {
   readAt: Date | null;
   // Optimistic update states
   status?: 'sending' | 'sent' | 'failed';
-  tempId?: string;
+  clientId?: string; // Client-generated ID for matching optimistic updates
+}
+
+// Generate a unique client ID for message deduplication
+function generateClientId(): string {
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 }
 
 interface Conversation {
@@ -264,13 +269,19 @@ export function useChat(conversationId: string) {
           const newMsg = payload.new as any;
           
           setMessages((prev) => {
-            // Check if this message already exists (optimistic update)
+            // Check if message already exists by server ID (prevent duplicates)
+            const existsByServerId = prev.some(m => m.id === newMsg.id);
+            if (existsByServerId) {
+              return prev; // Already have this message, skip
+            }
+
+            // Check if this matches an optimistic message by client_id
             const existingIndex = prev.findIndex(
-              m => m.tempId && m.content === newMsg.content && m.senderId === newMsg.sender_id
+              m => m.clientId && newMsg.client_id && m.clientId === newMsg.client_id
             );
             
             if (existingIndex !== -1) {
-              // Replace optimistic message with real one
+              // Replace optimistic message with confirmed server message
               const updated = [...prev];
               updated[existingIndex] = {
                 id: newMsg.id,
@@ -280,11 +291,12 @@ export function useChat(conversationId: string) {
                 createdAt: new Date(newMsg.created_at),
                 readAt: newMsg.read_at ? new Date(newMsg.read_at) : null,
                 status: 'sent',
+                clientId: newMsg.client_id, // Preserve client_id for reference
               };
               return updated;
             }
             
-            // New message from other user
+            // New message from other user (no matching optimistic message)
             return [
               ...prev,
               {
@@ -295,6 +307,7 @@ export function useChat(conversationId: string) {
                 createdAt: new Date(newMsg.created_at),
                 readAt: newMsg.read_at ? new Date(newMsg.read_at) : null,
                 status: 'sent',
+                clientId: newMsg.client_id,
               },
             ];
           });
@@ -317,7 +330,7 @@ export function useChat(conversationId: string) {
     };
   }, [conversationId, user]);
 
-  const sendMessage = useCallback(async (content: string, tempId?: string): Promise<boolean> => {
+  const sendMessage = useCallback(async (content: string, retryClientId?: string): Promise<boolean> => {
     const trimmedContent = content.trim();
     
     // Client-side validation for message length
@@ -328,13 +341,14 @@ export function useChat(conversationId: string) {
       return false;
     }
 
-    const messageId = tempId || `temp-${Date.now()}`;
+    // Use existing clientId for retry, or generate new one
+    const clientId = retryClientId || generateClientId();
 
     // Add optimistic message if not retrying
-    if (!tempId) {
+    if (!retryClientId) {
       const optimisticMessage: Message = {
-        id: messageId,
-        tempId: messageId,
+        id: `temp-${clientId}`,
+        clientId,
         conversationId,
         senderId: user.id,
         content: trimmedContent,
@@ -345,10 +359,10 @@ export function useChat(conversationId: string) {
 
       setMessages((prev) => [...prev, optimisticMessage]);
     } else {
-      // Mark existing message as sending again
+      // Mark existing message as sending again (retry)
       setMessages((prev) =>
         prev.map((m) =>
-          m.tempId === tempId ? { ...m, status: 'sending' as const } : m
+          m.clientId === retryClientId ? { ...m, status: 'sending' as const } : m
         )
       );
     }
@@ -359,6 +373,7 @@ export function useChat(conversationId: string) {
         conversation_id: conversationId,
         sender_id: user.id,
         content: trimmedContent,
+        client_id: clientId, // Send client_id for deduplication
       });
 
     if (error) {
@@ -366,7 +381,7 @@ export function useChat(conversationId: string) {
       // Mark message as failed
       setMessages((prev) =>
         prev.map((m) =>
-          m.tempId === messageId ? { ...m, status: 'failed' as const } : m
+          m.clientId === clientId ? { ...m, status: 'failed' as const } : m
         )
       );
       return false;
@@ -385,8 +400,8 @@ export function useChat(conversationId: string) {
     return true;
   }, [user, conversationId, conversationMeta]);
 
-  const retryMessage = useCallback((tempId: string, content: string) => {
-    sendMessage(content, tempId);
+  const retryMessage = useCallback((clientId: string, content: string) => {
+    sendMessage(content, clientId);
   }, [sendMessage]);
 
   return { messages, loading, sendMessage, retryMessage, refetch: fetchMessages };
