@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { Check, CheckCheck, Clock, AlertCircle } from 'lucide-react';
+import { Check, CheckCheck, Clock, AlertCircle, Crown } from 'lucide-react';
 import { useMemo } from 'react';
 import { useI18n } from '@/contexts/I18nContext';
 import { MessageActionMenu } from './MessageActionMenu';
@@ -9,6 +9,7 @@ interface MessageBubbleProps {
   timestamp: Date;
   isOwn: boolean;
   isRead: boolean;
+  readAt?: Date;
   showTimestamp?: boolean;
   isFirstInGroup?: boolean;
   isLastInGroup?: boolean;
@@ -16,6 +17,8 @@ interface MessageBubbleProps {
   isFirstMessage?: boolean;
   isDeleted?: boolean;
   status?: 'sending' | 'sent' | 'failed';
+  isPremiumSender?: boolean;
+  isPremiumViewer?: boolean;
   onRetry?: () => void;
   onDelete?: () => void;
 }
@@ -36,12 +39,15 @@ export function MessageBubble({
   timestamp,
   isOwn,
   isRead,
+  readAt,
   isFirstInGroup = true,
   isLastInGroup = true,
   isLastOwnMessage = false,
   isFirstMessage = false,
   isDeleted = false,
   status = 'sent',
+  isPremiumSender = false,
+  isPremiumViewer = false,
   onRetry,
   onDelete,
 }: MessageBubbleProps) {
@@ -101,6 +107,20 @@ export function MessageBubble({
     );
   }
 
+  // Format "seen X minutes ago" for premium viewers
+  const getSeenText = () => {
+    if (!readAt) return null;
+    const now = new Date();
+    const diffMs = now.getTime() - readAt.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'Şimdi görüldü';
+    if (diffMins < 60) return `${diffMins} dk önce görüldü`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours} saat önce görüldü`;
+    return 'Görüldü';
+  };
+
   const bubbleContent = (
     <div
       className={cn(
@@ -118,9 +138,17 @@ export function MessageBubble({
         </div>
       )}
       
+      {/* Premium sender indicator for incoming messages */}
+      {!isOwn && isPremiumSender && isFirstInGroup && (
+        <div className="flex items-center gap-1 mb-1 ml-1">
+          <Crown className="w-3 h-3 text-amber-500" />
+          <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">Premium</span>
+        </div>
+      )}
+      
       <div
         className={cn(
-          'max-w-[70%] shadow-sm transition-opacity duration-200',
+          'max-w-[70%] shadow-sm transition-opacity duration-200 relative',
           // Sending state - reduced opacity
           isSending && 'opacity-60',
           // Failed state - subtle red tint
@@ -131,7 +159,9 @@ export function MessageBubble({
             : 'px-3.5 py-2.5',
           // Bubble colors - warm palette
           !emojiOnly && isOwn && 'bg-primary text-primary-foreground',
-          !emojiOnly && !isOwn && 'bg-secondary/80 text-foreground'
+          !emojiOnly && !isOwn && 'bg-secondary/80 text-foreground',
+          // Premium sender gold outline for incoming messages
+          !emojiOnly && !isOwn && isPremiumSender && 'ring-1 ring-amber-500/40'
         )}
         style={{ borderRadius: emojiOnly ? '0' : getBorderRadius() }}
       >
@@ -172,20 +202,29 @@ export function MessageBubble({
                   <AlertCircle className="w-3 h-3 text-destructive" />
                 )}
                 {status === 'sent' && isLastOwnMessage && (
-                  <CheckCheck 
-                    className={cn(
-                      'w-3.5 h-3.5 transition-colors',
-                      isRead 
-                        ? 'text-accent-foreground' 
-                        : 'text-primary-foreground/50'
-                    )} 
-                  />
+                  <>
+                    <CheckCheck 
+                      className={cn(
+                        'w-3.5 h-3.5 transition-colors',
+                        isRead 
+                          ? 'text-accent-foreground' 
+                          : 'text-primary-foreground/50'
+                      )} 
+                    />
+                  </>
                 )}
                 {status === 'sent' && !isLastOwnMessage && (
                   <Check className="w-3 h-3 text-primary-foreground/50" />
                 )}
               </>
             )}
+          </div>
+        )}
+        
+        {/* Premium: Detailed read receipt below bubble */}
+        {isOwn && isLastOwnMessage && status === 'sent' && isRead && isPremiumViewer && isLastInGroup && !emojiOnly && (
+          <div className="text-[9px] text-primary-foreground/50 mt-0.5 text-right">
+            {getSeenText()}
           </div>
         )}
 
