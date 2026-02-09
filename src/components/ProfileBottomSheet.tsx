@@ -8,6 +8,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { PurposeBadge } from './PurposeBadge';
 import { HobbyDisplay } from './HobbyDisplay';
+import { ProfilePhotoCarousel } from './ProfilePhotoCarousel';
 import { MessageRequestModal } from './MessageRequestModal';
 import { BlockDialog, ReportDialog } from './BlockReportDialog';
 import { Purpose } from '@/types';
@@ -16,6 +17,7 @@ import { useMessageRequests } from '@/hooks/useMessageRequests';
 import { useBlocking } from '@/hooks/useBlocking';
 import { useProfileViews } from '@/hooks/useProfileViews';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePremium } from '@/hooks/usePremium';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +29,7 @@ interface ProfileUser {
   id: string;
   name: string;
   photoUrl: string;
+  photoUrls?: string[];
   bio: string;
   purpose: Purpose;
   allowDMs?: boolean;
@@ -45,6 +48,7 @@ interface ProfileBottomSheetProps {
 
 export function ProfileBottomSheet({ user, open, onOpenChange, cafeId }: ProfileBottomSheetProps) {
   const { user: currentUser, profile } = useAuth();
+  const { isPremium } = usePremium();
   const { sendRequest, presetMessages, sentRequests } = useMessageRequests();
   const { blockUser, reportUser } = useBlocking();
   const { logProfileView } = useProfileViews();
@@ -147,23 +151,17 @@ export function ProfileBottomSheet({ user, open, onOpenChange, cafeId }: Profile
           )}
           
           <div className="flex flex-col items-center py-4">
-            {/* Profile Photo or Initials */}
-            <div className="relative mb-4">
-              {user.photoUrl ? (
-                <img
-                  src={user.photoUrl}
-                  alt={user.name}
-                  className="w-24 h-24 rounded-full object-cover border-4 border-card shadow-lg"
-                />
-              ) : (
-                <div className="w-24 h-24 rounded-full bg-primary flex items-center justify-center border-4 border-card shadow-lg">
-                  <span className="text-2xl font-bold text-primary-foreground">
-                    {getInitials(user.name)}
-                  </span>
-                </div>
-              )}
-              {/* Online indicator */}
-              <div className="absolute bottom-1 right-1 w-5 h-5 bg-accent rounded-full border-2 border-card" />
+            {/* Profile Photo Carousel */}
+            <div className="mb-4 w-full max-w-[200px]">
+              <ProfilePhotoCarousel
+                photos={user.photoUrls && user.photoUrls.length > 0 
+                  ? user.photoUrls 
+                  : (user.photoUrl ? [user.photoUrl] : [])}
+                isPremium={isPremium}
+                isOwnProfile={false}
+                name={user.name}
+                size="md"
+              />
             </div>
 
             {/* Name and Purpose */}

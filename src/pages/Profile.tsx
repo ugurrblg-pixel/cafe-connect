@@ -24,6 +24,7 @@ interface Profile {
   age: number | null;
   bio: string;
   photo_url: string;
+  photo_urls: string[];
   purpose: Purpose;
   allow_dms: boolean;
   is_visible: boolean;
@@ -60,6 +61,7 @@ export default function Profile() {
           age: data.age,
           bio: data.bio || '',
           photo_url: data.photo_url || '',
+          photo_urls: (data.photo_urls as string[]) || [],
           purpose: data.purpose as Purpose,
           allow_dms: data.allow_dms,
           is_visible: data.is_visible ?? true,
@@ -185,8 +187,11 @@ export default function Profile() {
         <div className="flex flex-col items-center py-6 animate-scale-in">
           {/* Profile Photo Carousel */}
           <ProfilePhotoCarousel
-            photos={profile.photo_url ? [profile.photo_url] : []}
+            photos={profile.photo_urls.length > 0 
+              ? profile.photo_urls 
+              : (profile.photo_url ? [profile.photo_url] : [])}
             isPremium={isPremium}
+            isOwnProfile={true}
             name={displayName}
             size="lg"
             className="mb-4"

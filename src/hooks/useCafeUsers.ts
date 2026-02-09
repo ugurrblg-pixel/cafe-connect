@@ -29,6 +29,7 @@ interface CafeUser {
   age: number | null;
   bio: string;
   photoUrl: string;
+  photoUrls: string[];
   purpose: 'chat' | 'friendship' | 'dating';
   allowDMs: boolean;
   isVisible: boolean;
@@ -112,7 +113,7 @@ export function useCafeUsers(cafeId: string, options: UseCafeUsersOptions = {}) 
     // Fetch profiles
     const { data: profilesData, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, user_id, name, display_name, age, bio, photo_url, purpose, allow_dms, is_visible, hobbies')
+      .select('id, user_id, name, display_name, age, bio, photo_url, photo_urls, purpose, allow_dms, is_visible, hobbies')
       .in('user_id', userIds);
 
     if (profilesError) {
@@ -143,6 +144,7 @@ export function useCafeUsers(cafeId: string, options: UseCafeUsersOptions = {}) 
           age: profile.age,
           bio: profile.bio || '',
           photoUrl: profile.photo_url || '',
+          photoUrls: (profile.photo_urls as string[]) || [],
           purpose: profile.purpose as 'chat' | 'friendship' | 'dating',
           allowDMs: profile.allow_dms,
           isVisible: profile.is_visible ?? true,

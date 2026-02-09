@@ -31,6 +31,7 @@ interface SelectedUser {
   userId?: string;
   name: string;
   photoUrl: string;
+  photoUrls?: string[];
   bio: string;
   purpose: Purpose;
   allowDMs?: boolean;
@@ -215,6 +216,7 @@ export default function CafeRoom() {
       userId: activeUser.userId,
       name: activeUser.displayName || activeUser.name,
       photoUrl: activeUser.photoUrl,
+      photoUrls: activeUser.photoUrls,
       bio: activeUser.bio,
       purpose: activeUser.purpose,
       allowDMs: activeUser.allowDMs,
