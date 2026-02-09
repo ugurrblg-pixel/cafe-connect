@@ -1,35 +1,22 @@
 import { useEffect, useState, useCallback } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { RefreshCw, AlertTriangle, XCircle } from 'lucide-react';
-import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { RefreshCw, Search, Smartphone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SubscriptionRow {
   id: string;
+  user_id: string;
+  plan_type: string;
   status: string;
-  customer_id: string;
-  customer_email: string | null;
-  customer_name: string | null;
-  current_period_start: number;
-  current_period_end: number;
-  cancel_at_period_end: boolean;
-  created: number;
-  price_id: string | null;
-  product_id: string | null;
-  amount: number | null;
-  currency: string | null;
-  interval: string | null;
+  started_at: string | null;
+  expires_at: string | null;
+  google_play_product_id: string | null;
+  created_at: string;
+  profile_name?: string;
 }
 
 export default function AdminSubscriptions() {
@@ -37,81 +24,104 @@ export default function AdminSubscriptions() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
-  const [cancelTarget, setCancelTarget] = useState<SubscriptionRow | null>(null);
-  const [cancelling, setCancelling] = useState(false);
+  const [search, setSearch] = useState('');
 
   const fetchSubscriptions = useCallback(async () => {
-    const res = await supabase.functions.invoke(`admin-payments?action=list-subscriptions&status=${statusFilter}`);
+    let query = supabase
+      .from('subscriptions')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(100);
 
-    if (res.error) {
-      console.error('Error fetching subscriptions:', res.error);
+    if (statusFilter !== 'all') {
+      query = query.eq('status', statusFilter);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching subscriptions:', error);
       setLoading(false);
       setRefreshing(false);
       return;
     }
 
-    setSubscriptions(res.data?.subscriptions || []);
+    // Enrich with profile names
+    if (data && data.length > 0) {
+      const userIds = [...new Set(data.map(s => s.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, name, display_name')
+        .in('user_id', userIds);
+
+      const profileMap = new Map(
+        (profiles || []).map(p => [p.user_id, p.display_name || p.name])
+      );
+
+      const enriched = data.map(s => ({
+        ...s,
+        profile_name: profileMap.get(s.user_id) || 'Unknown',
+      }));
+
+      setSubscriptions(enriched);
+    } else {
+      setSubscriptions([]);
+    }
+
     setLoading(false);
     setRefreshing(false);
   }, [statusFilter]);
 
   useEffect(() => { setLoading(true); fetchSubscriptions(); }, [fetchSubscriptions]);
 
-  const handleCancel = async () => {
-    if (!cancelTarget) return;
-    setCancelling(true);
-
-    const res = await supabase.functions.invoke(`admin-payments?action=cancel-subscription&subscription_id=${cancelTarget.id}`);
-
-    if (res.error) {
-      toast.error('Failed to cancel subscription');
-    } else {
-      toast.success('Subscription cancelled');
-      fetchSubscriptions();
-    }
-    setCancelling(false);
-    setCancelTarget(null);
-  };
-
-  const formatAmount = (amount: number | null, currency: string | null) => {
-    if (!amount || !currency) return 'N/A';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency.toUpperCase(),
-    }).format(amount / 100);
-  };
-
   const statusBadge = (status: string) => {
     const colors: Record<string, string> = {
       active: 'bg-accent/10 text-accent',
-      canceled: 'bg-destructive/10 text-destructive',
-      past_due: 'bg-warning/10 text-warning',
-      trialing: 'bg-primary/10 text-primary',
-      incomplete: 'bg-warning/10 text-warning',
-      unpaid: 'bg-destructive/10 text-destructive',
+      cancelled: 'bg-destructive/10 text-destructive',
+      expired: 'bg-muted text-muted-foreground',
+      inactive: 'bg-warning/10 text-warning',
     };
     return colors[status] || 'bg-muted text-muted-foreground';
   };
+
+  const filtered = subscriptions.filter(s => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      (s.profile_name || '').toLowerCase().includes(q) ||
+      s.user_id.toLowerCase().includes(q) ||
+      (s.google_play_product_id || '').toLowerCase().includes(q)
+    );
+  });
 
   return (
     <AdminLayout>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Subscriptions</h1>
-          <p className="text-muted-foreground text-sm">Manage Stripe subscriptions</p>
+          <p className="text-muted-foreground text-sm flex items-center gap-1.5">
+            <Smartphone className="w-3.5 h-3.5" />
+            Google Play subscriptions
+          </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => { setRefreshing(true); fetchSubscriptions(); }} disabled={refreshing}>
           <RefreshCw className={cn("w-4 h-4 mr-2", refreshing && "animate-spin")} /> Refresh
         </Button>
       </div>
 
-      <div className="flex gap-1.5 mb-4 flex-wrap">
-        {['all', 'active', 'canceled', 'past_due', 'trialing'].map(s => (
-          <button key={s} onClick={() => setStatusFilter(s)} className={cn(
-            'px-3 py-2 rounded-lg text-xs font-medium transition-colors capitalize',
-            statusFilter === s ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:bg-muted'
-          )}>{s.replace('_', ' ')}</button>
-        ))}
+      <div className="flex gap-3 mb-4 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input placeholder="Search by name or user ID..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+        </div>
+        <div className="flex gap-1.5">
+          {['all', 'active', 'cancelled', 'expired'].map(s => (
+            <button key={s} onClick={() => setStatusFilter(s)} className={cn(
+              'px-3 py-2 rounded-lg text-xs font-medium transition-colors capitalize',
+              statusFilter === s ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:bg-muted'
+            )}>{s}</button>
+          ))}
+        </div>
       </div>
 
       <div className="bg-card border border-border rounded-xl overflow-hidden">
@@ -119,12 +129,12 @@ export default function AdminSubscriptions() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/50">
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Customer</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">User</th>
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Plan</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Product</th>
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Period End</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Auto-Renew</th>
-                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Actions</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Expires</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Created</th>
               </tr>
             </thead>
             <tbody>
@@ -136,42 +146,32 @@ export default function AdminSubscriptions() {
                     ))}
                   </tr>
                 ))
-              ) : subscriptions.length === 0 ? (
+              ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">No subscriptions found</td>
+                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                    <Smartphone className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                    No subscriptions found
+                  </td>
                 </tr>
               ) : (
-                subscriptions.map(sub => (
+                filtered.map(sub => (
                   <tr key={sub.id} className="border-b border-border hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3">
-                      <p className="font-medium text-foreground">{sub.customer_name || sub.customer_email || 'Unknown'}</p>
-                      <p className="text-xs text-muted-foreground">{sub.customer_email}</p>
+                      <p className="font-medium text-foreground">{sub.profile_name}</p>
+                      <p className="text-xs text-muted-foreground font-mono">{sub.user_id.slice(0, 8)}...</p>
                     </td>
+                    <td className="px-4 py-3 capitalize text-foreground">{sub.plan_type}</td>
                     <td className="px-4 py-3">
-                      <p className="font-medium text-foreground">{formatAmount(sub.amount, sub.currency)}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{sub.interval || 'N/A'}</p>
+                      <span className="text-xs font-mono text-muted-foreground">{sub.google_play_product_id || 'N/A'}</span>
                     </td>
                     <td className="px-4 py-3">
                       <span className={cn('text-xs px-2 py-1 rounded-full font-medium', statusBadge(sub.status))}>{sub.status}</span>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {new Date(sub.current_period_end * 1000).toLocaleDateString()}
+                      {sub.expires_at ? new Date(sub.expires_at).toLocaleDateString() : 'N/A'}
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={cn('text-xs font-medium', sub.cancel_at_period_end ? 'text-destructive' : 'text-accent')}>
-                        {sub.cancel_at_period_end ? 'No' : 'Yes'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {sub.status === 'active' && (
-                        <button
-                          onClick={() => setCancelTarget(sub)}
-                          className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
-                          title="Cancel subscription"
-                        >
-                          <XCircle className="w-4 h-4" />
-                        </button>
-                      )}
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {new Date(sub.created_at).toLocaleDateString()}
                     </td>
                   </tr>
                 ))
@@ -180,27 +180,6 @@ export default function AdminSubscriptions() {
           </table>
         </div>
       </div>
-
-      {/* Cancel Confirmation */}
-      <Dialog open={!!cancelTarget} onOpenChange={() => setCancelTarget(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-destructive" />
-              Cancel Subscription
-            </DialogTitle>
-            <DialogDescription>
-              Cancel subscription for {cancelTarget?.customer_name || cancelTarget?.customer_email}? This will immediately cancel via Stripe and be logged.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setCancelTarget(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleCancel} disabled={cancelling}>
-              {cancelling ? 'Cancelling...' : 'Confirm Cancel'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </AdminLayout>
   );
 }

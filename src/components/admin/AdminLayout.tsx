@@ -10,7 +10,6 @@ import {
   MessageCircle,
   ScrollText,
   ChevronLeft,
-  CreditCard,
   Receipt,
   TrendingUp,
 } from 'lucide-react';
@@ -20,9 +19,8 @@ const navItems = [
   { label: 'Users', icon: Users, to: '/admin/users' },
   { label: 'Reports', icon: Flag, to: '/admin/reports' },
   { label: 'Moderation', icon: MessageCircle, to: '/admin/moderation' },
-  { label: 'Payments', icon: CreditCard, to: '/admin/payments' },
   { label: 'Subscriptions', icon: Receipt, to: '/admin/subscriptions' },
-  { label: 'Revenue', icon: TrendingUp, to: '/admin/revenue' },
+  { label: 'Overview', icon: TrendingUp, to: '/admin/revenue' },
   { label: 'Audit Log', icon: ScrollText, to: '/admin/audit-log' },
 ];
 

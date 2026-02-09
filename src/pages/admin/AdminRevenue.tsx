@@ -3,52 +3,48 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, DollarSign, TrendingUp, RotateCcw, CreditCard } from 'lucide-react';
+import { RefreshCw, Users, Crown, TrendingUp, Smartphone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface RevenueStats {
-  daily_revenue: number;
-  weekly_revenue: number;
-  monthly_revenue: number;
-  daily_count: number;
-  weekly_count: number;
-  monthly_count: number;
-  refund_count: number;
-  refund_amount: number;
+  totalSubscriptions: number;
+  activeSubscriptions: number;
+  cancelledSubscriptions: number;
+  expiredSubscriptions: number;
+  monthlyPlans: number;
+  yearlyPlans: number;
 }
 
-function RevenueCard({ label, amount, count, icon: Icon, loading, variant }: {
+function StatCard({ label, value, icon: Icon, loading, variant }: {
   label: string;
-  amount: number;
-  count: number;
+  value: string | number;
   icon: any;
   loading: boolean;
-  variant?: 'default' | 'destructive';
+  variant?: 'default' | 'accent' | 'destructive' | 'muted';
 }) {
-  const formatUSD = (cents: number) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
+  const colorMap = {
+    default: 'border-border',
+    accent: 'border-accent/30',
+    destructive: 'border-destructive/30',
+    muted: 'border-border',
+  };
+  const textMap = {
+    default: 'text-foreground',
+    accent: 'text-accent',
+    destructive: 'text-destructive',
+    muted: 'text-muted-foreground',
+  };
 
   return (
-    <div className={cn(
-      "bg-card border rounded-xl p-5",
-      variant === 'destructive' ? "border-destructive/30" : "border-border"
-    )}>
+    <div className={cn("bg-card border rounded-xl p-5", colorMap[variant || 'default'])}>
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm text-muted-foreground">{label}</span>
-        <Icon className={cn("w-5 h-5", variant === 'destructive' ? 'text-destructive/50' : 'text-muted-foreground/50')} />
+        <Icon className="w-5 h-5 text-muted-foreground/50" />
       </div>
       {loading ? (
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-24" />
-          <Skeleton className="h-4 w-16" />
-        </div>
+        <Skeleton className="h-8 w-16" />
       ) : (
-        <>
-          <p className={cn("text-3xl font-bold", variant === 'destructive' ? 'text-destructive' : 'text-foreground')}>
-            {formatUSD(amount)}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">{count} transaction{count !== 1 ? 's' : ''}</p>
-        </>
+        <p className={cn("text-3xl font-bold", textMap[variant || 'default'])}>{value}</p>
       )}
     </div>
   );
@@ -60,16 +56,26 @@ export default function AdminRevenue() {
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchStats = useCallback(async () => {
-    const res = await supabase.functions.invoke('admin-payments?action=revenue-stats');
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('status, plan_type');
 
-    if (res.error) {
-      console.error('Error fetching revenue stats:', res.error);
+    if (error) {
+      console.error('Error fetching subscription stats:', error);
       setLoading(false);
       setRefreshing(false);
       return;
     }
 
-    setStats(res.data);
+    const all = data || [];
+    setStats({
+      totalSubscriptions: all.length,
+      activeSubscriptions: all.filter(s => s.status === 'active').length,
+      cancelledSubscriptions: all.filter(s => s.status === 'cancelled').length,
+      expiredSubscriptions: all.filter(s => s.status === 'expired' || s.status === 'inactive').length,
+      monthlyPlans: all.filter(s => s.plan_type === 'monthly').length,
+      yearlyPlans: all.filter(s => s.plan_type === 'yearly').length,
+    });
     setLoading(false);
     setRefreshing(false);
   }, []);
@@ -80,44 +86,24 @@ export default function AdminRevenue() {
     <AdminLayout>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Revenue Dashboard</h1>
-          <p className="text-muted-foreground text-sm">Financial overview from Stripe</p>
+          <h1 className="text-2xl font-bold text-foreground">Subscription Overview</h1>
+          <p className="text-muted-foreground text-sm flex items-center gap-1.5">
+            <Smartphone className="w-3.5 h-3.5" />
+            Google Play subscription analytics
+          </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => { setRefreshing(true); fetchStats(); }} disabled={refreshing}>
           <RefreshCw className={cn("w-4 h-4 mr-2", refreshing && "animate-spin")} /> Refresh
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <RevenueCard
-          label="Daily Revenue"
-          amount={stats?.daily_revenue || 0}
-          count={stats?.daily_count || 0}
-          icon={DollarSign}
-          loading={loading}
-        />
-        <RevenueCard
-          label="Weekly Revenue"
-          amount={stats?.weekly_revenue || 0}
-          count={stats?.weekly_count || 0}
-          icon={TrendingUp}
-          loading={loading}
-        />
-        <RevenueCard
-          label="Monthly Revenue"
-          amount={stats?.monthly_revenue || 0}
-          count={stats?.monthly_count || 0}
-          icon={CreditCard}
-          loading={loading}
-        />
-        <RevenueCard
-          label="Refunds (30d)"
-          amount={stats?.refund_amount || 0}
-          count={stats?.refund_count || 0}
-          icon={RotateCcw}
-          loading={loading}
-          variant="destructive"
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <StatCard label="Total Subscriptions" value={stats?.totalSubscriptions || 0} icon={Users} loading={loading} />
+        <StatCard label="Active" value={stats?.activeSubscriptions || 0} icon={Crown} loading={loading} variant="accent" />
+        <StatCard label="Cancelled" value={stats?.cancelledSubscriptions || 0} icon={TrendingUp} loading={loading} variant="destructive" />
+        <StatCard label="Expired / Inactive" value={stats?.expiredSubscriptions || 0} icon={Users} loading={loading} variant="muted" />
+        <StatCard label="Monthly Plans" value={stats?.monthlyPlans || 0} icon={Crown} loading={loading} />
+        <StatCard label="Yearly Plans" value={stats?.yearlyPlans || 0} icon={Crown} loading={loading} />
       </div>
     </AdminLayout>
   );
