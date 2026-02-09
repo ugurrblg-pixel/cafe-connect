@@ -23,6 +23,7 @@ import Onboarding from "./pages/Onboarding";
 import Subscription from "./pages/Subscription";
 import ProfileViewers from "./pages/ProfileViewers";
 import Boost from "./pages/Boost";
+import UserProfileView from "./pages/UserProfileView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -139,6 +140,14 @@ function AppRoutes() {
             element={
               <ProtectedRoute>
                 <ProfileEdit />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile/:userId"
+            element={
+              <ProtectedRoute>
+                <UserProfileView />
               </ProtectedRoute>
             }
           />

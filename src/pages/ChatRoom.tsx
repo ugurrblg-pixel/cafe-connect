@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Send, MoreVertical, Flag, Ban, Loader2, ShieldAlert, ChevronLeft, Sparkles } from 'lucide-react';
+import { Send, MoreVertical, Flag, Ban, Loader2, ShieldAlert, ChevronLeft, Sparkles, User } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { TypingIndicator } from '@/components/chat/TypingIndicator';
@@ -353,6 +353,11 @@ export default function ChatRoom() {
         isTyping={isOtherUserTyping}
         typingText={t.chat.typing}
         onBack={() => navigate('/messages')}
+        onProfileClick={() => {
+          if (otherUser) {
+            navigate(`/profile/${otherUser.userId}`);
+          }
+        }}
         isPremium={otherUser?.isPremium}
         actions={
           <DropdownMenu>
@@ -362,6 +367,14 @@ export default function ChatRoom() {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-card border border-border">
+              <DropdownMenuItem 
+                onClick={() => {
+                  if (otherUser) navigate(`/profile/${otherUser.userId}`);
+                }}
+              >
+                <User className="w-4 h-4 mr-2" />
+                Profili Gör
+              </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={() => setShowReportDialog(true)} 
                 className="text-destructive focus:text-destructive"
@@ -390,12 +403,15 @@ export default function ChatRoom() {
         {messages.length === 0 ? (
           <EmptyChat 
             otherUserName={otherUser?.displayName || 'User'}
+            otherUserPhotoUrl={otherUser?.photoUrl}
             cafeName={cafeInfo?.name}
+            onViewProfile={() => {
+              if (otherUser) navigate(`/profile/${otherUser.userId}`);
+            }}
             onSuggestionTap={(text) => {
               setMessageInput(text);
               setTyping(true);
               inputRef.current?.focus();
-              // Trigger resize for the textarea
               if (inputRef.current) {
                 inputRef.current.style.height = 'auto';
               }
