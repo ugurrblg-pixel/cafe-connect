@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { MapPin, Check, Loader2 } from 'lucide-react';
+import { MapPin, Check, Loader2, ShieldCheck } from 'lucide-react';
 
 interface CheckInButtonProps {
   isCheckedIn: boolean;
@@ -20,6 +20,7 @@ export function CheckInButton({
 }: CheckInButtonProps) {
   if (isCheckedIn) {
     return (
+      <>
       <button
         onClick={onCheckOut}
         className={cn(
@@ -31,10 +32,16 @@ export function CheckInButton({
         <Check className="w-5 h-5" />
         <span>Buradasın{cafeName ? ` - ${cafeName}` : ''}</span>
       </button>
+      <div className="flex items-center justify-center gap-1.5 mt-2 text-xs text-muted-foreground">
+        <ShieldCheck className="w-3.5 h-3.5" />
+        <span>Sadece check-in yaptığın süre boyunca görünürsün</span>
+      </div>
+      </>
     );
   }
 
   return (
+    <>
     <button
       onClick={onCheckIn}
       disabled={verifyingLocation}
@@ -56,5 +63,10 @@ export function CheckInButton({
         </>
       )}
     </button>
+    <div className="flex items-center justify-center gap-1.5 mt-2 text-xs text-muted-foreground">
+      <ShieldCheck className="w-3.5 h-3.5" />
+      <span>Tam konumun asla paylaşılmaz</span>
+    </div>
+    </>
   );
 }
