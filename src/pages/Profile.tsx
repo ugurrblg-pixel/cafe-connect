@@ -5,6 +5,7 @@ import { PurposeBadge } from '@/components/PurposeBadge';
 import { PageLayout } from '@/components/PageLayout';
 import { PremiumBadge } from '@/components/PremiumBadge';
 import { ProfilePhotoCarousel } from '@/components/ProfilePhotoCarousel';
+import { HobbyDisplay } from '@/components/HobbyDisplay';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { usePremium } from '@/hooks/usePremium';
@@ -27,6 +28,7 @@ interface Profile {
   allow_dms: boolean;
   is_visible: boolean;
   notifications_enabled: boolean;
+  hobbies: string[];
 }
 
 export default function Profile() {
@@ -62,6 +64,7 @@ export default function Profile() {
           allow_dms: data.allow_dms,
           is_visible: data.is_visible ?? true,
           notifications_enabled: data.notifications_enabled ?? true,
+          hobbies: (data.hobbies as string[]) || [],
         });
       }
       setLoading(false);
@@ -300,6 +303,19 @@ export default function Profile() {
           </div>
           <p className="text-muted-foreground">{profile.bio || 'Add a bio to tell others about yourself'}</p>
         </section>
+
+        {/* Hobbies Section */}
+        {profile.hobbies && profile.hobbies.length > 0 && (
+          <section className="card-elevated p-4 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold text-foreground">Hobiler</h2>
+              <button onClick={() => navigate('/profile/edit')} className="text-primary p-1">
+                <Edit2 className="w-4 h-4" />
+              </button>
+            </div>
+            <HobbyDisplay hobbies={profile.hobbies} />
+          </section>
+        )}
 
         {/* Purpose Selection */}
         <section className="card-elevated p-4 mb-4">
