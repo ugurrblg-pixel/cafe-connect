@@ -32,11 +32,11 @@ function formatSmartTime(date: Date | undefined, t: any): string {
   const diffDays = Math.floor(diffHours / 24);
 
   if (diffMins < 1) return t.time.justNow;
-  if (diffMins < 60) return `${diffMins}m`;
-  if (diffHours < 24) return `${diffHours}h`;
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return date.toLocaleDateString(undefined, { weekday: 'short' });
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  if (diffMins < 60) return `${diffMins}d`;
+  if (diffHours < 24) return `${diffHours}s`;
+  if (diffDays === 1) return 'Dün';
+  if (diffDays < 7) return date.toLocaleDateString('tr-TR', { weekday: 'short' });
+  return date.toLocaleDateString('tr-TR', { month: 'short', day: 'numeric' });
 }
 
 export function InboxItem({
@@ -70,43 +70,50 @@ export function InboxItem({
       tabIndex={0}
       aria-disabled={isLoading}
       className={cn(
-        'w-full flex items-center gap-3 px-4 py-3 select-none cursor-pointer',
-        'transition-all duration-150 ease-out',
-        'hover:bg-secondary/60 active:bg-secondary/80 active:scale-[0.99]',
-        hasUnread && 'bg-secondary/30',
+        'w-full flex items-center gap-3.5 px-4 py-3.5 select-none cursor-pointer',
+        'transition-all duration-200 ease-out',
+        'rounded-2xl mx-2 my-1',
+        // Card-like appearance with shadow
+        'bg-card/60 hover:bg-card shadow-sm hover:shadow-md',
+        // Unread highlight
+        hasUnread && 'bg-primary/5 shadow-md',
         // Premium user highlight
-        isPremiumUser && hasUnread && 'bg-amber-500/5',
-        isLoading && 'pointer-events-none opacity-60'
+        isPremiumUser && hasUnread && 'bg-gradient-to-r from-amber-500/8 to-primary/5',
+        isLoading && 'pointer-events-none opacity-60',
+        // Smooth press feedback
+        'active:scale-[0.98] active:shadow-sm'
       )}
     >
       {/* Avatar with online indicator and premium ring */}
       <div className="relative flex-shrink-0">
         <div className={cn(
-          "rounded-full",
-          isPremiumUser && "ring-2 ring-amber-500/50"
+          "rounded-full transition-transform duration-200",
+          isPremiumUser && "ring-2 ring-amber-500/50 ring-offset-2 ring-offset-background"
         )}>
           {userPhotoUrl ? (
             <img
               src={userPhotoUrl}
               alt={userName}
-              className="w-12 h-12 rounded-full object-cover"
+              className="w-14 h-14 rounded-full object-cover shadow-sm"
             />
           ) : (
             <InitialsAvatar 
               name={userName} 
               size="md" 
-              className="w-12 h-12"
+              className="w-14 h-14 shadow-sm"
             />
           )}
         </div>
-        {/* Online indicator */}
+        {/* Online indicator - pulsing green dot */}
         {isOnline && (
-          <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-background" />
+          <div className="absolute bottom-0.5 right-0.5 w-4 h-4 bg-emerald-500 rounded-full border-[2.5px] border-background shadow-sm">
+            <div className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-50" />
+          </div>
         )}
         {/* Premium crown badge */}
         {isPremiumUser && !isOnline && (
-          <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center border-2 border-background">
-            <Crown className="w-2.5 h-2.5 text-white" />
+          <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center border-2 border-background shadow-sm">
+            <Crown className="w-3 h-3 text-white" />
           </div>
         )}
       </div>
@@ -114,11 +121,11 @@ export function InboxItem({
       {/* Content */}
       <div className="flex-1 min-w-0 text-left">
         {/* Top row: Name + Time */}
-        <div className="flex items-center justify-between gap-2 mb-0.5">
+        <div className="flex items-center justify-between gap-2 mb-1">
           <div className="flex items-center gap-1.5 min-w-0">
             <span className={cn(
               'text-[15px] truncate',
-              hasUnread ? 'font-semibold text-foreground' : 'font-medium text-foreground'
+              hasUnread ? 'font-bold text-foreground' : 'font-semibold text-foreground/90'
             )}>
               {userName}
             </span>
@@ -126,7 +133,10 @@ export function InboxItem({
               <Crown className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
             )}
           </div>
-          <span className="text-xs text-muted-foreground flex-shrink-0">
+          <span className={cn(
+            "text-xs flex-shrink-0 font-medium",
+            hasUnread ? "text-primary" : "text-muted-foreground"
+          )}>
             {formatSmartTime(lastMessageTime, t)}
           </span>
         </div>
@@ -138,32 +148,33 @@ export function InboxItem({
             <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500 flex-shrink-0" />
           )}
           {isTyping ? (
-            <span className="text-sm text-primary italic flex items-center gap-1">
-              {t.chat.typing}
+            <span className="text-sm text-primary font-medium flex items-center gap-1.5">
+              yazıyor
               <span className="flex gap-0.5">
-                <span className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </span>
             </span>
           ) : lastMessage ? (
             <span className={cn(
-              'text-sm truncate',
-              hasUnread ? 'text-foreground/80' : 'text-muted-foreground'
+              'text-sm truncate leading-relaxed',
+              hasUnread ? 'text-foreground font-medium' : 'text-muted-foreground'
             )}>
               {lastMessage}
             </span>
           ) : (
             <span className="text-sm text-muted-foreground/60 italic">
-              {t.messages.matchedAt.replace('{cafe}', cafeName || 'a cafe')}
+              {cafeName ? `${cafeName} kafesinde eşleştiniz` : 'Yeni eşleşme'}
             </span>
           )}
         </div>
 
-        {/* Bottom row: Cafe badge */}
+        {/* Bottom row: Cafe badge - more subtle */}
         {cafeName && lastMessage && (
-          <div className="mt-1">
-            <span className="text-[11px] text-muted-foreground/70 bg-muted/50 px-1.5 py-0.5 rounded">
+          <div className="mt-1.5">
+            <span className="text-[10px] text-muted-foreground/60 bg-secondary/60 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+              <span className="w-1 h-1 bg-primary/40 rounded-full" />
               {cafeName}
             </span>
           </div>
@@ -171,14 +182,14 @@ export function InboxItem({
       </div>
 
       {/* Right side: Unread badge or loading */}
-      <div className="flex-shrink-0 w-6 flex items-center justify-center">
+      <div className="flex-shrink-0 w-7 flex items-center justify-center">
         {isLoading ? (
-          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+          <Loader2 className="w-5 h-5 animate-spin text-primary" />
         ) : hasUnread ? (
           <span className={cn(
-            "min-w-5 h-5 px-1.5 text-xs font-semibold rounded-full flex items-center justify-center",
+            "min-w-6 h-6 px-2 text-xs font-bold rounded-full flex items-center justify-center shadow-sm",
             isPremiumUser 
-              ? "bg-amber-500 text-white" 
+              ? "bg-gradient-to-br from-amber-400 to-amber-600 text-white" 
               : "bg-primary text-primary-foreground"
           )}>
             {unreadCount > 99 ? '99+' : unreadCount}

@@ -455,11 +455,11 @@ export default function ChatRoom() {
         <ChatLimitBanner />
       </div>
 
-      {/* Message input - refined and warm with Premium hint */}
-      <div className="fixed bottom-0 left-0 right-0 px-4 py-3 bg-background/95 backdrop-blur-md border-t border-border">
+      {/* Message input - refined, warm, and modern */}
+      <div className="fixed bottom-0 left-0 right-0 px-4 py-3 bg-background/98 backdrop-blur-lg border-t border-border/50 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]">
         {/* Premium visibility hint */}
         {isPremium && (
-          <div className="flex items-center justify-center gap-1.5 mb-2 text-xs text-amber-600 dark:text-amber-400">
+          <div className="flex items-center justify-center gap-1.5 mb-2.5 text-xs text-amber-600 dark:text-amber-400 font-medium">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Mesajların daha görünür</span>
           </div>
@@ -474,13 +474,13 @@ export default function ChatRoom() {
             }}
             onKeyDown={handleKeyDown}
             onBlur={() => setTyping(false)}
-            placeholder={isPremium ? "Mesajın daha görünür ✨" : t.chat.typeMessage}
+            placeholder={isPremium ? "Mesajın daha görünür ✨" : "Bir şey yaz..."}
             rows={1}
             className={cn(
-              "flex-1 resize-none rounded-2xl px-4 py-3 text-sm border-0 focus:outline-none focus:ring-1 leading-6 max-h-[88px] overflow-y-auto scrollbar-thin",
+              "flex-1 resize-none rounded-2xl px-4 py-3.5 text-[15px] border focus:outline-none focus:ring-2 leading-6 max-h-[88px] overflow-y-auto scrollbar-thin transition-all duration-200",
               isPremium 
-                ? "bg-amber-500/5 focus:ring-amber-500/40 placeholder:text-amber-600/60 dark:placeholder:text-amber-400/60" 
-                : "bg-secondary/60 focus:ring-primary/40 placeholder:text-muted-foreground/60"
+                ? "bg-amber-500/5 border-amber-500/20 focus:ring-amber-500/30 focus:border-amber-500/40 placeholder:text-amber-600/50 dark:placeholder:text-amber-400/50" 
+                : "bg-secondary/70 border-transparent focus:ring-primary/30 focus:border-primary/30 placeholder:text-muted-foreground/50"
             )}
             maxLength={2000}
           />
@@ -489,10 +489,10 @@ export default function ChatRoom() {
             disabled={!messageInput.trim() || isSending}
             size="icon"
             className={cn(
-              "w-11 h-11 rounded-full shrink-0 transition-all duration-200",
+              "w-12 h-12 rounded-full shrink-0 transition-all duration-300",
               messageInput.trim() && !isSending
-                ? "bg-primary text-primary-foreground shadow-md scale-100 opacity-100"
-                : "bg-muted text-muted-foreground shadow-none scale-95 opacity-60",
+                ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg hover:shadow-xl scale-100 opacity-100"
+                : "bg-muted text-muted-foreground shadow-none scale-90 opacity-50",
               "active:scale-90"
             )}
           >
