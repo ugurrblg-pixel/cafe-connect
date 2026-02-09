@@ -25,6 +25,12 @@ import ProfileViewers from "./pages/ProfileViewers";
 import Boost from "./pages/Boost";
 import UserProfileView from "./pages/UserProfileView";
 import NotFound from "./pages/NotFound";
+import { AdminGuard } from "./components/admin/AdminGuard";
+import { lazy, Suspense } from "react";
+
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 
 const queryClient = new QueryClient();
 
@@ -55,7 +61,11 @@ function AppRoutes() {
   const hideStatusBar = 
     location.pathname.startsWith('/cafe/') || 
     location.pathname.startsWith('/chat/') ||
+    location.pathname.startsWith('/admin') ||
     location.pathname === '/auth';
+
+  // Hide bottom nav on admin pages
+  const hideBottomNav = location.pathname.startsWith('/admin');
 
   if (loading) {
     return (
@@ -175,9 +185,14 @@ function AppRoutes() {
               </ProtectedRoute>
             }
           />
+          {/* Admin routes */}
+          <Route path="/admin" element={<AdminGuard><Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><AdminDashboard /></Suspense></AdminGuard>} />
+          <Route path="/admin/users" element={<AdminGuard><Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><AdminUsers /></Suspense></AdminGuard>} />
+          <Route path="/admin/reports" element={<AdminGuard><Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><AdminReports /></Suspense></AdminGuard>} />
+          
           <Route path="*" element={<NotFound />} />
       </Routes>
-      {user && <BottomNav />}
+      {user && !hideBottomNav && <BottomNav />}
     </div>
   );
 }

@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          admin_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: []
+      }
       cafes: {
         Row: {
           address: string
@@ -541,6 +571,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_bans: {
+        Row: {
+          ban_type: string
+          banned_at: string
+          banned_by: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          reason: string | null
+          unbanned_at: string | null
+          unbanned_by: string | null
+          user_id: string
+        }
+        Insert: {
+          ban_type?: string
+          banned_at?: string
+          banned_by: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          reason?: string | null
+          unbanned_at?: string | null
+          unbanned_by?: string | null
+          user_id: string
+        }
+        Update: {
+          ban_type?: string
+          banned_at?: string
+          banned_by?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          reason?: string | null
+          unbanned_at?: string | null
+          unbanned_by?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_blocks: {
         Row: {
           blocked_id: string
@@ -559,6 +628,51 @@ export type Database = {
           blocker_id?: string
           created_at?: string
           id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_warnings: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string
+          user_id: string
+          warned_by: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason: string
+          user_id: string
+          warned_by: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string
+          user_id?: string
+          warned_by?: string
         }
         Relationships: []
       }
@@ -611,6 +725,13 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: number
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       increment_chat_starts: {
         Args: { target_user_id: string }
         Returns: number
@@ -619,6 +740,7 @@ export type Database = {
         Args: { count_type: string; target_user_id: string }
         Returns: undefined
       }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_blocked: {
         Args: { checker_id: string; target_id: string }
         Returns: boolean
@@ -628,6 +750,7 @@ export type Database = {
         Returns: boolean
       }
       is_premium: { Args: { target_user_id: string }; Returns: boolean }
+      is_user_banned: { Args: { _user_id: string }; Returns: boolean }
       match_exists: {
         Args: { target_cafe_id: string; user_a: string; user_b: string }
         Returns: boolean
@@ -642,7 +765,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "super_admin" | "moderator" | "support"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -769,6 +892,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["super_admin", "moderator", "support"],
+    },
   },
 } as const
