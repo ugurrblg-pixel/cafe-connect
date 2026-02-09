@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { Users, MapPin, MessageCircle, Heart, Crown, Flag } from 'lucide-react';
+import { Users, MapPin, MessageCircle, Heart, Crown, Flag, Activity } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface DashboardStats {
   totalUsers: number;
+  activeUsers24h: number;
   activeCheckIns: number;
   activeConversations: number;
   matchesToday: number;
   premiumUsers: number;
-  reportsLast24h: number;
+  pendingReports: number;
 }
 
 function StatCard({ label, value, icon: Icon, loading }: { label: string; value: number; icon: any; loading: boolean }) {
@@ -41,6 +42,7 @@ export default function AdminDashboard() {
 
       const [
         usersRes,
+        activeUsersRes,
         checkInsRes,
         convsRes,
         matchesRes,
@@ -48,20 +50,22 @@ export default function AdminDashboard() {
         reportsRes,
       ] = await Promise.all([
         supabase.from('profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('check_ins').select('user_id', { count: 'exact', head: true }).gt('expiry_time', last24h),
         supabase.from('check_ins').select('id', { count: 'exact', head: true }).gt('expiry_time', now.toISOString()),
         supabase.from('conversations').select('id', { count: 'exact', head: true }).eq('is_active', true),
         supabase.from('matches').select('id', { count: 'exact', head: true }).gte('created_at', todayStart),
         supabase.from('subscriptions').select('id', { count: 'exact', head: true }).eq('status', 'active'),
-        supabase.from('reports').select('id', { count: 'exact', head: true }).gte('created_at', last24h),
+        supabase.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
       ]);
 
       setStats({
         totalUsers: usersRes.count || 0,
+        activeUsers24h: activeUsersRes.count || 0,
         activeCheckIns: checkInsRes.count || 0,
         activeConversations: convsRes.count || 0,
         matchesToday: matchesRes.count || 0,
         premiumUsers: premiumRes.count || 0,
-        reportsLast24h: reportsRes.count || 0,
+        pendingReports: reportsRes.count || 0,
       });
       setLoading(false);
     };
@@ -78,11 +82,12 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard label="Total Users" value={stats?.totalUsers || 0} icon={Users} loading={loading} />
+        <StatCard label="Active Users (24h)" value={stats?.activeUsers24h || 0} icon={Activity} loading={loading} />
         <StatCard label="Active Check-ins" value={stats?.activeCheckIns || 0} icon={MapPin} loading={loading} />
         <StatCard label="Active Conversations" value={stats?.activeConversations || 0} icon={MessageCircle} loading={loading} />
         <StatCard label="Matches Today" value={stats?.matchesToday || 0} icon={Heart} loading={loading} />
         <StatCard label="Premium Users" value={stats?.premiumUsers || 0} icon={Crown} loading={loading} />
-        <StatCard label="Reports (24h)" value={stats?.reportsLast24h || 0} icon={Flag} loading={loading} />
+        <StatCard label="Pending Reports" value={stats?.pendingReports || 0} icon={Flag} loading={loading} />
       </div>
     </AdminLayout>
   );

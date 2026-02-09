@@ -7,7 +7,8 @@ import {
   Users,
   Flag,
   ShieldCheck,
-  LogOut,
+  MessageCircle,
+  ScrollText,
   ChevronLeft,
 } from 'lucide-react';
 
@@ -15,6 +16,8 @@ const navItems = [
   { label: 'Dashboard', icon: LayoutDashboard, to: '/admin' },
   { label: 'Users', icon: Users, to: '/admin/users' },
   { label: 'Reports', icon: Flag, to: '/admin/reports' },
+  { label: 'Moderation', icon: MessageCircle, to: '/admin/moderation' },
+  { label: 'Audit Log', icon: ScrollText, to: '/admin/audit-log' },
 ];
 
 interface AdminLayoutProps {
