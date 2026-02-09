@@ -190,8 +190,6 @@ export default function Profile() {
             photos={profile.photo_urls.length > 0 
               ? profile.photo_urls 
               : (profile.photo_url ? [profile.photo_url] : [])}
-            isPremium={isPremium}
-            isOwnProfile={true}
             name={displayName}
             size="lg"
             className="mb-4"
