@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -8,6 +8,8 @@ import {
   formatDistance,
   CHECK_IN_RADIUS_METERS,
   ACTIVITY_PING_INTERVAL_MS,
+  CHECK_IN_COOLDOWN_MS,
+  GPS_FAILURE_GRACE_COUNT,
   Coordinates,
 } from '@/lib/geolocation';
 
@@ -31,6 +33,8 @@ export function useCheckIn(cafeId: string) {
   const [currentCheckIn, setCurrentCheckIn] = useState<CheckIn | null>(null);
   const [loading, setLoading] = useState(true);
   const [verifyingLocation, setVerifyingLocation] = useState(false);
+  const [lastCheckOutTime, setLastCheckOutTime] = useState<number | null>(null);
+  const gpsFailureCountRef = useRef(0);
 
   // Check if user is already checked in at this cafe
   useEffect(() => {
@@ -125,22 +129,36 @@ export function useCheckIn(cafeId: string) {
       const locationResult = await verifyLocation();
       
       if (!locationResult.valid && locationResult.distance !== undefined) {
-        // User has left the cafe - auto checkout
-        toast.info('Kafeden ayrıldın, otomatik check-out yapıldı', {
-          description: `${formatDistance(locationResult.distance)} uzaklaştın`,
-        });
+        // GPS returned a valid position but user is out of range
+        gpsFailureCountRef.current++;
         
-        await supabase
-          .from('check_ins')
-          .delete()
-          .eq('id', currentCheckIn.id);
-        
-        setCurrentCheckIn(null);
-        setIsCheckedIn(false);
+        if (gpsFailureCountRef.current >= GPS_FAILURE_GRACE_COUNT) {
+          // Only auto-checkout after consecutive failures (grace period)
+          toast.info('Kafeden ayrıldın, otomatik check-out yapıldı', {
+            description: `${formatDistance(locationResult.distance)} uzaklaştın`,
+          });
+          
+          await supabase
+            .from('check_ins')
+            .delete()
+            .eq('id', currentCheckIn.id);
+          
+          setCurrentCheckIn(null);
+          setIsCheckedIn(false);
+          setLastCheckOutTime(Date.now());
+          gpsFailureCountRef.current = 0;
+          return;
+        }
+      } else if (!locationResult.valid && locationResult.error) {
+        // GPS error (no position) - don't auto-checkout, just skip this check
+        // Never auto-checkout due to temporary GPS loss
         return;
+      } else {
+        // User is in range - reset failure counter
+        gpsFailureCountRef.current = 0;
       }
 
-      // User is still in range - update activity timestamp
+      // Update activity timestamp
       await supabase
         .from('check_ins')
         .update({ last_active_at: new Date().toISOString() })
@@ -165,6 +183,15 @@ export function useCheckIn(cafeId: string) {
   const checkIn = async () => {
     if (!user) {
       toast.error('Giriş yapmalısın');
+      return false;
+    }
+
+    // Check cooldown (5 min same cafe)
+    if (lastCheckOutTime && (Date.now() - lastCheckOutTime) < CHECK_IN_COOLDOWN_MS) {
+      const remainingSec = Math.ceil((CHECK_IN_COOLDOWN_MS - (Date.now() - lastCheckOutTime)) / 1000);
+      toast.error('Biraz bekle', {
+        description: `Aynı kafeye tekrar check-in için ${Math.ceil(remainingSec / 60)} dakika beklemen gerekiyor.`,
+      });
       return false;
     }
 

@@ -125,3 +125,17 @@ export const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
 
 // Activity ping interval (in milliseconds) - 5 minutes
 export const ACTIVITY_PING_INTERVAL_MS = 5 * 60 * 1000;
+
+// Cooldown between check-ins at the same cafe (in milliseconds) - 5 minutes
+export const CHECK_IN_COOLDOWN_MS = 5 * 60 * 1000;
+
+// Number of consecutive GPS failures before auto-checkout (grace period)
+export const GPS_FAILURE_GRACE_COUNT = 3;
+
+// Format distance as privacy-safe range string (never exact)
+export function formatDistanceRange(meters: number): string {
+  if (meters <= 500) return '500 m içinde';
+  if (meters <= 1000) return '1 km içinde';
+  if (meters <= 2000) return '2 km içinde';
+  return `${Math.ceil(meters / 1000)} km içinde`;
+}

@@ -18,7 +18,7 @@ import { useMatches } from '@/hooks/useMatches';
 import { usePremium } from '@/hooks/usePremium';
 import { useProfileCompletion } from '@/hooks/useProfileCompletion';
 import { useI18n } from '@/contexts/I18nContext';
-import { MapPin, Users, Clock, AlertCircle, UserPlus } from 'lucide-react';
+import { MapPin, Users, Clock, AlertCircle, UserPlus, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
@@ -258,7 +258,7 @@ export default function CafeRoom() {
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-1.5 text-primary font-medium">
               <Users className="w-4 h-4" />
-              <span>{activeUsers.length} people here</span>
+              <span>{activeUsers.length} kişi burada</span>
             </div>
             <div className={cn(
               'flex items-center gap-1.5',
@@ -290,7 +290,7 @@ export default function CafeRoom() {
         <section>
           <h2 className="font-semibold text-lg text-foreground mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-accent rounded-full animate-pulse-soft" />
-            People here now
+            Şu an burada
             {intentFilter !== 'all' && (
               <span className="text-sm font-normal text-muted-foreground">
                 ({filteredUsers.length} of {otherUsers.length})
@@ -360,10 +360,10 @@ export default function CafeRoom() {
         {/* Time limit notice */}
         {isCheckedIn && (
           <div className="mt-6 p-4 rounded-2xl bg-secondary flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+            <ShieldCheck className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
             <div className="text-sm text-muted-foreground">
-              <p className="font-medium text-foreground mb-1">Auto check-out</p>
-              <p>You'll be automatically checked out after 60 minutes for your safety.</p>
+              <p className="font-medium text-foreground mb-1">Güvenlik & Gizlilik</p>
+              <p>60 dakika sonra otomatik check-out yapılır. Tam konumun asla paylaşılmaz — sadece bu kafede olduğun görünür.</p>
             </div>
           </div>
         )}

@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { Send, MoreVertical, Flag, Ban, Loader2, ShieldAlert, ChevronLeft, Sparkles, User } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageBubble } from '@/components/chat/MessageBubble';
@@ -61,6 +62,10 @@ export default function ChatRoom() {
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [hasMatch, setHasMatch] = useState<boolean | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Rate limiting: track messages sent in first minute of conversation
+  const sentTimestampsRef = useRef<number[]>([]);
+  const conversationStartRef = useRef<number | null>(null);
 
   // Typing indicator with debouncing
   const { isOtherUserTyping, setTyping, hideTypingImmediately } = useTypingIndicator(
@@ -189,6 +194,23 @@ export default function ChatRoom() {
   const handleSend = useCallback(async () => {
     if (!messageInput.trim() || isSending) return;
     
+    // Rate limiting: max 2 messages in first minute of a new conversation
+    const now = Date.now();
+    if (!conversationStartRef.current && messages.length === 0) {
+      conversationStartRef.current = now;
+    }
+    
+    if (conversationStartRef.current && (now - conversationStartRef.current) < 60_000) {
+      // We're in the first minute — count own messages sent in this window
+      sentTimestampsRef.current = sentTimestampsRef.current.filter(t => (now - t) < 60_000);
+      if (sentTimestampsRef.current.length >= 2) {
+        toast.info('Biraz yavaşla 🙂', {
+          description: 'Yeni eşleşmelerde ilk dakikada en fazla 2 mesaj gönderebilirsin.',
+        });
+        return;
+      }
+    }
+    
     const contentToSend = messageInput;
     setMessageInput('');
     setTyping(false);
@@ -200,12 +222,13 @@ export default function ChatRoom() {
       inputRef.current.focus();
     }
     
+    sentTimestampsRef.current.push(now);
     await sendMessage(contentToSend);
     setIsSending(false);
     
     // Scroll to bottom after sending
     scrollToBottom();
-  }, [messageInput, isSending, sendMessage, setTyping, scrollToBottom]);
+  }, [messageInput, isSending, sendMessage, setTyping, scrollToBottom, messages.length]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
