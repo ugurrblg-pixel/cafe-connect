@@ -9,8 +9,5 @@ verify_jwt = false
 [functions.verify-google-purchase]
 verify_jwt = false
 
-[functions.stripe-webhook]
-verify_jwt = false
-
 [functions.admin-payments]
 verify_jwt = false
