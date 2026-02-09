@@ -5,9 +5,9 @@ import { Crown, CreditCard, RefreshCw, ShieldCheck } from 'lucide-react';
 export default function PremiumPayments() {
   const items = [
     {
-      icon: <Crown className="w-6 h-6 text-amber-500" />,
-      title: 'Premium Özellikler',
-      description: 'Premium abonelik ile sınırsız sohbet, profil görüntüleyenleri görme, boost ve daha fazla özelliğe erişebilirsin.',
+      icon: <Crown className="w-6 h-6 text-primary" />,
+      title: 'CafeMeet Premium',
+      description: 'Premium ile sınırsız sohbet, profil görüntüleyenleri görme, boost ve gelişmiş görünürlük gibi özel özelliklere eriş.',
     },
     {
       icon: <CreditCard className="w-6 h-6 text-primary" />,
@@ -17,7 +17,7 @@ export default function PremiumPayments() {
     {
       icon: <RefreshCw className="w-6 h-6 text-primary" />,
       title: 'Abonelik Yönetimi',
-      description: 'Aboneliğini istediğin zaman Google Play üzerinden yönetebilir ve iptal edebilirsin. İptal sonrası dönem sonuna kadar premium erişimin devam eder.',
+      description: 'Aboneliğini Google Play üzerinden istediğin zaman yönetebilir veya iptal edebilirsin. İptal sonrası dönem sonuna kadar premium erişimin devam eder.',
     },
     {
       icon: <ShieldCheck className="w-6 h-6 text-primary" />,
@@ -32,7 +32,7 @@ export default function PremiumPayments() {
         <Header title="Premium & Ödemeler" showBack />
         <main className="pt-16 px-4 space-y-4">
           <p className="text-muted-foreground text-sm mt-2">
-            Premium abonelik ve ödeme süreçleri hakkında bilgi.
+            CafeMeet Premium abonelik ve ödeme süreçleri hakkında bilgi.
           </p>
 
           {items.map(({ icon, title, description }, idx) => (

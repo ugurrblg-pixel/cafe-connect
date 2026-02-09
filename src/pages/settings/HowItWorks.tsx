@@ -7,32 +7,32 @@ export default function HowItWorks() {
     {
       icon: <Coffee className="w-6 h-6 text-primary" />,
       title: 'Yakındaki Kafeleri Keşfet',
-      description: 'Cafe Huddle, bulunduğun konuma yakın kafeleri gösterir. Gittiğin kafeye check-in yaparak oradaki insanlarla etkileşime geçebilirsin.',
+      description: 'CafeMeet, bulunduğun konuma yakın kafeleri gösterir. Gittiğin kafeye check-in yaparak orada bulunan insanlarla tanışmaya başla.',
     },
     {
       icon: <Users className="w-6 h-6 text-primary" />,
-      title: 'Profilleri İncele',
-      description: 'Aynı kafede bulunan kişilerin profillerini gör. Hobilerini, ilgi alanlarını ve burada bulunma amaçlarını keşfet.',
+      title: 'İnsanları Keşfet',
+      description: 'Aynı kafede bulunan kişilerin profillerini gör. İlgi alanlarını, hobilerini ve burada olma amaçlarını öğren.',
     },
     {
       icon: <Heart className="w-6 h-6 text-primary" />,
-      title: 'Eşleş ve Tanış',
-      description: 'Beğendiğin kişilere wave gönder. Karşılıklı wave ile eşleşin ve sohbet etmeye başlayın.',
+      title: 'Eşleş ve Bağlan',
+      description: 'Hoşlandığın kişilere wave gönder. Karşılıklı ilgi olduğunda eşleşin ve sohbet etmeye başlayın.',
     },
     {
       icon: <MessageCircle className="w-6 h-6 text-primary" />,
       title: 'Güvenli Sohbet',
-      description: 'Eşleştiğin kişilerle güvenli bir ortamda mesajlaş. Amacımız gerçek dünyada doğal ve güvenli bağlantılar kurmaktır.',
+      description: 'Eşleştiğin kişilerle güvenli ortamda mesajlaş. CafeMeet\'in amacı gerçek hayatta doğal, güvenli ve saygılı bağlantılar kurmaktır.',
     },
   ];
 
   return (
     <PageLayout>
       <div className="min-h-screen bg-background pb-24">
-        <Header title="Nasıl Çalışır?" showBack />
+        <Header title="CafeMeet Nasıl Çalışır?" showBack />
         <main className="pt-16 px-4 space-y-4">
           <p className="text-muted-foreground text-sm mt-2">
-            Cafe Huddle, yakındaki kafeleri keşfetmeni ve aynı mekândaki insanlarla bağlantı kurmanı sağlar.
+            CafeMeet, gerçek kafelerde doğal bağlantılar kurmanı sağlar. Check-in yap, insanları keşfet, eşleş ve sohbet et.
           </p>
 
           {steps.map(({ icon, title, description }, idx) => (

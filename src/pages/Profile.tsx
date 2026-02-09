@@ -267,7 +267,7 @@ export default function Profile() {
               </div>
               <div>
                 <p className="font-medium text-foreground">
-                  {isPremium ? 'Premium Aktif' : 'Premium\'a Geç'}
+                  {isPremium ? 'Premium Aktif' : 'CafeMeet Premium'}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {isPremium ? 'Tüm özellikler açık' : 'Sınırsız sohbet ve daha fazlası'}

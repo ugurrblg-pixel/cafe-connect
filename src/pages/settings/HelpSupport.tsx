@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { PageLayout } from '@/components/PageLayout';
-import { ChevronRight, BookOpen, MapPin, Crown, Mail } from 'lucide-react';
+import { ChevronRight, BookOpen, MapPin, Crown, Mail, FileText, Scale } from 'lucide-react';
 
 export default function HelpSupport() {
   const navigate = useNavigate();
@@ -9,18 +9,18 @@ export default function HelpSupport() {
   const items = [
     {
       icon: <BookOpen className="w-5 h-5 text-primary" />,
-      label: 'Nasıl Çalışır?',
-      description: 'Uygulamanın temel özelliklerini öğrenin',
+      label: 'CafeMeet Nasıl Çalışır?',
+      description: 'Uygulamanın temel özelliklerini keşfedin',
       onClick: () => navigate('/settings/help/how-it-works'),
     },
     {
       icon: <MapPin className="w-5 h-5 text-accent" />,
-      label: 'Konum Kullanımı',
+      label: 'Konum Neden Gerekli?',
       description: 'Konum kullanımı hakkında bilgi',
       onClick: () => navigate('/settings/help/location'),
     },
     {
-      icon: <Crown className="w-5 h-5 text-amber-500" />,
+      icon: <Crown className="w-5 h-5 text-primary" />,
       label: 'Premium & Ödemeler',
       description: 'Abonelik ve ödeme bilgileri',
       onClick: () => navigate('/settings/help/premium'),
@@ -30,6 +30,18 @@ export default function HelpSupport() {
       label: 'Bize Ulaşın',
       description: 'Soru veya geri bildirim gönderin',
       onClick: () => navigate('/settings/help/contact'),
+    },
+    {
+      icon: <FileText className="w-5 h-5 text-muted-foreground" />,
+      label: 'Gizlilik Politikası',
+      description: 'Verilerinizi nasıl koruyoruz',
+      onClick: () => navigate('/settings/help/privacy-policy'),
+    },
+    {
+      icon: <Scale className="w-5 h-5 text-muted-foreground" />,
+      label: 'Kullanım Koşulları',
+      description: 'Hizmet şartlarımız',
+      onClick: () => navigate('/settings/help/terms'),
     },
   ];
 
@@ -63,7 +75,7 @@ export default function HelpSupport() {
           </section>
 
           <p className="text-xs text-muted-foreground text-center mt-6 px-4">
-            Cafe Huddle v1.0 — Güvenliğiniz bizim için önemli ☕
+            CafeMeet v1.0 — Güvenliğiniz bizim için önemli ☕
           </p>
         </main>
       </div>
