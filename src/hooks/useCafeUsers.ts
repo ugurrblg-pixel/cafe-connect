@@ -35,6 +35,7 @@ interface CafeUser {
   checkedInAt: Date;
   lastActiveAt: Date; // Derived from presence heartbeat
   userId: string;
+  hobbies: string[];
 }
 
 interface UseCafeUsersOptions {
@@ -111,7 +112,7 @@ export function useCafeUsers(cafeId: string, options: UseCafeUsersOptions = {}) 
     // Fetch profiles
     const { data: profilesData, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, user_id, name, display_name, age, bio, photo_url, purpose, allow_dms, is_visible')
+      .select('id, user_id, name, display_name, age, bio, photo_url, purpose, allow_dms, is_visible, hobbies')
       .in('user_id', userIds);
 
     if (profilesError) {
@@ -147,6 +148,7 @@ export function useCafeUsers(cafeId: string, options: UseCafeUsersOptions = {}) 
           isVisible: profile.is_visible ?? true,
           checkedInAt: new Date(checkIn.check_in_time),
           lastActiveAt,
+          hobbies: (profile.hobbies as string[]) || [],
         };
       })
       .filter((u): u is CafeUser => u !== null);

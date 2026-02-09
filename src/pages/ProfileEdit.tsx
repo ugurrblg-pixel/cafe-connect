@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { HobbySelector } from '@/components/HobbySelector';
 import { Camera, User, Loader2, MessageCircle, Users, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,6 +22,7 @@ interface ProfileData {
   photo_url: string;
   is_visible: boolean;
   purpose: Purpose;
+  hobbies: string[];
 }
 
 export default function ProfileEdit() {
@@ -37,6 +39,7 @@ export default function ProfileEdit() {
     photo_url: '',
     is_visible: true,
     purpose: 'friendship',
+    hobbies: [],
   });
 
   useEffect(() => {
@@ -45,7 +48,7 @@ export default function ProfileEdit() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, display_name, bio, photo_url, is_visible, purpose')
+        .select('id, display_name, bio, photo_url, is_visible, purpose, hobbies')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -60,6 +63,7 @@ export default function ProfileEdit() {
           photo_url: data.photo_url || '',
           is_visible: data.is_visible ?? true,
           purpose: (data.purpose as Purpose) || 'friendship',
+          hobbies: (data.hobbies as string[]) || [],
         });
       }
       setLoading(false);
@@ -144,6 +148,7 @@ export default function ProfileEdit() {
         photo_url: profile.photo_url,
         is_visible: profile.is_visible,
         purpose: profile.purpose,
+        hobbies: profile.hobbies,
       })
       .eq('id', profile.id);
 
@@ -293,6 +298,18 @@ export default function ProfileEdit() {
             <p className="text-xs text-muted-foreground">
               This helps others know what kind of connection you're open to
             </p>
+          </div>
+
+          {/* Hobbies Section */}
+          <div className="space-y-3">
+            <Label>Hobiler</Label>
+            <p className="text-xs text-muted-foreground -mt-1">
+              İlgi alanlarını seç, ortak hobiler eşleşmelere yardımcı olur
+            </p>
+            <HobbySelector
+              selectedHobbies={profile.hobbies}
+              onHobbiesChange={(hobbies) => setProfile(prev => ({ ...prev, hobbies }))}
+            />
           </div>
 
           {/* Visibility Toggle */}

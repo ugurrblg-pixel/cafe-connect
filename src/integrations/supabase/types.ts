@@ -358,6 +358,7 @@ export type Database = {
           created_at: string
           display_name: string | null
           hide_last_seen: boolean
+          hobbies: string[] | null
           id: string
           is_visible: boolean | null
           name: string
@@ -376,6 +377,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           hide_last_seen?: boolean
+          hobbies?: string[] | null
           id?: string
           is_visible?: boolean | null
           name?: string
@@ -394,6 +396,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           hide_last_seen?: boolean
+          hobbies?: string[] | null
           id?: string
           is_visible?: boolean | null
           name?: string

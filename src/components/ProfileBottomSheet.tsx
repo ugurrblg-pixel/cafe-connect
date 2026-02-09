@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { PurposeBadge } from './PurposeBadge';
+import { HobbyDisplay } from './HobbyDisplay';
 import { MessageRequestModal } from './MessageRequestModal';
 import { BlockDialog, ReportDialog } from './BlockReportDialog';
 import { Purpose } from '@/types';
@@ -32,6 +33,7 @@ interface ProfileUser {
   checkedInAt?: Date;
   userId?: string;
   cafeId?: string;
+  hobbies?: string[];
 }
 
 interface ProfileBottomSheetProps {
@@ -173,6 +175,13 @@ export function ProfileBottomSheet({ user, open, onOpenChange, cafeId }: Profile
               <p className="text-muted-foreground text-center mt-4 px-4 max-w-sm">
                 {user.bio}
               </p>
+            )}
+
+            {/* Hobbies */}
+            {user.hobbies && user.hobbies.length > 0 && (
+              <div className="mt-4 px-4">
+                <HobbyDisplay hobbies={user.hobbies} className="justify-center" />
+              </div>
             )}
 
             {/* Currently Here Indicator */}

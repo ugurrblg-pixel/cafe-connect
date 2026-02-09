@@ -36,6 +36,7 @@ interface SelectedUser {
   allowDMs?: boolean;
   checkedInAt?: Date;
   cafeId?: string;
+  hobbies?: string[];
 }
 
 export default function CafeRoom() {
@@ -219,6 +220,7 @@ export default function CafeRoom() {
       allowDMs: activeUser.allowDMs,
       checkedInAt: activeUser.checkedInAt,
       cafeId: id,
+      hobbies: activeUser.hobbies,
     });
     setSheetOpen(true);
   };
