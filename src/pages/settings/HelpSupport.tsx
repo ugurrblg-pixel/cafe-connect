@@ -1,52 +1,35 @@
+import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { PageLayout } from '@/components/PageLayout';
-import { ChevronRight, BookOpen, MapPin, Crown, Mail, FileText, Scale } from 'lucide-react';
-
-interface HelpItem {
-  icon: React.ReactNode;
-  label: string;
-  description: string;
-  href?: string;
-  onClick?: () => void;
-}
+import { ChevronRight, BookOpen, MapPin, Crown, Mail } from 'lucide-react';
 
 export default function HelpSupport() {
-  const items: HelpItem[] = [
+  const navigate = useNavigate();
+
+  const items = [
     {
       icon: <BookOpen className="w-5 h-5 text-primary" />,
       label: 'Nasıl Çalışır?',
       description: 'Uygulamanın temel özelliklerini öğrenin',
-      href: '#how-it-works',
+      onClick: () => navigate('/settings/help/how-it-works'),
     },
     {
       icon: <MapPin className="w-5 h-5 text-accent" />,
-      label: 'Konum Neden Gerekli?',
+      label: 'Konum Kullanımı',
       description: 'Konum kullanımı hakkında bilgi',
-      href: '#location',
+      onClick: () => navigate('/settings/help/location'),
     },
     {
-      icon: <Crown className="w-5 h-5 text-warning" />,
+      icon: <Crown className="w-5 h-5 text-amber-500" />,
       label: 'Premium & Ödemeler',
       description: 'Abonelik ve ödeme bilgileri',
-      href: '#premium',
+      onClick: () => navigate('/settings/help/premium'),
     },
     {
       icon: <Mail className="w-5 h-5 text-primary" />,
       label: 'Bize Ulaşın',
       description: 'Soru veya geri bildirim gönderin',
-      href: 'mailto:support@cafehuddle.app',
-    },
-    {
-      icon: <FileText className="w-5 h-5 text-muted-foreground" />,
-      label: 'Gizlilik Politikası',
-      description: 'Verilerinizi nasıl koruyoruz',
-      href: '#privacy-policy',
-    },
-    {
-      icon: <Scale className="w-5 h-5 text-muted-foreground" />,
-      label: 'Kullanım Koşulları',
-      description: 'Hizmet şartlarımız',
-      href: '#terms',
+      onClick: () => navigate('/settings/help/contact'),
     },
   ];
 
@@ -56,13 +39,12 @@ export default function HelpSupport() {
         <Header title="Yardım & Destek" showBack />
 
         <main className="pt-16 px-4">
-          {/* FAQ Sections */}
           <section className="card-elevated overflow-hidden">
-            {items.map(({ icon, label, description, href }, idx) => (
-              <a
+            {items.map(({ icon, label, description, onClick }, idx) => (
+              <button
                 key={label}
-                href={href}
-                className={`flex items-center justify-between p-4 hover:bg-secondary/50 transition-colors ${
+                onClick={onClick}
+                className={`w-full flex items-center justify-between p-4 hover:bg-secondary/50 transition-colors text-left ${
                   idx < items.length - 1 ? 'border-b border-border' : ''
                 }`}
               >
@@ -76,7 +58,7 @@ export default function HelpSupport() {
                   </div>
                 </div>
                 <ChevronRight className="w-5 h-5 text-muted-foreground" />
-              </a>
+              </button>
             ))}
           </section>
 
