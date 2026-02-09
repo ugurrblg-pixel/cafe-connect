@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 interface ProfilePhotoCarouselProps {
   photos: string[];
   isPremium: boolean;
+  isOwnProfile?: boolean;
   name: string;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
@@ -15,7 +16,8 @@ interface ProfilePhotoCarouselProps {
 
 export function ProfilePhotoCarousel({ 
   photos, 
-  isPremium, 
+  isPremium,
+  isOwnProfile = false,
   name,
   size = 'lg',
   className 
@@ -27,10 +29,21 @@ export function ProfilePhotoCarousel({
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // For demo purposes, generate placeholder photos if not enough
-  const displayPhotos = isPremium 
-    ? [...photos, ...Array(Math.max(0, 3 - photos.length)).fill('')].slice(0, 3)
-    : photos.slice(0, 1);
+  // Filter out empty photos and determine what to show
+  const validPhotos = photos.filter(Boolean);
+  
+  // For own profile, show all photos without restrictions
+  // For others' profiles, show based on premium status
+  const displayPhotos = isOwnProfile
+    ? validPhotos.length > 0 ? validPhotos : [''] // Show all own photos
+    : isPremium 
+      ? validPhotos // Premium users see all photos of others
+      : validPhotos.slice(0, 1); // Free users see only first photo of others
+  
+  // Calculate locked photos count (only for viewing others' profiles as free user)
+  const lockedPhotosCount = !isOwnProfile && !isPremium && validPhotos.length > 1
+    ? validPhotos.length - 1
+    : 0;
 
   const getInitials = (name: string) => {
     return name
@@ -63,13 +76,14 @@ export function ProfilePhotoCarousel({
     const isLeftSwipe = distance > 50;
     const isRightSwipe = distance < -50;
 
-    if (!isPremium && (isLeftSwipe || isRightSwipe)) {
-      // Free user trying to swipe - show paywall
+    // Only show paywall for free users viewing others' profiles with locked photos
+    if (!isOwnProfile && !isPremium && lockedPhotosCount > 0 && (isLeftSwipe || isRightSwipe)) {
       setShowPaywall(true);
       return;
     }
 
-    if (isPremium) {
+    // Allow swiping for own profile or premium users viewing others
+    if (isOwnProfile || isPremium) {
       if (isLeftSwipe && currentIndex < displayPhotos.length - 1) {
         setCurrentIndex(prev => prev + 1);
       }
@@ -80,7 +94,8 @@ export function ProfilePhotoCarousel({
   };
 
   const handleNavClick = (direction: 'prev' | 'next') => {
-    if (!isPremium) {
+    // Only show paywall for free users viewing others' profiles
+    if (!isOwnProfile && !isPremium) {
       setShowPaywall(true);
       return;
     }
@@ -138,21 +153,23 @@ export function ProfilePhotoCarousel({
             ))}
           </div>
 
-          {/* Badge - Premium Crown or Free Lock */}
-          <div className="absolute top-3 right-3 z-10">
-            {isPremium ? (
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg">
-                <Crown className="w-4 h-4 text-white" />
-              </div>
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
-                <Lock className="w-4 h-4 text-white/80" />
-              </div>
-            )}
-          </div>
+          {/* Badge - Only show for others' profiles, not own profile */}
+          {!isOwnProfile && (
+            <div className="absolute top-3 right-3 z-10">
+              {isPremium ? (
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg">
+                  <Crown className="w-4 h-4 text-white" />
+                </div>
+              ) : lockedPhotosCount > 0 ? (
+                <div className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                  <Lock className="w-4 h-4 text-white/80" />
+                </div>
+              ) : null}
+            </div>
+          )}
 
-          {/* Navigation Arrows (Premium only, desktop) */}
-          {isPremium && displayPhotos.length > 1 && (
+          {/* Navigation Arrows (for own profile or premium viewing others) */}
+          {(isOwnProfile || isPremium) && displayPhotos.length > 1 && (
             <>
               <button
                 onClick={() => handleNavClick('prev')}
@@ -175,8 +192,8 @@ export function ProfilePhotoCarousel({
             </>
           )}
 
-          {/* Dots Indicator (Premium only) */}
-          {isPremium && displayPhotos.length > 1 && (
+          {/* Dots Indicator (for own profile or premium viewing others) */}
+          {(isOwnProfile || isPremium) && displayPhotos.length > 1 && (
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
               {displayPhotos.map((_, index) => (
                 <button
@@ -194,14 +211,14 @@ export function ProfilePhotoCarousel({
           )}
         </div>
 
-        {/* Free User Text */}
-        {!isPremium && (
+        {/* Locked Photos Text - Only for viewing others' profiles as free user */}
+        {!isOwnProfile && !isPremium && lockedPhotosCount > 0 && (
           <button 
             onClick={() => setShowPaywall(true)}
             className="mt-3 flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
           >
             <Lock className="w-3.5 h-3.5" />
-            <span>+2 fotoğraf Premium'da</span>
+            <span>+{lockedPhotosCount} fotoğraf Premium'da</span>
           </button>
         )}
       </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,7 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { HobbySelector } from '@/components/HobbySelector';
-import { Camera, User, Loader2, MessageCircle, Users, Heart } from 'lucide-react';
+import { ProfilePhotoManager } from '@/components/ProfilePhotoManager';
+import { User, Loader2, MessageCircle, Users, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Purpose } from '@/types';
@@ -20,6 +21,7 @@ interface ProfileData {
   display_name: string;
   bio: string;
   photo_url: string;
+  photo_urls: string[];
   is_visible: boolean;
   purpose: Purpose;
   hobbies: string[];
@@ -28,15 +30,14 @@ interface ProfileData {
 export default function ProfileEdit() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [profile, setProfile] = useState<ProfileData>({
     id: '',
     display_name: '',
     bio: '',
     photo_url: '',
+    photo_urls: [],
     is_visible: true,
     purpose: 'friendship',
     hobbies: [],
@@ -48,7 +49,7 @@ export default function ProfileEdit() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, display_name, bio, photo_url, is_visible, purpose, hobbies')
+        .select('id, display_name, bio, photo_url, photo_urls, is_visible, purpose, hobbies')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -61,6 +62,7 @@ export default function ProfileEdit() {
           display_name: data.display_name || '',
           bio: data.bio || '',
           photo_url: data.photo_url || '',
+          photo_urls: (data.photo_urls as string[]) || [],
           is_visible: data.is_visible ?? true,
           purpose: (data.purpose as Purpose) || 'friendship',
           hobbies: (data.hobbies as string[]) || [],
@@ -72,48 +74,9 @@ export default function ProfileEdit() {
     fetchProfile();
   }, [user]);
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image file');
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be less than 5MB');
-      return;
-    }
-
-    setUploading(true);
-
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-
-      // Upload to storage
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
-
-      setProfile(prev => ({ ...prev, photo_url: publicUrl }));
-      toast.success('Photo uploaded!');
-    } catch (error) {
-      console.error('Error uploading photo:', error);
-      toast.error('Failed to upload photo');
-    } finally {
-      setUploading(false);
-    }
+  // Sync photo_urls with legacy photo_url field
+  const getMainPhotoUrl = () => {
+    return profile.photo_urls.length > 0 ? profile.photo_urls[0] : profile.photo_url;
   };
 
   const handleSave = async () => {
@@ -140,12 +103,16 @@ export default function ProfileEdit() {
 
     setSaving(true);
 
+    // Use first photo from photo_urls as main photo_url for backwards compatibility
+    const mainPhotoUrl = profile.photo_urls.length > 0 ? profile.photo_urls[0] : profile.photo_url;
+
     const { error } = await supabase
       .from('profiles')
       .update({
         display_name: trimmedName,
         bio: trimmedBio,
-        photo_url: profile.photo_url,
+        photo_url: mainPhotoUrl,
+        photo_urls: profile.photo_urls,
         is_visible: profile.is_visible,
         purpose: profile.purpose,
         hobbies: profile.hobbies,
@@ -161,15 +128,6 @@ export default function ProfileEdit() {
     }
 
     setSaving(false);
-  };
-
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2) || 'U';
   };
 
   if (loading) {
@@ -189,56 +147,26 @@ export default function ProfileEdit() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <Header title="Edit Profile" showBack />
+      <Header title="Profili Düzenle" showBack />
 
-      <main className="pt-20 px-4">
-        {/* Profile Photo */}
-        <div className="flex flex-col items-center py-6">
-          <div className="relative mb-6">
-            {profile.photo_url ? (
-              <img
-                src={profile.photo_url}
-                alt="Profile"
-                className="w-28 h-28 rounded-full object-cover border-4 border-card shadow-lg"
-              />
-            ) : (
-              <div className="w-28 h-28 rounded-full bg-primary flex items-center justify-center border-4 border-card shadow-lg">
-                <span className="text-3xl font-bold text-primary-foreground">
-                  {getInitials(profile.display_name)}
-                </span>
-              </div>
-            )}
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="absolute bottom-0 right-0 w-10 h-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-md hover:bg-primary/90 transition-colors disabled:opacity-50"
-            >
-              {uploading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Camera className="w-5 h-5" />
-              )}
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handlePhotoUpload}
-              className="hidden"
-            />
-          </div>
-          <p className="text-sm text-muted-foreground">Tap to change photo</p>
+      <main className="pt-20 px-4 pb-24">
+        {/* Profile Photos Section */}
+        <div className="py-6">
+          <ProfilePhotoManager
+            photos={profile.photo_urls.length > 0 ? profile.photo_urls : (profile.photo_url ? [profile.photo_url] : [])}
+            onPhotosChange={(photos) => setProfile(prev => ({ ...prev, photo_urls: photos }))}
+          />
         </div>
 
         {/* Form */}
         <div className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="display_name">Display Name</Label>
+            <Label htmlFor="display_name">Görünen İsim</Label>
             <Input
               id="display_name"
               value={profile.display_name}
               onChange={(e) => setProfile(prev => ({ ...prev, display_name: e.target.value }))}
-              placeholder="How should others see you?"
+              placeholder="İsminiz nasıl görünsün?"
               maxLength={50}
             />
             <p className="text-xs text-muted-foreground text-right">
@@ -247,12 +175,12 @@ export default function ProfileEdit() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="bio">Short Bio</Label>
+            <Label htmlFor="bio">Kısa Bio</Label>
             <Textarea
               id="bio"
               value={profile.bio}
               onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
-              placeholder="Tell others a bit about yourself..."
+              placeholder="Kendinizden biraz bahsedin..."
               maxLength={120}
               rows={3}
               className="resize-none"
@@ -264,7 +192,7 @@ export default function ProfileEdit() {
 
           {/* Intent/Purpose Selector */}
           <div className="space-y-3">
-            <Label>What are you looking for?</Label>
+            <Label>Ne arıyorsun?</Label>
             <ToggleGroup
               type="single"
               value={profile.purpose}
@@ -278,25 +206,25 @@ export default function ProfileEdit() {
                 className="flex flex-col items-center gap-1 py-3 px-2 h-auto data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
               >
                 <Users className="w-5 h-5" />
-                <span className="text-xs font-medium">Friendship</span>
+                <span className="text-xs font-medium">Arkadaşlık</span>
               </ToggleGroupItem>
               <ToggleGroupItem
                 value="dating"
                 className="flex flex-col items-center gap-1 py-3 px-2 h-auto data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
               >
                 <Heart className="w-5 h-5" />
-                <span className="text-xs font-medium">Dating</span>
+                <span className="text-xs font-medium">Flört</span>
               </ToggleGroupItem>
               <ToggleGroupItem
                 value="chat"
                 className="flex flex-col items-center gap-1 py-3 px-2 h-auto data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
               >
                 <MessageCircle className="w-5 h-5" />
-                <span className="text-xs font-medium">Chat</span>
+                <span className="text-xs font-medium">Sohbet</span>
               </ToggleGroupItem>
             </ToggleGroup>
             <p className="text-xs text-muted-foreground">
-              This helps others know what kind of connection you're open to
+              Bu, diğerlerinin ne tür bir bağlantıya açık olduğunu anlamasına yardımcı olur
             </p>
           </div>
 
@@ -320,8 +248,8 @@ export default function ProfileEdit() {
                   <User className="w-5 h-5 text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">Visible in Cafes</p>
-                  <p className="text-sm text-muted-foreground">Others can see you when checked in</p>
+                  <p className="font-medium text-foreground">Kafelerde Görünür</p>
+                  <p className="text-sm text-muted-foreground">Check-in yaptığında diğerleri seni görebilir</p>
                 </div>
               </div>
               <Switch
@@ -339,10 +267,10 @@ export default function ProfileEdit() {
             {saving ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Saving...
+                Kaydediliyor...
               </>
             ) : (
-              'Save Profile'
+              'Profili Kaydet'
             )}
           </Button>
         </div>

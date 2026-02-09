@@ -364,6 +364,7 @@ export type Database = {
           name: string
           notifications_enabled: boolean
           photo_url: string | null
+          photo_urls: string[] | null
           purpose: string
           show_read_receipts: boolean
           updated_at: string
@@ -383,6 +384,7 @@ export type Database = {
           name?: string
           notifications_enabled?: boolean
           photo_url?: string | null
+          photo_urls?: string[] | null
           purpose?: string
           show_read_receipts?: boolean
           updated_at?: string
@@ -402,6 +404,7 @@ export type Database = {
           name?: string
           notifications_enabled?: boolean
           photo_url?: string | null
+          photo_urls?: string[] | null
           purpose?: string
           show_read_receipts?: boolean
           updated_at?: string
