@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Search, Trash2, MessageCircle, Heart, AlertTriangle } from 'lucide-react';
+import { Search, Trash2, MessageCircle, Heart, AlertTriangle, Eye, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -29,7 +29,6 @@ interface ConversationRow {
   updated_at: string;
   user1Name?: string;
   user2Name?: string;
-  messageCount?: number;
 }
 
 interface MatchRow {
@@ -42,6 +41,15 @@ interface MatchRow {
   user2Name?: string;
 }
 
+interface MessageRow {
+  id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+  deleted_at: string | null;
+  senderName?: string;
+}
+
 export default function AdminModeration() {
   const { user: currentUser } = useAuth();
   const [tab, setTab] = useState<Tab>('conversations');
@@ -50,6 +58,12 @@ export default function AdminModeration() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{ type: Tab; id: string; label: string } | null>(null);
+
+  // Message viewer state
+  const [viewingConvo, setViewingConvo] = useState<ConversationRow | null>(null);
+  const [messages, setMessages] = useState<MessageRow[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [deleteMessageTarget, setDeleteMessageTarget] = useState<MessageRow | null>(null);
 
   const logAudit = async (action: string, targetType: string, targetId: string, details?: any) => {
     if (!currentUser) return;
@@ -114,6 +128,32 @@ export default function AdminModeration() {
     setLoading(false);
   }, []);
 
+  const fetchMessages = async (conversationId: string) => {
+    setMessagesLoading(true);
+    const { data, error } = await supabase
+      .from('messages')
+      .select('id, sender_id, content, created_at, deleted_at')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true })
+      .limit(200);
+
+    if (error || !data) { setMessagesLoading(false); return; }
+
+    const senderIds = [...new Set(data.map(m => m.sender_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('user_id, display_name, name')
+      .in('user_id', senderIds);
+
+    const nameMap = new Map(profiles?.map(p => [p.user_id, p.display_name || p.name || 'Unknown']) || []);
+
+    setMessages(data.map(m => ({
+      ...m,
+      senderName: nameMap.get(m.sender_id) || 'Unknown',
+    })));
+    setMessagesLoading(false);
+  };
+
   useEffect(() => {
     if (tab === 'conversations') fetchConversations();
     else fetchMatches();
@@ -123,7 +163,6 @@ export default function AdminModeration() {
     if (!deleteTarget) return;
 
     if (deleteTarget.type === 'conversations') {
-      // Soft delete: deactivate conversation
       const { error } = await supabase
         .from('conversations')
         .update({ is_active: false })
@@ -153,6 +192,27 @@ export default function AdminModeration() {
     setDeleteTarget(null);
   };
 
+  const handleDeleteMessage = async () => {
+    if (!deleteMessageTarget) return;
+
+    const { error } = await supabase
+      .from('messages')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', deleteMessageTarget.id);
+
+    if (!error) {
+      await logAudit('delete_message', 'message', deleteMessageTarget.id, {
+        conversation_id: viewingConvo?.id,
+        content_preview: deleteMessageTarget.content.slice(0, 50),
+      });
+      toast.success('Message deleted');
+      setDeleteMessageTarget(null);
+      if (viewingConvo) fetchMessages(viewingConvo.id);
+    } else {
+      toast.error('Failed to delete message');
+    }
+  };
+
   const filteredConversations = conversations.filter(c => {
     const q = search.toLowerCase();
     return (c.user1Name || '').toLowerCase().includes(q) || (c.user2Name || '').toLowerCase().includes(q);
@@ -167,7 +227,7 @@ export default function AdminModeration() {
     <AdminLayout>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground">Chat & Match Moderation</h1>
-        <p className="text-muted-foreground text-sm">Manage conversations and matches</p>
+        <p className="text-muted-foreground text-sm">Manage conversations, messages, and matches</p>
       </div>
 
       {/* Tabs */}
@@ -240,7 +300,14 @@ export default function AdminModeration() {
                       <td className="px-4 py-3 text-muted-foreground">
                         {new Date(c.updated_at).toLocaleString()}
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-right flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => { setViewingConvo(c); fetchMessages(c.id); }}
+                          className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
+                          title="View messages"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
                         {c.is_active && (
                           <button
                             onClick={() => setDeleteTarget({ type: 'conversations', id: c.id, label: `${c.user1Name} ↔ ${c.user2Name}` })}
@@ -299,7 +366,90 @@ export default function AdminModeration() {
         )}
       </div>
 
-      {/* Delete confirmation */}
+      {/* Message Viewer Dialog */}
+      <Dialog open={!!viewingConvo} onOpenChange={() => setViewingConvo(null)}>
+        <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageCircle className="w-5 h-5 text-primary" />
+              Messages
+            </DialogTitle>
+            <DialogDescription>
+              {viewingConvo?.user1Name} ↔ {viewingConvo?.user2Name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto space-y-2 min-h-[200px] max-h-[400px]">
+            {messagesLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-3/4" />
+              ))
+            ) : messages.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">No messages in this conversation</p>
+            ) : (
+              messages.map(msg => (
+                <div
+                  key={msg.id}
+                  className={cn(
+                    'flex items-start gap-2 p-2 rounded-lg text-sm group',
+                    msg.deleted_at ? 'opacity-40' : 'hover:bg-muted/50'
+                  )}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-foreground text-xs">{msg.senderName}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(msg.created_at).toLocaleString()}
+                      </span>
+                      {msg.deleted_at && (
+                        <span className="text-xs text-destructive font-medium">[deleted]</span>
+                      )}
+                    </div>
+                    <p className={cn('text-foreground mt-0.5', msg.deleted_at && 'line-through')}>
+                      {msg.content}
+                    </p>
+                  </div>
+                  {!msg.deleted_at && (
+                    <button
+                      onClick={() => setDeleteMessageTarget(msg)}
+                      className="p-1 rounded hover:bg-destructive/10 text-destructive opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                      title="Delete message"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete message confirmation */}
+      <Dialog open={!!deleteMessageTarget} onOpenChange={() => setDeleteMessageTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Delete Message
+            </DialogTitle>
+            <DialogDescription>
+              This will soft-delete the message. It will be hidden from users but preserved for audit.
+            </DialogDescription>
+          </DialogHeader>
+          {deleteMessageTarget && (
+            <div className="bg-muted p-3 rounded-lg text-sm">
+              <p className="text-xs text-muted-foreground mb-1">{deleteMessageTarget.senderName}:</p>
+              <p className="text-foreground">{deleteMessageTarget.content}</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDeleteMessageTarget(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteMessage}>Delete Message</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete conversation/match confirmation */}
       <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
