@@ -169,6 +169,15 @@ export default function Profile() {
     );
   }
 
+  // TEMPORARY: Log auth user ID for admin setup
+  if (user) {
+    console.log('=== AUTH USER ID (for super_admin SQL) ===');
+    console.log('auth.users.id:', user.id);
+    console.log('user.email:', user.email);
+    console.log('This ID is used as profiles.user_id');
+    console.log('==========================================');
+  }
+
   if (!profile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -183,6 +192,15 @@ export default function Profile() {
         <Header title="Profile" showMenu />
 
         <main className="pt-16 px-4">
+        {/* TEMPORARY: Auth User ID for admin setup - REMOVE AFTER USE */}
+        {user && (
+          <div className="mb-4 p-3 rounded-lg bg-muted border border-border text-xs font-mono break-all">
+            <p className="font-semibold text-foreground mb-1">🔑 Your Auth User ID (for super_admin setup):</p>
+            <p className="text-primary select-all">{user.id}</p>
+            <p className="text-muted-foreground mt-1">Email: {user.email}</p>
+            <p className="text-muted-foreground mt-1">SQL: INSERT INTO public.user_roles (user_id, role) VALUES ('{user.id}', 'super_admin');</p>
+          </div>
+        )}
         {/* Profile Header */}
         <div className="flex flex-col items-center py-6 animate-scale-in">
           {/* Profile Photo Carousel */}
