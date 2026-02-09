@@ -1,6 +1,5 @@
-import { MessageCircle, Sparkles, MapPin } from 'lucide-react';
+import { MessageCircle, Sparkles, MapPin, Coffee } from 'lucide-react';
 import { useI18n } from '@/contexts/I18nContext';
-import { SystemMessage } from './SystemMessage';
 
 interface EmptyChatProps {
   otherUserName: string;
@@ -27,40 +26,43 @@ export function EmptyChat({ otherUserName, cafeName, onSuggestionTap }: EmptyCha
 
   return (
     <div className="flex flex-col items-center justify-center h-full min-h-[50vh] px-6 text-center animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
-      {/* Cafe context hint */}
-      <div className="flex items-center gap-1.5 mb-6 px-3 py-1.5 rounded-full bg-secondary/60">
-        <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
-        <span className="text-xs text-muted-foreground">{cafeMessage}</span>
+      {/* Cafe context badge - warmer design */}
+      <div className="flex items-center gap-2 mb-8 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500/10 to-primary/10 border border-amber-500/20">
+        <Coffee className="w-4 h-4 text-amber-600" />
+        <span className="text-sm font-medium text-foreground/80">{cafeMessage}</span>
       </div>
 
-      {/* Soft icon */}
-      <div className="relative mb-5">
-        <div className="w-16 h-16 bg-secondary/60 rounded-full flex items-center justify-center">
-          <MessageCircle className="w-8 h-8 text-muted-foreground/40" />
+      {/* Warm illustration */}
+      <div className="relative mb-6">
+        {/* Background glow */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/15 to-amber-500/10 rounded-full blur-xl scale-150" />
+        
+        <div className="relative w-20 h-20 bg-gradient-to-br from-secondary to-secondary/60 rounded-full flex items-center justify-center shadow-lg">
+          <MessageCircle className="w-10 h-10 text-primary/50" strokeWidth={1.5} />
         </div>
-        <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 bg-primary/15 rounded-full flex items-center justify-center">
-          <Sparkles className="w-3 h-3 text-primary/70" />
+        <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center shadow-md">
+          <Sparkles className="w-4 h-4 text-primary-foreground" />
         </div>
       </div>
       
-      {/* Heading - Updated to "You're the first one here" */}
-      <h3 className="font-medium text-base text-foreground mb-1.5">
+      {/* Friendly heading */}
+      <h3 className="font-bold text-xl text-foreground mb-2">
         {t.chat.youreFirstHere}
       </h3>
       
-      {/* Subtext */}
-      <p className="text-muted-foreground text-sm max-w-[260px] leading-relaxed mb-6">
+      {/* Encouraging subtext */}
+      <p className="text-muted-foreground text-base max-w-[280px] leading-relaxed mb-8">
         {t.chat.firstMessageEncouragement}
       </p>
 
-      {/* Suggestion chips */}
+      {/* Suggestion chips - more prominent */}
       {onSuggestionTap && (
-        <div className="flex flex-wrap justify-center gap-2 max-w-[300px]">
+        <div className="flex flex-wrap justify-center gap-2.5 max-w-[320px]">
           {suggestions.map((suggestion, index) => (
             <button
               key={index}
               onClick={() => onSuggestionTap(suggestion)}
-              className="px-3.5 py-2 text-sm bg-secondary/70 hover:bg-secondary text-foreground/80 rounded-full transition-all duration-200 hover:scale-105 active:scale-95"
+              className="px-4 py-2.5 text-sm font-medium bg-secondary hover:bg-secondary/80 text-foreground rounded-full transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm hover:shadow-md border border-border/50"
             >
               {suggestion}
             </button>
@@ -70,4 +72,3 @@ export function EmptyChat({ otherUserName, cafeName, onSuggestionTap }: EmptyCha
     </div>
   );
 }
-

@@ -57,10 +57,10 @@ export function MessageBubble({
   const emojiOnly = useMemo(() => !isDeleted && isEmojiOnly(content), [content, isDeleted]);
   const longMessage = useMemo(() => isLongMessage(content), [content]);
 
-  // Calculate border radius based on position in group
+  // Calculate border radius based on position in group - more rounded for modern feel
   const getBorderRadius = () => {
-    const full = '20px';
-    const tight = '6px';
+    const full = '22px';
+    const tight = '8px';
     
     if (isOwn) {
       if (isFirstInGroup && isLastInGroup) {
@@ -97,11 +97,11 @@ export function MessageBubble({
         className={cn(
           'flex flex-col',
           isOwn ? 'items-end' : 'items-start',
-          isLastInGroup ? 'mb-2.5' : 'mb-0.5'
+          isLastInGroup ? 'mb-3' : 'mb-1'
         )}
       >
-        <div className="px-3.5 py-2 rounded-2xl bg-secondary/40 border border-border/50">
-          <p className="text-sm italic text-muted-foreground/60">
+        <div className="px-4 py-2.5 rounded-2xl bg-secondary/50 border border-border/30">
+          <p className="text-sm italic text-muted-foreground/50">
             {deletedText}
           </p>
         </div>
@@ -126,44 +126,46 @@ export function MessageBubble({
   const bubbleContent = (
     <div
       className={cn(
-        'flex flex-col animate-in fade-in-0 slide-in-from-bottom-1 duration-200',
+        'flex flex-col',
+        // Smooth enter animation
+        'animate-in fade-in-0 slide-in-from-bottom-2 duration-300',
         isOwn ? 'items-end' : 'items-start',
-        isLastInGroup ? 'mb-2.5' : 'mb-0.5',
+        isLastInGroup ? 'mb-3' : 'mb-1',
         // First message gets a subtle highlight
         isFirstMessage && 'relative'
       )}
     >
       {/* First message badge */}
       {isFirstMessage && (
-        <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-primary/10 text-[10px] font-medium text-primary">
-          ✨
+        <div className="absolute -top-7 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-gradient-to-r from-primary/10 to-amber-500/10 text-[10px] font-semibold text-primary flex items-center gap-1 shadow-sm">
+          ✨ İlk mesaj
         </div>
       )}
       
       {/* Premium sender indicator for incoming messages */}
       {!isOwn && isPremiumSender && isFirstInGroup && (
-        <div className="flex items-center gap-1 mb-1 ml-1">
-          <Crown className="w-3 h-3 text-amber-500" />
-          <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">Premium</span>
+        <div className="flex items-center gap-1 mb-1.5 ml-1">
+          <Crown className="w-3.5 h-3.5 text-amber-500" />
+          <span className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold">Premium</span>
         </div>
       )}
       
       <div
         className={cn(
-          'max-w-[70%] shadow-sm transition-opacity duration-200 relative',
-          // Sending state - reduced opacity
-          isSending && 'opacity-60',
+          'max-w-[75%] transition-all duration-200 relative',
+          // Sending state - reduced opacity with subtle pulse
+          isSending && 'opacity-70',
           // Failed state - subtle red tint
           isFailed && 'opacity-90',
           // Emoji-only: no background, larger text
           emojiOnly
             ? 'bg-transparent shadow-none px-1 py-0.5'
-            : 'px-3.5 py-2.5',
-          // Bubble colors - warm palette
-          !emojiOnly && isOwn && 'bg-primary text-primary-foreground',
-          !emojiOnly && !isOwn && 'bg-secondary/80 text-foreground',
+            : 'px-4 py-3',
+          // Bubble colors - warmer, more modern palette with shadows
+          !emojiOnly && isOwn && 'bg-gradient-to-br from-primary to-primary/90 text-primary-foreground shadow-md',
+          !emojiOnly && !isOwn && 'bg-secondary/90 text-foreground shadow-sm',
           // Premium sender gold outline for incoming messages
-          !emojiOnly && !isOwn && isPremiumSender && 'ring-1 ring-amber-500/40'
+          !emojiOnly && !isOwn && isPremiumSender && 'ring-1 ring-amber-500/40 shadow-amber-500/10'
         )}
         style={{ borderRadius: emojiOnly ? '0' : getBorderRadius() }}
       >
@@ -172,7 +174,7 @@ export function MessageBubble({
           className={cn(
             'whitespace-pre-wrap break-words',
             emojiOnly
-              ? 'text-4xl leading-none'
+              ? 'text-5xl leading-none'
               : longMessage
                 ? 'text-[15px] leading-relaxed'
                 : 'text-[15px] leading-snug'
@@ -184,12 +186,12 @@ export function MessageBubble({
         {/* Timestamp and status - only show on last message in group */}
         {isLastInGroup && !emojiOnly && (
           <div className={cn(
-            'flex items-center gap-1 mt-1',
+            'flex items-center gap-1.5 mt-1.5',
             isOwn ? 'justify-end' : 'justify-start'
           )}>
             <span className={cn(
               'text-[10px] font-medium',
-              isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'
+              isOwn ? 'text-primary-foreground/60' : 'text-muted-foreground'
             )}>
               {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
@@ -198,25 +200,25 @@ export function MessageBubble({
             {isOwn && (
               <>
                 {isSending && (
-                  <Clock className="w-3 h-3 text-primary-foreground/50 animate-pulse" />
+                  <Clock className="w-3.5 h-3.5 text-primary-foreground/40 animate-pulse" />
                 )}
                 {isFailed && (
-                  <AlertCircle className="w-3 h-3 text-destructive" />
+                  <AlertCircle className="w-3.5 h-3.5 text-destructive" />
                 )}
                 {status === 'sent' && isLastOwnMessage && (
                   <>
                     <CheckCheck 
                       className={cn(
-                        'w-3.5 h-3.5 transition-colors',
+                        'w-4 h-4 transition-all duration-300',
                         isRead 
                           ? 'text-accent-foreground' 
-                          : 'text-primary-foreground/50'
+                          : 'text-primary-foreground/40'
                       )} 
                     />
                   </>
                 )}
                 {status === 'sent' && !isLastOwnMessage && (
-                  <Check className="w-3 h-3 text-primary-foreground/50" />
+                  <Check className="w-3.5 h-3.5 text-primary-foreground/40" />
                 )}
               </>
             )}
@@ -225,7 +227,7 @@ export function MessageBubble({
         
         {/* Premium: Detailed read receipt below bubble */}
         {isOwn && isLastOwnMessage && status === 'sent' && isRead && isPremiumViewer && isLastInGroup && !emojiOnly && (
-          <div className="text-[9px] text-primary-foreground/50 mt-0.5 text-right">
+          <div className="text-[9px] text-primary-foreground/40 mt-1 text-right font-medium">
             {getSeenText()}
           </div>
         )}
@@ -233,23 +235,23 @@ export function MessageBubble({
         {/* Timestamp for emoji-only messages */}
         {isLastInGroup && emojiOnly && (
           <div className={cn(
-            'flex items-center gap-1 mt-0.5',
+            'flex items-center gap-1.5 mt-1',
             isOwn ? 'justify-end' : 'justify-start'
           )}>
             <span className="text-[10px] font-medium text-muted-foreground">
               {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
             {isOwn && isSending && (
-              <Clock className="w-3 h-3 text-muted-foreground/50 animate-pulse" />
+              <Clock className="w-3.5 h-3.5 text-muted-foreground/40 animate-pulse" />
             )}
             {isOwn && isFailed && (
-              <AlertCircle className="w-3 h-3 text-destructive" />
+              <AlertCircle className="w-3.5 h-3.5 text-destructive" />
             )}
             {isOwn && status === 'sent' && isLastOwnMessage && (
               <CheckCheck 
                 className={cn(
-                  'w-3.5 h-3.5 transition-colors',
-                  isRead ? 'text-primary' : 'text-muted-foreground/50'
+                  'w-4 h-4 transition-colors',
+                  isRead ? 'text-primary' : 'text-muted-foreground/40'
                 )} 
               />
             )}
@@ -261,9 +263,9 @@ export function MessageBubble({
       {isFailed && onRetry && (
         <button
           onClick={onRetry}
-          className="mt-1 text-xs text-destructive hover:text-destructive/80 transition-colors flex items-center gap-1"
+          className="mt-1.5 text-xs text-destructive hover:text-destructive/80 transition-colors flex items-center gap-1.5 font-medium"
         >
-          <AlertCircle className="w-3 h-3" />
+          <AlertCircle className="w-3.5 h-3.5" />
           {t.chat.failedToSend}
         </button>
       )}
