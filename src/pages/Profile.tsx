@@ -6,12 +6,13 @@ import { PageLayout } from '@/components/PageLayout';
 import { PremiumBadge } from '@/components/PremiumBadge';
 import { ProfilePhotoCarousel } from '@/components/ProfilePhotoCarousel';
 import { HobbyDisplay } from '@/components/HobbyDisplay';
+import { DeleteAccountDialog } from '@/components/DeleteAccountDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { usePremium } from '@/hooks/usePremium';
 import { supabase } from '@/integrations/supabase/client';
 import { Purpose } from '@/types';
-import { Edit2, Shield, Bell, HelpCircle, LogOut, MessageCircle, Users, Heart, Eye, EyeOff, BellOff, BellRing, Loader2, Crown, ChevronRight, Zap } from 'lucide-react';
+import { Edit2, Shield, Bell, HelpCircle, LogOut, MessageCircle, Users, Heart, Eye, EyeOff, BellOff, BellRing, Loader2, Crown, ChevronRight, Zap, Trash2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -136,9 +137,30 @@ export default function Profile() {
     }
   };
 
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
   const handleLogout = async () => {
     await signOut();
     navigate('/auth');
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user || !profile) return;
+    
+    try {
+      // Soft delete: hide profile, deactivate conversations, remove check-ins
+      await Promise.all([
+        supabase.from('profiles').update({ is_visible: false, bio: '[deleted]', display_name: 'Silinmiş Kullanıcı', photo_url: null, photo_urls: [] }).eq('user_id', user.id),
+        supabase.from('conversations').update({ is_active: false }).or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`),
+        supabase.from('check_ins').delete().eq('user_id', user.id),
+      ]);
+
+      await signOut();
+      navigate('/auth');
+      toast.success('Hesabınız silindi');
+    } catch {
+      toast.error('Hesap silinemedi, lütfen tekrar deneyin');
+    }
   };
 
   const displayName = profile?.display_name || profile?.name || 'Anonymous';
@@ -406,10 +428,11 @@ export default function Profile() {
         {/* Settings Links */}
         <section className="card-elevated overflow-hidden">
           {[
-            { icon: Shield, label: 'Safety & Privacy', color: 'text-accent', onClick: () => {} },
-            { icon: Bell, label: 'Notifications', color: 'text-primary', onClick: () => {} },
-            { icon: HelpCircle, label: 'Help & Support', color: 'text-muted-foreground', onClick: () => {} },
-            { icon: LogOut, label: 'Log Out', color: 'text-destructive', onClick: handleLogout },
+            { icon: Shield, label: 'Güvenlik & Gizlilik', color: 'text-accent', onClick: () => navigate('/settings/safety') },
+            { icon: Bell, label: 'Bildirimler', color: 'text-primary', onClick: () => navigate('/settings/notifications') },
+            { icon: HelpCircle, label: 'Yardım & Destek', color: 'text-muted-foreground', onClick: () => navigate('/settings/help') },
+            { icon: LogOut, label: 'Çıkış Yap', color: 'text-destructive', onClick: handleLogout },
+            { icon: Trash2, label: 'Hesabı Sil', color: 'text-destructive', onClick: () => setShowDeleteDialog(true) },
           ].map(({ icon: Icon, label, color, onClick }) => (
             <button
               key={label}
@@ -418,9 +441,18 @@ export default function Profile() {
             >
               <Icon className={`w-5 h-5 ${color}`} />
               <span className="font-medium text-foreground">{label}</span>
+              {label !== 'Çıkış Yap' && label !== 'Hesabı Sil' && (
+                <ChevronRight className="w-4 h-4 text-muted-foreground ml-auto" />
+              )}
             </button>
           ))}
         </section>
+
+        <DeleteAccountDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          onConfirm={handleDeleteAccount}
+        />
       </main>
       </div>
     </PageLayout>

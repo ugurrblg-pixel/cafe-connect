@@ -25,6 +25,9 @@ import ProfileViewers from "./pages/ProfileViewers";
 import Boost from "./pages/Boost";
 import UserProfileView from "./pages/UserProfileView";
 import NotFound from "./pages/NotFound";
+import SafetyPrivacy from "./pages/settings/SafetyPrivacy";
+import NotificationSettings from "./pages/settings/NotificationSettings";
+import HelpSupport from "./pages/settings/HelpSupport";
 import { AdminGuard } from "./components/admin/AdminGuard";
 import { lazy, Suspense } from "react";
 
@@ -190,6 +193,10 @@ function AppRoutes() {
               </ProtectedRoute>
             }
           />
+          {/* Settings routes */}
+          <Route path="/settings/safety" element={<ProtectedRoute><SafetyPrivacy /></ProtectedRoute>} />
+          <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
+          <Route path="/settings/help" element={<ProtectedRoute><HelpSupport /></ProtectedRoute>} />
           {/* Admin routes */}
           <Route path="/admin" element={<AdminGuard><Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><AdminDashboard /></Suspense></AdminGuard>} />
           <Route path="/admin/users" element={<AdminGuard><Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><AdminUsers /></Suspense></AdminGuard>} />
