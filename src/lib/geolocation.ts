@@ -118,7 +118,7 @@ export function getCurrentPosition(
 }
 
 // Maximum distance allowed for check-in (in meters)
-export const CHECK_IN_RADIUS_METERS = 100;
+export const CHECK_IN_RADIUS_METERS = 500;
 
 // Inactivity timeout (in milliseconds) - 15 minutes
 export const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
