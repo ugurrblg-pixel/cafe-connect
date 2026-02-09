@@ -18,9 +18,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Search, MoreVertical, Ban, AlertTriangle, Crown, ShieldOff, Eye } from 'lucide-react';
+import { Search, MoreVertical, Ban, AlertTriangle, ShieldOff, Eye, EyeOff, ImageOff, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -35,6 +36,7 @@ interface UserRow {
   hobbies: string[] | null;
   photo_urls: string[] | null;
   age: number | null;
+  is_visible: boolean | null;
 }
 
 interface BanInfo {
@@ -56,18 +58,19 @@ export default function AdminUsers() {
   const [warnDialogOpen, setWarnDialogOpen] = useState(false);
   const [warnReason, setWarnReason] = useState('');
   const [bans, setBans] = useState<Record<string, BanInfo>>({});
+  const [deletePhotoTarget, setDeletePhotoTarget] = useState<{ userId: string; photoUrl: string; index: number } | null>(null);
+  const [softDeleteTarget, setSoftDeleteTarget] = useState<UserRow | null>(null);
 
   const fetchUsers = useCallback(async () => {
     const { data, error } = await supabase
       .from('profiles')
-      .select('user_id, display_name, name, photo_url, purpose, created_at, bio, hobbies, photo_urls, age')
+      .select('user_id, display_name, name, photo_url, purpose, created_at, bio, hobbies, photo_urls, age, is_visible')
       .order('created_at', { ascending: false })
       .limit(200);
 
     if (!error && data) {
       setUsers(data);
 
-      // Fetch active bans
       const userIds = data.map(u => u.user_id);
       const { data: banData } = await supabase
         .from('user_bans')
@@ -78,7 +81,6 @@ export default function AdminUsers() {
       if (banData) {
         const banMap: Record<string, BanInfo> = {};
         banData.forEach(b => {
-          // Only count active bans that haven't expired
           if (!b.expires_at || new Date(b.expires_at) > new Date()) {
             banMap[b.user_id] = { is_active: b.is_active, ban_type: b.ban_type, expires_at: b.expires_at };
           }
@@ -98,12 +100,12 @@ export default function AdminUsers() {
       || u.user_id.toLowerCase().includes(q);
   });
 
-  const logAuditAction = async (action: string, targetId: string, details?: any) => {
+  const logAuditAction = async (action: string, targetId: string, targetType: string = 'user', details?: any) => {
     if (!currentUser) return;
     await supabase.from('admin_audit_log').insert({
       admin_id: currentUser.id,
       action,
-      target_type: 'user',
+      target_type: targetType,
       target_id: targetId,
       details,
     });
@@ -127,7 +129,7 @@ export default function AdminUsers() {
     });
 
     if (!error) {
-      await logAuditAction('ban_user', selectedUser.user_id, { duration: banDuration, reason: banReason });
+      await logAuditAction('ban_user', selectedUser.user_id, 'user', { duration: banDuration, reason: banReason });
       toast.success(`User banned (${banDuration})`);
       setBanDialogOpen(false);
       setBanReason('');
@@ -163,12 +165,59 @@ export default function AdminUsers() {
     });
 
     if (!error) {
-      await logAuditAction('warn_user', selectedUser.user_id, { reason: warnReason });
+      await logAuditAction('warn_user', selectedUser.user_id, 'user', { reason: warnReason });
       toast.success('Warning sent');
       setWarnDialogOpen(false);
       setWarnReason('');
     } else {
       toast.error('Failed to send warning');
+    }
+  };
+
+  const handleDeletePhoto = async () => {
+    if (!deletePhotoTarget || !currentUser) return;
+
+    const targetUser = users.find(u => u.user_id === deletePhotoTarget.userId);
+    if (!targetUser) return;
+
+    const updatedPhotos = (targetUser.photo_urls || []).filter((_, i) => i !== deletePhotoTarget.index);
+    const newPrimaryPhoto = updatedPhotos.length > 0 ? updatedPhotos[0] : '';
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ photo_urls: updatedPhotos, photo_url: newPrimaryPhoto })
+      .eq('user_id', deletePhotoTarget.userId);
+
+    if (!error) {
+      await logAuditAction('delete_photo', deletePhotoTarget.userId, 'photo', { removed_url: deletePhotoTarget.photoUrl });
+      toast.success('Photo removed');
+      setDeletePhotoTarget(null);
+      fetchUsers();
+      // Refresh profile dialog if open
+      if (selectedUser?.user_id === deletePhotoTarget.userId) {
+        const updated = { ...selectedUser, photo_urls: updatedPhotos, photo_url: newPrimaryPhoto };
+        setSelectedUser(updated);
+      }
+    } else {
+      toast.error('Failed to remove photo');
+    }
+  };
+
+  const handleSoftDelete = async () => {
+    if (!softDeleteTarget || !currentUser) return;
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_visible: false, display_name: '[Deleted User]', bio: '' })
+      .eq('user_id', softDeleteTarget.user_id);
+
+    if (!error) {
+      await logAuditAction('soft_delete_user', softDeleteTarget.user_id, 'user');
+      toast.success('User soft-deleted (hidden from app)');
+      setSoftDeleteTarget(null);
+      fetchUsers();
+    } else {
+      toast.error('Failed to soft-delete user');
     }
   };
 
@@ -223,9 +272,13 @@ export default function AdminUsers() {
               ) : (
                 filteredUsers.map((u) => {
                   const isBanned = !!bans[u.user_id];
+                  const isHidden = u.is_visible === false;
                   const displayName = u.display_name || u.name || 'Anonymous';
                   return (
-                    <tr key={u.user_id} className="border-b border-border hover:bg-muted/30 transition-colors">
+                    <tr key={u.user_id} className={cn(
+                      "border-b border-border hover:bg-muted/30 transition-colors",
+                      isHidden && "opacity-50"
+                    )}>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           {u.photo_url ? (
@@ -234,7 +287,10 @@ export default function AdminUsers() {
                             <InitialsAvatar name={displayName} size="sm" />
                           )}
                           <div>
-                            <p className="font-medium text-foreground">{displayName}</p>
+                            <p className="font-medium text-foreground flex items-center gap-1.5">
+                              {displayName}
+                              {isHidden && <EyeOff className="w-3 h-3 text-muted-foreground" />}
+                            </p>
                             <p className="text-xs text-muted-foreground truncate max-w-[180px]">{u.user_id}</p>
                           </div>
                         </div>
@@ -248,6 +304,10 @@ export default function AdminUsers() {
                         {isBanned ? (
                           <span className="text-xs px-2 py-1 rounded-full bg-destructive/10 text-destructive font-medium">
                             Banned
+                          </span>
+                        ) : isHidden ? (
+                          <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground font-medium">
+                            Hidden
                           </span>
                         ) : (
                           <span className="text-xs px-2 py-1 rounded-full bg-accent/10 text-accent font-medium">
@@ -272,6 +332,7 @@ export default function AdminUsers() {
                             <DropdownMenuItem onClick={() => { setSelectedUser(u); setWarnDialogOpen(true); }}>
                               <AlertTriangle className="w-4 h-4 mr-2" /> Warn
                             </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             {isBanned ? (
                               <DropdownMenuItem onClick={() => handleUnban(u.user_id)}>
                                 <ShieldOff className="w-4 h-4 mr-2" /> Unban
@@ -284,6 +345,12 @@ export default function AdminUsers() {
                                 <Ban className="w-4 h-4 mr-2" /> Ban
                               </DropdownMenuItem>
                             )}
+                            <DropdownMenuItem
+                              onClick={() => setSoftDeleteTarget(u)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" /> Soft Delete
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </td>
@@ -298,7 +365,7 @@ export default function AdminUsers() {
 
       {/* Profile View Dialog */}
       <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>User Profile</DialogTitle>
           </DialogHeader>
@@ -340,7 +407,16 @@ export default function AdminUsers() {
                   <p className="text-xs font-medium text-muted-foreground mb-1">Photos ({selectedUser.photo_urls.length})</p>
                   <div className="grid grid-cols-3 gap-2">
                     {selectedUser.photo_urls.map((url, i) => (
-                      <img key={i} src={url} alt="" className="rounded-lg object-cover aspect-square w-full" />
+                      <div key={i} className="relative group">
+                        <img src={url} alt="" className="rounded-lg object-cover aspect-square w-full" />
+                        <button
+                          onClick={() => setDeletePhotoTarget({ userId: selectedUser.user_id, photoUrl: url, index: i })}
+                          className="absolute top-1 right-1 p-1 bg-destructive/90 rounded-md text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Remove photo"
+                        >
+                          <ImageOff className="w-3 h-3" />
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -415,6 +491,49 @@ export default function AdminUsers() {
             <Button onClick={handleWarn} disabled={!warnReason.trim()}>
               Send Warning
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Photo Confirmation */}
+      <Dialog open={!!deletePhotoTarget} onOpenChange={() => setDeletePhotoTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Remove Photo
+            </DialogTitle>
+            <DialogDescription>
+              This will permanently remove this photo from the user's profile. This action will be logged.
+            </DialogDescription>
+          </DialogHeader>
+          {deletePhotoTarget && (
+            <div className="flex justify-center">
+              <img src={deletePhotoTarget.photoUrl} alt="" className="rounded-lg max-h-48 object-cover" />
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDeletePhotoTarget(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeletePhoto}>Remove Photo</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Soft Delete Confirmation */}
+      <Dialog open={!!softDeleteTarget} onOpenChange={() => setSoftDeleteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Soft Delete User
+            </DialogTitle>
+            <DialogDescription>
+              This will hide {softDeleteTarget?.display_name || softDeleteTarget?.name} from the app. Their data will be preserved but they won't appear in discovery or search. This action will be logged.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setSoftDeleteTarget(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleSoftDelete}>Soft Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
