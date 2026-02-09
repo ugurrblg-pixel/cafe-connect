@@ -7,12 +7,12 @@ export default function LocationUsage() {
     {
       icon: <MapPin className="w-6 h-6 text-primary" />,
       title: 'Konum Ne İçin Kullanılır?',
-      description: 'Konumun yalnızca yakındaki kafeleri göstermek ve check-in doğrulaması için kullanılır. Sana en yakın mekanları bulmana yardımcı olur.',
+      description: 'CafeMeet, konumunu yalnızca yakındaki kafeleri ve orada bulunan kişileri göstermek için kullanır.',
     },
     {
       icon: <EyeOff className="w-6 h-6 text-primary" />,
       title: 'Arka Planda Takip Yok',
-      description: 'Konum bilgin arka planda sürekli takip edilmez. Yalnızca uygulamayı aktif olarak kullandığında konum verisi işlenir.',
+      description: 'Konum bilgin arka planda asla takip edilmez. Yalnızca uygulamayı aktif olarak kullandığında konum verisi işlenir.',
     },
     {
       icon: <Settings className="w-6 h-6 text-primary" />,
@@ -29,10 +29,10 @@ export default function LocationUsage() {
   return (
     <PageLayout>
       <div className="min-h-screen bg-background pb-24">
-        <Header title="Konum Kullanımı" showBack />
+        <Header title="Konum Neden Gerekli?" showBack />
         <main className="pt-16 px-4 space-y-4">
           <p className="text-muted-foreground text-sm mt-2">
-            Konum bilgini nasıl kullandığımız ve gizliliğini nasıl koruduğumuz hakkında bilgi.
+            CafeMeet konum bilgini nasıl kullanır ve gizliliğini nasıl korur?
           </p>
 
           {items.map(({ icon, title, description }, idx) => (

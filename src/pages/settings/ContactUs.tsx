@@ -19,11 +19,8 @@ export default function ContactUs() {
               </div>
               <div>
                 <h3 className="font-semibold text-foreground mb-1">E-posta</h3>
-                <a
-                  href="mailto:destek@cafehuddle.app"
-                  className="text-sm text-primary underline"
-                >
-                  destek@cafehuddle.app
+                <a href="mailto:destek@cafemeet.app" className="text-sm text-primary underline">
+                  destek@cafemeet.app
                 </a>
               </div>
             </div>
@@ -51,7 +48,7 @@ export default function ContactUs() {
               <div>
                 <h3 className="font-semibold text-foreground mb-1">Geri Bildirim</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Uygulamayı geliştirmemize yardımcı olmak için görüş ve önerilerinizi bekliyoruz. Her geri bildirim bizim için değerlidir.
+                  CafeMeet'i geliştirmemize yardımcı olmak için görüş ve önerilerinizi bekliyoruz.
                 </p>
               </div>
             </div>
