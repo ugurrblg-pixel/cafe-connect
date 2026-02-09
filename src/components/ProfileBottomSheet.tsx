@@ -157,8 +157,6 @@ export function ProfileBottomSheet({ user, open, onOpenChange, cafeId }: Profile
                 photos={user.photoUrls && user.photoUrls.length > 0 
                   ? user.photoUrls 
                   : (user.photoUrl ? [user.photoUrl] : [])}
-                isPremium={isPremium}
-                isOwnProfile={false}
                 name={user.name}
                 size="md"
               />
