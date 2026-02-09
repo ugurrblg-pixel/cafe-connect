@@ -33,6 +33,9 @@ const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 const AdminModeration = lazy(() => import("./pages/admin/AdminModeration"));
 const AdminAuditLog = lazy(() => import("./pages/admin/AdminAuditLog"));
+const AdminPayments = lazy(() => import("./pages/admin/AdminPayments"));
+const AdminSubscriptions = lazy(() => import("./pages/admin/AdminSubscriptions"));
+const AdminRevenue = lazy(() => import("./pages/admin/AdminRevenue"));
 
 const queryClient = new QueryClient();
 
@@ -192,6 +195,9 @@ function AppRoutes() {
           <Route path="/admin/users" element={<AdminGuard><Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><AdminUsers /></Suspense></AdminGuard>} />
           <Route path="/admin/reports" element={<AdminGuard><Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><AdminReports /></Suspense></AdminGuard>} />
           <Route path="/admin/moderation" element={<AdminGuard><Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><AdminModeration /></Suspense></AdminGuard>} />
+          <Route path="/admin/payments" element={<AdminGuard><Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><AdminPayments /></Suspense></AdminGuard>} />
+          <Route path="/admin/subscriptions" element={<AdminGuard><Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><AdminSubscriptions /></Suspense></AdminGuard>} />
+          <Route path="/admin/revenue" element={<AdminGuard><Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><AdminRevenue /></Suspense></AdminGuard>} />
           <Route path="/admin/audit-log" element={<AdminGuard><Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><AdminAuditLog /></Suspense></AdminGuard>} />
           
           <Route path="*" element={<NotFound />} />
