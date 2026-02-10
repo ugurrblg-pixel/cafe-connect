@@ -62,12 +62,12 @@ export function ProfileCompletionBanner() {
           </div>
           <div className="flex-1 min-w-0 pr-6">
             <h3 className="font-semibold text-foreground text-sm mb-0.5">
-              Complete your profile
+              Profilini tamamla
             </h3>
             <p className="text-xs text-muted-foreground">
               {missingFields.length === 1 
-                ? `Add your ${missingFields[0].toLowerCase()} to connect with others`
-                : 'Stand out and get more connections'}
+                ? `${missingFields[0]} ekleyerek bağlantı kur`
+                : 'Öne çık ve daha fazla bağlantı kur'}
             </p>
           </div>
         </div>
@@ -75,8 +75,8 @@ export function ProfileCompletionBanner() {
         {/* Progress */}
         <div className="mb-3">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs text-muted-foreground">Profile completion</span>
-            <span className="text-xs font-medium text-primary">{percentage}%</span>
+            <span className="text-xs text-muted-foreground">Profil tamamlama durumu</span>
+            <span className="text-xs font-medium text-primary">%{percentage}</span>
           </div>
           <Progress value={percentage} className="h-2" />
         </div>
@@ -88,7 +88,7 @@ export function ProfileCompletionBanner() {
           className="w-full h-10 rounded-xl font-medium"
         >
           <Sparkles className="w-4 h-4 mr-2" />
-          Complete Profile
+          Profil Tamamlama
           <ChevronRight className="w-4 h-4 ml-1" />
         </Button>
       </div>

@@ -9,10 +9,10 @@ export interface ProfileCompletionStatus {
 }
 
 const PROFILE_FIELDS = [
-  { key: 'display_name', label: 'Display name', weight: 30 },
-  { key: 'bio', label: 'Bio', weight: 25 },
-  { key: 'photo_url', label: 'Profile photo', weight: 30 },
-  { key: 'purpose', label: 'Purpose', weight: 15 },
+  { key: 'display_name', label: 'Görünen isim', weight: 30 },
+  { key: 'bio', label: 'Hakkında', weight: 25 },
+  { key: 'photo_url', label: 'Profil fotoğrafı', weight: 30 },
+  { key: 'purpose', label: 'Amaç', weight: 15 },
 ] as const;
 
 export function useProfileCompletion(): ProfileCompletionStatus {
