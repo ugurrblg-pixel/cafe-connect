@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { InitialsAvatar } from '@/components/InitialsAvatar';
 import { isActiveNow, formatLastActive } from '@/lib/activityTime';
 import { ChevronLeft, Crown } from 'lucide-react';
+import { FullscreenGallery } from '@/components/FullscreenGallery';
 
 interface ChatHeaderProps {
   userName: string;
   userPhotoUrl?: string;
+  userPhotoUrls?: string[];
   lastActiveAt?: Date;
   isTyping?: boolean;
   typingText: string;
@@ -18,6 +21,7 @@ interface ChatHeaderProps {
 export function ChatHeader({
   userName,
   userPhotoUrl,
+  userPhotoUrls,
   lastActiveAt,
   isTyping,
   typingText,
@@ -28,6 +32,11 @@ export function ChatHeader({
 }: ChatHeaderProps) {
   const isOnline = isActiveNow(lastActiveAt);
   const activityText = isOnline ? 'Çevrimiçi' : formatLastActive(lastActiveAt);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+
+  // Build gallery photos array
+  const galleryPhotos = (userPhotoUrls ?? []).filter(Boolean);
+  if (galleryPhotos.length === 0 && userPhotoUrl) galleryPhotos.push(userPhotoUrl);
 
   return (
     <div className={cn(
@@ -59,7 +68,13 @@ export function ChatHeader({
                   <img
                     src={userPhotoUrl}
                     alt={userName}
-                    className="w-11 h-11 rounded-full object-cover shadow-sm"
+                    className="w-11 h-11 rounded-full object-cover shadow-sm cursor-pointer"
+                    onClick={(e) => {
+                      if (galleryPhotos.length > 0) {
+                        e.stopPropagation();
+                        setGalleryOpen(true);
+                      }
+                    }}
                     onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                   />
                 ) : (
@@ -112,6 +127,13 @@ export function ChatHeader({
         {/* Actions (menu) */}
         {actions}
       </div>
+      {/* Fullscreen Gallery for chat partner photos */}
+      <FullscreenGallery
+        photos={galleryPhotos}
+        initialIndex={0}
+        open={galleryOpen}
+        onClose={() => setGalleryOpen(false)}
+      />
     </div>
   );
 }

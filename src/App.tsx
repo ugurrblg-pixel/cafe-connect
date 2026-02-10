@@ -53,7 +53,7 @@ const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 const AdminModeration = lazy(() => import("./pages/admin/AdminModeration"));
 const AdminAuditLog = lazy(() => import("./pages/admin/AdminAuditLog"));
-const AdminPayments = lazy(() => import("./pages/admin/AdminPayments"));
+// AdminPayments removed — Stripe not used
 const AdminSubscriptions = lazy(() => import("./pages/admin/AdminSubscriptions"));
 const AdminRevenue = lazy(() => import("./pages/admin/AdminRevenue"));
 
@@ -150,7 +150,7 @@ function AppRoutes() {
         <Route path="/admin/users" element={<AdminGuard><SuspensePage><AdminUsers /></SuspensePage></AdminGuard>} />
         <Route path="/admin/reports" element={<AdminGuard><SuspensePage><AdminReports /></SuspensePage></AdminGuard>} />
         <Route path="/admin/moderation" element={<AdminGuard><SuspensePage><AdminModeration /></SuspensePage></AdminGuard>} />
-        <Route path="/admin/payments" element={<AdminGuard><SuspensePage><AdminPayments /></SuspensePage></AdminGuard>} />
+        {/* AdminPayments route removed — Stripe not used */}
         <Route path="/admin/subscriptions" element={<AdminGuard><SuspensePage><AdminSubscriptions /></SuspensePage></AdminGuard>} />
         <Route path="/admin/revenue" element={<AdminGuard><SuspensePage><AdminRevenue /></SuspensePage></AdminGuard>} />
         <Route path="/admin/audit-log" element={<AdminGuard><SuspensePage><AdminAuditLog /></SuspensePage></AdminGuard>} />

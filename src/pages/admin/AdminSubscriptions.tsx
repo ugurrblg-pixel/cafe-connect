@@ -98,28 +98,28 @@ export default function AdminSubscriptions() {
     <AdminLayout>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Subscriptions</h1>
+          <h1 className="text-2xl font-bold text-foreground">Abonelikler</h1>
           <p className="text-muted-foreground text-sm flex items-center gap-1.5">
             <Smartphone className="w-3.5 h-3.5" />
-            Google Play subscriptions
+            Google Play abonelikleri (salt okunur)
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => { setRefreshing(true); fetchSubscriptions(); }} disabled={refreshing}>
-          <RefreshCw className={cn("w-4 h-4 mr-2", refreshing && "animate-spin")} /> Refresh
+          <RefreshCw className={cn("w-4 h-4 mr-2", refreshing && "animate-spin")} /> Yenile
         </Button>
       </div>
 
       <div className="flex gap-3 mb-4 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Search by name or user ID..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+          <Input placeholder="İsim veya kullanıcı ID ile ara..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
         </div>
         <div className="flex gap-1.5">
           {['all', 'active', 'cancelled', 'expired'].map(s => (
             <button key={s} onClick={() => setStatusFilter(s)} className={cn(
               'px-3 py-2 rounded-lg text-xs font-medium transition-colors capitalize',
               statusFilter === s ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:bg-muted'
-            )}>{s}</button>
+            )}>{s === 'all' ? 'Tümü' : s}</button>
           ))}
         </div>
       </div>
@@ -129,12 +129,12 @@ export default function AdminSubscriptions() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/50">
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">User</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Kullanıcı</th>
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Plan</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Product</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Expires</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Created</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Product ID</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Durum</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Bitiş</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Oluşturulma</th>
               </tr>
             </thead>
             <tbody>
@@ -150,7 +150,7 @@ export default function AdminSubscriptions() {
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
                     <Smartphone className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                    No subscriptions found
+                    Abonelik bulunamadı
                   </td>
                 </tr>
               ) : (
