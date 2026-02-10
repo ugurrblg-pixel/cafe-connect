@@ -60,6 +60,7 @@ export function ChatHeader({
                     src={userPhotoUrl}
                     alt={userName}
                     className="w-11 h-11 rounded-full object-cover shadow-sm"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                   />
                 ) : (
                   <InitialsAvatar 

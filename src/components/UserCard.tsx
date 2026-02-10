@@ -44,10 +44,10 @@ export function UserCard({ user, onMessage, onInteraction, onTap, waveState = 'n
             src={user.photoUrl}
             alt={displayName}
             className="w-16 h-16 rounded-2xl object-cover"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }}
           />
-        ) : (
-          <InitialsAvatar name={displayName} size="md" />
-        )}
+        ) : null}
+        <InitialsAvatar name={displayName} size="md" className={user.photoUrl ? 'hidden' : ''} />
         {/* Activity indicator dot */}
         <div 
           className={cn(
