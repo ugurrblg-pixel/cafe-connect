@@ -34,6 +34,7 @@ interface OtherUser {
   userId: string;
   displayName: string;
   photoUrl: string;
+  photoUrls: string[];
   lastActiveAt?: Date;
   isPremium?: boolean;
 }
@@ -118,7 +119,7 @@ export default function ChatRoom() {
       const [profileRes, checkInRes, cafeRes, subscriptionRes] = await Promise.all([
         supabase
           .from('profiles')
-          .select('user_id, display_name, photo_url')
+          .select('user_id, display_name, photo_url, photo_urls')
           .eq('user_id', otherUserId)
           .maybeSingle(),
         supabase
@@ -153,6 +154,7 @@ export default function ChatRoom() {
           userId: profile.user_id,
           displayName: profile.display_name || 'Anonymous',
           photoUrl: profile.photo_url || '',
+          photoUrls: (profile.photo_urls as string[]) || [],
           lastActiveAt: checkIn?.last_active_at ? new Date(checkIn.last_active_at) : undefined,
           isPremium: isOtherUserPremium,
         });
@@ -372,6 +374,7 @@ export default function ChatRoom() {
       <ChatHeader
         userName={otherUser?.displayName || 'User'}
         userPhotoUrl={otherUser?.photoUrl}
+        userPhotoUrls={otherUser?.photoUrls}
         lastActiveAt={otherUser?.lastActiveAt}
         isTyping={isOtherUserTyping}
         typingText={t.chat.typing}

@@ -19,8 +19,8 @@ const navItems = [
   { label: 'Users', icon: Users, to: '/admin/users' },
   { label: 'Reports', icon: Flag, to: '/admin/reports' },
   { label: 'Moderation', icon: MessageCircle, to: '/admin/moderation' },
-  { label: 'Subscriptions', icon: Receipt, to: '/admin/subscriptions' },
-  { label: 'Overview', icon: TrendingUp, to: '/admin/revenue' },
+  { label: 'Abonelikler', icon: Receipt, to: '/admin/subscriptions' },
+  { label: 'Genel Bakış', icon: TrendingUp, to: '/admin/revenue' },
   { label: 'Audit Log', icon: ScrollText, to: '/admin/audit-log' },
 ];
 
