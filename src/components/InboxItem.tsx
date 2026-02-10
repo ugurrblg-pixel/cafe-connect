@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { cn } from '@/lib/utils';
 import { InitialsAvatar } from '@/components/InitialsAvatar';
 import { useI18n } from '@/contexts/I18nContext';
@@ -39,7 +40,7 @@ function formatSmartTime(date: Date | undefined, t: any): string {
   return date.toLocaleDateString('tr-TR', { month: 'short', day: 'numeric' });
 }
 
-export function InboxItem({
+export const InboxItem = memo(function InboxItem({
   userName,
   userPhotoUrl,
   lastMessage,
@@ -95,6 +96,7 @@ export function InboxItem({
               src={userPhotoUrl}
               alt={userName}
               className="w-14 h-14 rounded-full object-cover shadow-sm"
+              loading="lazy"
             />
           ) : (
             <InitialsAvatar 
@@ -198,4 +200,4 @@ export function InboxItem({
       </div>
     </div>
   );
-}
+});

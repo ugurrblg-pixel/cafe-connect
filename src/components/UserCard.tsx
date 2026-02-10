@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { User } from '@/types';
 import { PurposeBadge } from './PurposeBadge';
 import { InitialsAvatar } from './InitialsAvatar';
@@ -18,7 +19,7 @@ interface UserCardProps {
   style?: React.CSSProperties;
 }
 
-export function UserCard({ user, onMessage, onInteraction, onTap, waveState = 'none', isWaving = false, className, style }: UserCardProps) {
+export const UserCard = memo(function UserCard({ user, onMessage, onInteraction, onTap, waveState = 'none', isWaving = false, className, style }: UserCardProps) {
   const timeAgo = user.checkedInAt
     ? Math.floor((Date.now() - user.checkedInAt.getTime()) / 60000)
     : 0;
@@ -44,6 +45,7 @@ export function UserCard({ user, onMessage, onInteraction, onTap, waveState = 'n
             src={user.photoUrl}
             alt={displayName}
             className="w-16 h-16 rounded-2xl object-cover"
+            loading="lazy"
             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }}
           />
         ) : null}
@@ -143,4 +145,4 @@ export function UserCard({ user, onMessage, onInteraction, onTap, waveState = 'n
       </div>
     </div>
   );
-}
+});

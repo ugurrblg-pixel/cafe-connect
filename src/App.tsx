@@ -10,32 +10,43 @@ import { NotificationProvider } from "@/contexts/NotificationContext";
 import { I18nProvider } from "@/contexts/I18nContext";
 import { LocationProvider } from "@/contexts/LocationContext";
 import { PremiumProvider } from "@/contexts/PremiumContext";
-import Discover from "./pages/Discover";
-import CafeRoom from "./pages/CafeRoom";
-import Messages from "./pages/Messages";
-import ChatRoom from "./pages/ChatRoom";
-import Profile from "./pages/Profile";
-import ProfileEdit from "./pages/ProfileEdit";
-import Search from "./pages/Search";
-import Notifications from "./pages/Notifications";
-import Auth from "./pages/Auth";
-import Onboarding from "./pages/Onboarding";
-import Subscription from "./pages/Subscription";
-import ProfileViewers from "./pages/ProfileViewers";
-import Boost from "./pages/Boost";
-import UserProfileView from "./pages/UserProfileView";
-import NotFound from "./pages/NotFound";
-import SafetyPrivacy from "./pages/settings/SafetyPrivacy";
-import NotificationSettings from "./pages/settings/NotificationSettings";
-import HelpSupport from "./pages/settings/HelpSupport";
-import HowItWorks from "./pages/settings/HowItWorks";
-import LocationUsage from "./pages/settings/LocationUsage";
-import PremiumPayments from "./pages/settings/PremiumPayments";
-import ContactUs from "./pages/settings/ContactUs";
-import PrivacyPolicy from "./pages/settings/PrivacyPolicy";
-import TermsOfUse from "./pages/settings/TermsOfUse";
+// Lazy-load all page components for faster initial load
+const Discover = lazy(() => import("./pages/Discover"));
+const CafeRoom = lazy(() => import("./pages/CafeRoom"));
+const Messages = lazy(() => import("./pages/Messages"));
+const ChatRoom = lazy(() => import("./pages/ChatRoom"));
+const Profile = lazy(() => import("./pages/Profile"));
+const ProfileEdit = lazy(() => import("./pages/ProfileEdit"));
+const Search = lazy(() => import("./pages/Search"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+const Auth = lazy(() => import("./pages/Auth"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+const Subscription = lazy(() => import("./pages/Subscription"));
+const ProfileViewers = lazy(() => import("./pages/ProfileViewers"));
+const Boost = lazy(() => import("./pages/Boost"));
+const UserProfileView = lazy(() => import("./pages/UserProfileView"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const SafetyPrivacy = lazy(() => import("./pages/settings/SafetyPrivacy"));
+const NotificationSettings = lazy(() => import("./pages/settings/NotificationSettings"));
+const HelpSupport = lazy(() => import("./pages/settings/HelpSupport"));
+const HowItWorks = lazy(() => import("./pages/settings/HowItWorks"));
+const LocationUsage = lazy(() => import("./pages/settings/LocationUsage"));
+const PremiumPayments = lazy(() => import("./pages/settings/PremiumPayments"));
+const ContactUs = lazy(() => import("./pages/settings/ContactUs"));
+const PrivacyPolicy = lazy(() => import("./pages/settings/PrivacyPolicy"));
+const TermsOfUse = lazy(() => import("./pages/settings/TermsOfUse"));
 import { AdminGuard } from "./components/admin/AdminGuard";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, memo } from "react";
+
+const PageFallback = () => (
+  <div className="min-h-screen bg-background flex items-center justify-center">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+  </div>
+);
+
+const SuspensePage = memo(({ children }: { children: React.ReactNode }) => (
+  <Suspense fallback={<PageFallback />}>{children}</Suspense>
+));
 
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
@@ -46,7 +57,16 @@ const AdminPayments = lazy(() => import("./pages/admin/AdminPayments"));
 const AdminSubscriptions = lazy(() => import("./pages/admin/AdminSubscriptions"));
 const AdminRevenue = lazy(() => import("./pages/admin/AdminRevenue"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -97,127 +117,43 @@ function AppRoutes() {
       <Routes>
         <Route 
           path="/onboarding" 
-          element={user ? <Navigate to="/" replace /> : <Onboarding />} 
+          element={user ? <Navigate to="/" replace /> : <SuspensePage><Onboarding /></SuspensePage>} 
         />
         <Route 
           path="/auth" 
-          element={user ? <Navigate to="/" replace /> : <Auth />} 
+          element={user ? <Navigate to="/" replace /> : <SuspensePage><Auth /></SuspensePage>} 
         />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Discover />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/cafe/:id"
-          element={
-            <ProtectedRoute>
-              <CafeRoom />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/notifications"
-          element={
-            <ProtectedRoute>
-              <Notifications />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/search"
-          element={
-            <ProtectedRoute>
-              <Search />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/messages"
-          element={
-            <ProtectedRoute>
-              <Messages />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/chat/:conversationId"
-          element={
-            <ProtectedRoute>
-              <ChatRoom />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
-          <Route
-            path="/profile/edit"
-            element={
-              <ProtectedRoute>
-                <ProfileEdit />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile/:userId"
-            element={
-              <ProtectedRoute>
-                <UserProfileView />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/subscription"
-            element={
-              <ProtectedRoute>
-                <Subscription />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile/viewers"
-            element={
-              <ProtectedRoute>
-                <ProfileViewers />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/boost"
-            element={
-              <ProtectedRoute>
-                <Boost />
-              </ProtectedRoute>
-            }
-          />
-          {/* Settings routes */}
-          <Route path="/settings/safety" element={<ProtectedRoute><SafetyPrivacy /></ProtectedRoute>} />
-          <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
-          <Route path="/settings/help" element={<ProtectedRoute><HelpSupport /></ProtectedRoute>} />
-          <Route path="/settings/help/how-it-works" element={<ProtectedRoute><HowItWorks /></ProtectedRoute>} />
-          <Route path="/settings/help/location" element={<ProtectedRoute><LocationUsage /></ProtectedRoute>} />
-          <Route path="/settings/help/premium" element={<ProtectedRoute><PremiumPayments /></ProtectedRoute>} />
-          <Route path="/settings/help/contact" element={<ProtectedRoute><ContactUs /></ProtectedRoute>} />
-          <Route path="/settings/help/privacy-policy" element={<ProtectedRoute><PrivacyPolicy /></ProtectedRoute>} />
-          <Route path="/settings/help/terms" element={<ProtectedRoute><TermsOfUse /></ProtectedRoute>} />
-          {/* Admin routes */}
-          <Route path="/admin" element={<AdminGuard><Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><AdminDashboard /></Suspense></AdminGuard>} />
-          <Route path="/admin/users" element={<AdminGuard><Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><AdminUsers /></Suspense></AdminGuard>} />
-          <Route path="/admin/reports" element={<AdminGuard><Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><AdminReports /></Suspense></AdminGuard>} />
-          <Route path="/admin/moderation" element={<AdminGuard><Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><AdminModeration /></Suspense></AdminGuard>} />
-          <Route path="/admin/payments" element={<AdminGuard><Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><AdminPayments /></Suspense></AdminGuard>} />
-          <Route path="/admin/subscriptions" element={<AdminGuard><Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><AdminSubscriptions /></Suspense></AdminGuard>} />
-          <Route path="/admin/revenue" element={<AdminGuard><Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><AdminRevenue /></Suspense></AdminGuard>} />
-          <Route path="/admin/audit-log" element={<AdminGuard><Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><AdminAuditLog /></Suspense></AdminGuard>} />
+        <Route path="/" element={<ProtectedRoute><SuspensePage><Discover /></SuspensePage></ProtectedRoute>} />
+        <Route path="/cafe/:id" element={<ProtectedRoute><SuspensePage><CafeRoom /></SuspensePage></ProtectedRoute>} />
+        <Route path="/notifications" element={<ProtectedRoute><SuspensePage><Notifications /></SuspensePage></ProtectedRoute>} />
+        <Route path="/search" element={<ProtectedRoute><SuspensePage><Search /></SuspensePage></ProtectedRoute>} />
+        <Route path="/messages" element={<ProtectedRoute><SuspensePage><Messages /></SuspensePage></ProtectedRoute>} />
+        <Route path="/chat/:conversationId" element={<ProtectedRoute><SuspensePage><ChatRoom /></SuspensePage></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><SuspensePage><Profile /></SuspensePage></ProtectedRoute>} />
+        <Route path="/profile/edit" element={<ProtectedRoute><SuspensePage><ProfileEdit /></SuspensePage></ProtectedRoute>} />
+        <Route path="/profile/:userId" element={<ProtectedRoute><SuspensePage><UserProfileView /></SuspensePage></ProtectedRoute>} />
+        <Route path="/subscription" element={<ProtectedRoute><SuspensePage><Subscription /></SuspensePage></ProtectedRoute>} />
+        <Route path="/profile/viewers" element={<ProtectedRoute><SuspensePage><ProfileViewers /></SuspensePage></ProtectedRoute>} />
+        <Route path="/boost" element={<ProtectedRoute><SuspensePage><Boost /></SuspensePage></ProtectedRoute>} />
+        {/* Settings routes */}
+        <Route path="/settings/safety" element={<ProtectedRoute><SuspensePage><SafetyPrivacy /></SuspensePage></ProtectedRoute>} />
+        <Route path="/settings/notifications" element={<ProtectedRoute><SuspensePage><NotificationSettings /></SuspensePage></ProtectedRoute>} />
+        <Route path="/settings/help" element={<ProtectedRoute><SuspensePage><HelpSupport /></SuspensePage></ProtectedRoute>} />
+        <Route path="/settings/help/how-it-works" element={<ProtectedRoute><SuspensePage><HowItWorks /></SuspensePage></ProtectedRoute>} />
+        <Route path="/settings/help/location" element={<ProtectedRoute><SuspensePage><LocationUsage /></SuspensePage></ProtectedRoute>} />
+        <Route path="/settings/help/premium" element={<ProtectedRoute><SuspensePage><PremiumPayments /></SuspensePage></ProtectedRoute>} />
+        <Route path="/settings/help/contact" element={<ProtectedRoute><SuspensePage><ContactUs /></SuspensePage></ProtectedRoute>} />
+        <Route path="/settings/help/privacy-policy" element={<ProtectedRoute><SuspensePage><PrivacyPolicy /></SuspensePage></ProtectedRoute>} />
+        <Route path="/settings/help/terms" element={<ProtectedRoute><SuspensePage><TermsOfUse /></SuspensePage></ProtectedRoute>} />
+        {/* Admin routes */}
+        <Route path="/admin" element={<AdminGuard><SuspensePage><AdminDashboard /></SuspensePage></AdminGuard>} />
+        <Route path="/admin/users" element={<AdminGuard><SuspensePage><AdminUsers /></SuspensePage></AdminGuard>} />
+        <Route path="/admin/reports" element={<AdminGuard><SuspensePage><AdminReports /></SuspensePage></AdminGuard>} />
+        <Route path="/admin/moderation" element={<AdminGuard><SuspensePage><AdminModeration /></SuspensePage></AdminGuard>} />
+        <Route path="/admin/payments" element={<AdminGuard><SuspensePage><AdminPayments /></SuspensePage></AdminGuard>} />
+        <Route path="/admin/subscriptions" element={<AdminGuard><SuspensePage><AdminSubscriptions /></SuspensePage></AdminGuard>} />
+        <Route path="/admin/revenue" element={<AdminGuard><SuspensePage><AdminRevenue /></SuspensePage></AdminGuard>} />
+        <Route path="/admin/audit-log" element={<AdminGuard><SuspensePage><AdminAuditLog /></SuspensePage></AdminGuard>} />
           
           <Route path="*" element={<NotFound />} />
       </Routes>
