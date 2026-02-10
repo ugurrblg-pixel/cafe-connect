@@ -154,9 +154,8 @@ export function ProfileBottomSheet({ user, open, onOpenChange, cafeId }: Profile
             {/* Profile Photo Carousel */}
             <div className="mb-4 w-full max-w-[200px]">
               <ProfilePhotoCarousel
-                photos={user.photoUrls && user.photoUrls.length > 0 
-                  ? user.photoUrls 
-                  : (user.photoUrl ? [user.photoUrl] : [])}
+                photos={user.photoUrls}
+                avatarUrl={user.photoUrl}
                 name={user.name}
                 size="md"
               />

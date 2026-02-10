@@ -91,10 +91,6 @@ export default function UserProfileView() {
     );
   }
 
-  const photos = profile.photoUrls.length > 0 
-    ? profile.photoUrls 
-    : (profile.photoUrl ? [profile.photoUrl] : []);
-
   return (
     <div className="min-h-screen bg-background pb-24">
       <Header title={profile.displayName} showBack />
@@ -102,7 +98,8 @@ export default function UserProfileView() {
       <main className="pt-20 px-4">
         <div className="flex flex-col items-center py-6">
           <ProfilePhotoCarousel
-            photos={photos}
+            photos={profile.photoUrls}
+            avatarUrl={profile.photoUrl}
             name={profile.displayName}
             size="lg"
             className="mb-4"
