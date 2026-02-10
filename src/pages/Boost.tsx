@@ -15,11 +15,7 @@ const BOOST_BENEFITS = [
   { icon: Users, text: 'Daha görünür ol, daha çok tanış' },
 ];
 
-const DURATION_OPTIONS = [
-  { label: '30 dk', value: 30 },
-  { label: '1 saat', value: 60 },
-  { label: '3 saat', value: 180 },
-];
+const BOOST_DURATION_MINUTES = 30;
 
 function BoostPackageCard({ 
   pkg, selected, onSelect, isPremium 
@@ -128,7 +124,8 @@ export default function Boost() {
               </span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-[280px] mx-auto">
-              Boost aktifken kafedeki herkes seni daha üstte görür.
+              Boost ile {BOOST_DURATION_MINUTES} dakika boyunca öne çık.
+              {isPremium && <span className="block mt-1 text-primary font-medium">Premium: toplam {BOOST_DURATION_MINUTES + PREMIUM_BOOST_BONUS_MINUTES} dakika</span>}
             </p>
           </div>
         </div>
@@ -147,7 +144,7 @@ export default function Boost() {
               </li>
               <li className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                Her Boost'a +{PREMIUM_BOOST_BONUS_MINUTES} dakika ek süre
+                Her Boost {BOOST_DURATION_MINUTES + PREMIUM_BOOST_BONUS_MINUTES} dk ({BOOST_DURATION_MINUTES} dk + {PREMIUM_BOOST_BONUS_MINUTES} dk bonus)
               </li>
             </ul>
           </div>
@@ -190,27 +187,13 @@ export default function Boost() {
           </div>
         </div>
 
-        {/* Duration Options */}
-        <div className="space-y-3">
-          <h3 className="font-semibold text-foreground flex items-center gap-2">
-            <Clock className="w-4 h-4 text-muted-foreground" />
-            Süre Seçenekleri
-          </h3>
-          <div className="flex gap-2">
-            {DURATION_OPTIONS.map((option, index) => (
-              <button
-                key={index}
-                disabled
-                className="flex-1 py-3.5 px-4 rounded-xl border border-border bg-secondary/50 text-muted-foreground text-sm font-medium cursor-not-allowed relative overflow-hidden opacity-60"
-              >
-                {option.label}
-                {isPremium && (
-                  <span className="block text-[10px] text-primary mt-0.5">+{PREMIUM_BOOST_BONUS_MINUTES} dk</span>
-                )}
-                <Lock className="w-3 h-3 absolute top-2 right-2 text-muted-foreground/50" />
-              </button>
-            ))}
-          </div>
+        {/* Duration Info */}
+        <div className="flex items-start gap-2 p-3.5 rounded-xl bg-secondary/50">
+          <Clock className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Her Boost {BOOST_DURATION_MINUTES} dakika sürer.
+            {isPremium && <span className="text-primary font-medium"> Premium üye olarak +{PREMIUM_BOOST_BONUS_MINUTES} dk bonus ile toplam {BOOST_DURATION_MINUTES + PREMIUM_BOOST_BONUS_MINUTES} dakika!</span>}
+          </p>
         </div>
 
         {/* CTA */}
