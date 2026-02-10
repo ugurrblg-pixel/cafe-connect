@@ -28,27 +28,27 @@ const ACTION_CONFIG: Record<GatedAction, {
 }> = {
   message: {
     icon: MessageCircle,
-    title: 'Complete your profile to message',
-    description: 'People want to know who they\'re chatting with.',
-    benefit: 'Get more replies with a complete profile',
+    title: 'Mesaj göndermek için profilini tamamla',
+    description: 'İnsanlar kiminle sohbet ettiğini bilmek ister.',
+    benefit: 'Tamamlanmış profille daha fazla yanıt al',
   },
   'check-in': {
     icon: MapPin,
-    title: 'Complete your profile to check in',
-    description: 'Let others at the cafe know who you are.',
-    benefit: 'Be visible to people nearby',
+    title: 'Check-in yapmak için profilini tamamla',
+    description: 'Kafedeki diğer kişilerin seni tanımasını sağla.',
+    benefit: 'Yakındaki kişilere görünür ol',
   },
   visibility: {
     icon: User,
-    title: 'Complete your profile to be visible',
-    description: 'Your profile needs to be complete for others to see you.',
-    benefit: 'Appear in cafe user lists',
+    title: 'Görünür olmak için profilini tamamla',
+    description: 'Başkalarının seni görebilmesi için profilin tamamlanmış olmalı.',
+    benefit: 'Kafe kullanıcı listelerinde görün',
   },
   premium: {
     icon: Crown,
-    title: 'Complete your profile first',
-    description: 'Set up your profile before upgrading to Premium.',
-    benefit: 'Premium works best with a complete profile',
+    title: 'Önce profilini tamamla',
+    description: 'Premium\'a geçmeden önce profilini oluştur.',
+    benefit: 'Premium, tamamlanmış profille daha iyi çalışır',
   },
 };
 
@@ -82,8 +82,8 @@ export function ProfileGateModal({ open, onOpenChange, action }: ProfileGateModa
           {/* Progress */}
           <div className="p-4 rounded-xl bg-muted/50">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-muted-foreground">Profile completion</span>
-              <span className="text-sm font-semibold text-primary">{percentage}%</span>
+              <span className="text-sm text-muted-foreground">Profil tamamlama durumu</span>
+              <span className="text-sm font-semibold text-primary">%{percentage}</span>
             </div>
             <Progress value={percentage} className="h-2 mb-3" />
             
@@ -112,7 +112,7 @@ export function ProfileGateModal({ open, onOpenChange, action }: ProfileGateModa
         {/* Actions */}
         <div className="flex flex-col gap-2 pt-2">
           <Button onClick={handleCompleteProfile} className="h-12 rounded-xl">
-            Complete Profile
+            Profil Tamamlama
             <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
           <Button 
@@ -120,7 +120,7 @@ export function ProfileGateModal({ open, onOpenChange, action }: ProfileGateModa
             onClick={() => onOpenChange(false)}
             className="text-muted-foreground"
           >
-            Maybe later
+            Şimdilik geç
           </Button>
         </div>
       </DialogContent>
