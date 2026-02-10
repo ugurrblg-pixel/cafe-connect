@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Cafe } from '@/types';
 import { cn } from '@/lib/utils';
 import { MapPin, Users, Clock } from 'lucide-react';
@@ -12,7 +13,7 @@ interface CafeCardProps {
   style?: React.CSSProperties;
 }
 
-export function CafeCard({ cafe, onClick, className, style }: CafeCardProps) {
+export const CafeCard = memo(function CafeCard({ cafe, onClick, className, style }: CafeCardProps) {
   const { t } = useI18n();
   
   // Get live status from opening hours
@@ -92,4 +93,4 @@ export function CafeCard({ cafe, onClick, className, style }: CafeCardProps) {
       </div>
     </button>
   );
-}
+});

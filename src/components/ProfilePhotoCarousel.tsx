@@ -193,6 +193,7 @@ function CarouselImage({ src, alt, name }: { src: string; alt: string; name: str
         src={src}
         alt={alt}
         className={cn('w-full h-full object-cover transition-opacity duration-300', loaded ? 'opacity-100' : 'opacity-0')}
+        loading="lazy"
         onLoad={() => setLoaded(true)}
         onError={() => setError(true)}
       />

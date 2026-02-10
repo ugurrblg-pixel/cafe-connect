@@ -88,15 +88,15 @@ export function useInboxData() {
               .order('created_at', { ascending: false })
           : Promise.resolve({ data: [] }),
         
-        // Unread counts
+        // Unread messages (fetch conversation_id to count per-conversation)
         conversationIds.length > 0
           ? supabase
               .from('messages')
-              .select('conversation_id', { count: 'exact' })
+              .select('conversation_id')
               .in('conversation_id', conversationIds)
               .neq('sender_id', user.id)
               .is('read_at', null)
-          : Promise.resolve({ data: [], count: 0 }),
+          : Promise.resolve({ data: [] }),
       ]);
 
       // Build lookup maps
@@ -116,21 +116,14 @@ export function useInboxData() {
         }
       });
 
-      // Calculate unread counts per conversation
+      // Calculate unread counts from already-fetched unread data
       const unreadCountMap = new Map<string, number>();
-      if (conversationIds.length > 0) {
-        // Fetch unread counts individually for accuracy
-        await Promise.all(
-          conversationIds.map(async (convId) => {
-            const { count } = await supabase
-              .from('messages')
-              .select('*', { count: 'exact', head: true })
-              .eq('conversation_id', convId)
-              .neq('sender_id', user.id)
-              .is('read_at', null);
-            unreadCountMap.set(convId, count || 0);
-          })
-        );
+      if (conversationIds.length > 0 && unreadRes.data) {
+        // Count unread messages per conversation from the batch query
+        (unreadRes.data as any[]).forEach((msg: any) => {
+          const convId = msg.conversation_id;
+          unreadCountMap.set(convId, (unreadCountMap.get(convId) || 0) + 1);
+        });
       }
 
       // Build conversations list
