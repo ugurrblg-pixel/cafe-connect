@@ -47,7 +47,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     if (!isSupported || !user) return;
 
     try {
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await navigator.serviceWorker.ready as ServiceWorkerRegistration & { pushManager: PushManager };
       const subscription = await registration.pushManager.getSubscription();
       
       if (subscription) {
@@ -96,7 +96,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
       }
 
       // Register service worker if not already
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await navigator.serviceWorker.ready as ServiceWorkerRegistration & { pushManager: PushManager };
       
       // Subscribe to push
       const subscription = await registration.pushManager.subscribe({
@@ -141,7 +141,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     if (!isSupported || !user) return false;
 
     try {
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await navigator.serviceWorker.ready as ServiceWorkerRegistration & { pushManager: PushManager };
       const subscription = await registration.pushManager.getSubscription();
 
       if (subscription) {
