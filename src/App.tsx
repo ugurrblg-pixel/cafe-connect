@@ -10,6 +10,9 @@ import { NotificationProvider } from "@/contexts/NotificationContext";
 import { I18nProvider } from "@/contexts/I18nContext";
 import { LocationProvider } from "@/contexts/LocationContext";
 import { PremiumProvider } from "@/contexts/PremiumContext";
+import { lazy, Suspense, memo } from "react";
+import { AdminGuard } from "./components/admin/AdminGuard";
+
 // Lazy-load all page components for faster initial load
 const Discover = lazy(() => import("./pages/Discover"));
 const CafeRoom = lazy(() => import("./pages/CafeRoom"));
@@ -35,8 +38,6 @@ const PremiumPayments = lazy(() => import("./pages/settings/PremiumPayments"));
 const ContactUs = lazy(() => import("./pages/settings/ContactUs"));
 const PrivacyPolicy = lazy(() => import("./pages/settings/PrivacyPolicy"));
 const TermsOfUse = lazy(() => import("./pages/settings/TermsOfUse"));
-import { AdminGuard } from "./components/admin/AdminGuard";
-import { lazy, Suspense, memo } from "react";
 
 const PageFallback = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
