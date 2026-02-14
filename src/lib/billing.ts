@@ -1,11 +1,14 @@
 /**
- * Google Play Billing Service
+ * Cross-Platform Billing Service
  * 
- * This module provides the interface for Google Play Billing integration.
- * All purchases MUST go through Google Play Billing.
+ * Supports Google Play Billing (Android) and Apple In-App Purchase (iOS).
+ * All purchases go through native store billing.
  */
 
 import { supabase } from '@/integrations/supabase/client';
+
+export type Platform = 'android' | 'ios' | 'web';
+export type Store = 'google_play' | 'app_store' | 'none';
 
 export interface BillingProduct {
   productId: string;
@@ -34,6 +37,7 @@ export interface BoostPackage {
 export interface PurchaseResult {
   success: boolean;
   purchaseToken?: string;
+  receiptData?: string;
   productId?: string;
   error?: string;
 }
@@ -148,16 +152,42 @@ export const BOOST_PACKAGES: BoostPackage[] = [
 export const PREMIUM_BOOST_BONUS_MINUTES = 10;
 
 /**
- * Check if Google Play Billing is available
+ * Detect current platform
+ */
+export function detectPlatform(): Platform {
+  if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) return 'ios';
+  if (/Android/i.test(navigator.userAgent)) return 'android';
+  return 'web';
+}
+
+/**
+ * Get store for current platform
+ */
+export function getStore(): Store {
+  const platform = detectPlatform();
+  if (platform === 'android') return 'google_play';
+  if (platform === 'ios') return 'app_store';
+  return 'none';
+}
+
+/**
+ * Check if native billing is available
  */
 export async function isBillingAvailable(): Promise<boolean> {
-  const isAndroid = /Android/i.test(navigator.userAgent);
-  if (!isAndroid) return false;
-  
-  const hasNativeBilling = typeof (window as any).Capacitor !== 'undefined' && 
-    typeof (window as any).CapacitorGooglePlayBilling !== 'undefined';
-  
-  return hasNativeBilling;
+  const platform = detectPlatform();
+  if (platform === 'web') return false;
+
+  if (platform === 'android') {
+    return typeof (window as any).Capacitor !== 'undefined' &&
+      typeof (window as any).CapacitorGooglePlayBilling !== 'undefined';
+  }
+
+  if (platform === 'ios') {
+    return typeof (window as any).Capacitor !== 'undefined' &&
+      typeof (window as any).CapacitorAppleIAP !== 'undefined';
+  }
+
+  return false;
 }
 
 /**
@@ -166,7 +196,7 @@ export async function isBillingAvailable(): Promise<boolean> {
 export async function isBillingReady(): Promise<boolean> {
   const available = await isBillingAvailable();
   if (!available) return false;
-  
+
   try {
     return false; // Not ready until native SDK is integrated
   } catch (error) {
@@ -183,25 +213,29 @@ export async function getProducts(): Promise<BillingProduct[]> {
 }
 
 /**
- * Initiate a purchase flow through Google Play Billing
+ * Initiate a purchase flow through native store billing
  */
 export async function purchaseSubscription(
   productId: string,
   userId: string
 ): Promise<PurchaseResult> {
   const billingReady = await isBillingReady();
-  
+  const platform = detectPlatform();
+
   if (!billingReady) {
-    return {
-      success: false,
-      error: 'Google Play Billing henüz hazır değil. Uygulama güncellemesini bekleyin.',
-    };
+    const storeMsg = platform === 'ios'
+      ? 'App Store satın alma henüz hazır değil. Uygulama güncellemesini bekleyin.'
+      : 'Google Play Billing henüz hazır değil. Uygulama güncellemesini bekleyin.';
+    return { success: false, error: storeMsg };
   }
-  
+
   try {
+    // Native purchase would happen here via Capacitor plugin
     return {
       success: false,
-      error: 'Google Play Billing henüz hazır değil. Uygulama güncellemesini bekleyin.',
+      error: platform === 'ios'
+        ? 'App Store satın alma henüz hazır değil.'
+        : 'Google Play Billing henüz hazır değil.',
     };
   } catch (error) {
     console.error('Purchase error:', error);
@@ -213,20 +247,44 @@ export async function purchaseSubscription(
 }
 
 /**
- * Verify purchase token with backend
+ * Verify purchase with backend (cross-platform)
  */
-async function verifyPurchaseOnBackend(
-  purchaseToken: string,
-  productId: string,
-  userId: string
+export async function verifyPurchase(
+  params: {
+    purchaseToken?: string;
+    receiptData?: string;
+    productId: string;
+    userId: string;
+  }
 ): Promise<{ success: boolean; error?: string }> {
+  const platform = detectPlatform();
+
   try {
-    const { data, error } = await supabase.functions.invoke('verify-google-purchase', {
-      body: { purchaseToken, productId, userId },
-    });
-    
-    if (error) return { success: false, error: error.message };
-    return { success: data?.verified === true };
+    if (platform === 'android' && params.purchaseToken) {
+      const { data, error } = await supabase.functions.invoke('verify-google-purchase', {
+        body: {
+          purchaseToken: params.purchaseToken,
+          productId: params.productId,
+          userId: params.userId,
+        },
+      });
+      if (error) return { success: false, error: error.message };
+      return { success: data?.verified === true };
+    }
+
+    if (platform === 'ios' && params.receiptData) {
+      const { data, error } = await supabase.functions.invoke('verify-apple-purchase', {
+        body: {
+          receiptData: params.receiptData,
+          productId: params.productId,
+          userId: params.userId,
+        },
+      });
+      if (error) return { success: false, error: error.message };
+      return { success: data?.verified === true };
+    }
+
+    return { success: false, error: 'Geçersiz platform veya eksik veri' };
   } catch (error) {
     return { success: false, error: 'Sunucu doğrulaması başarısız' };
   }
@@ -249,7 +307,7 @@ export async function restorePurchases(userId: string): Promise<PurchaseResult> 
     if (data && data.expires_at && new Date(data.expires_at) > new Date()) {
       return {
         success: true,
-        productId: data.google_play_product_id || undefined,
+        productId: data.product_id || data.google_play_product_id || undefined,
       };
     }
 
@@ -260,9 +318,29 @@ export async function restorePurchases(userId: string): Promise<PurchaseResult> 
 }
 
 /**
- * Cancel subscription - redirects to Google Play
+ * Get store management URL for cancellation / subscription management
  */
-export async function cancelSubscription(userId: string): Promise<boolean> {
-  window.open('https://play.google.com/store/account/subscriptions', '_blank');
+export function getStoreManagementUrl(): string {
+  const platform = detectPlatform();
+  if (platform === 'ios') {
+    return 'https://apps.apple.com/account/subscriptions';
+  }
+  return 'https://play.google.com/store/account/subscriptions';
+}
+
+/**
+ * Get store name for display
+ */
+export function getStoreName(): string {
+  const platform = detectPlatform();
+  if (platform === 'ios') return 'App Store';
+  return 'Google Play';
+}
+
+/**
+ * Cancel subscription - redirects to store
+ */
+export async function cancelSubscription(): Promise<boolean> {
+  window.open(getStoreManagementUrl(), '_blank');
   return true;
 }

@@ -44,6 +44,36 @@ export type Database = {
         }
         Relationships: []
       }
+      boosts: {
+        Row: {
+          created_at: string
+          id: string
+          last_used_at: string | null
+          platform: string
+          remaining_boosts: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_used_at?: string | null
+          platform?: string
+          remaining_boosts?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_used_at?: string | null
+          platform?: string
+          remaining_boosts?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cafes: {
         Row: {
           address: string
@@ -563,9 +593,13 @@ export type Database = {
           google_play_product_id: string | null
           google_play_purchase_token: string | null
           id: string
+          last_receipt: string | null
           plan_type: string
+          platform: string
+          product_id: string | null
           started_at: string | null
           status: string
+          store: string
           updated_at: string
           user_id: string
         }
@@ -575,9 +609,13 @@ export type Database = {
           google_play_product_id?: string | null
           google_play_purchase_token?: string | null
           id?: string
+          last_receipt?: string | null
           plan_type?: string
+          platform?: string
+          product_id?: string | null
           started_at?: string | null
           status?: string
+          store?: string
           updated_at?: string
           user_id: string
         }
@@ -587,9 +625,13 @@ export type Database = {
           google_play_product_id?: string | null
           google_play_purchase_token?: string | null
           id?: string
+          last_receipt?: string | null
           plan_type?: string
+          platform?: string
+          product_id?: string | null
           started_at?: string | null
           status?: string
+          store?: string
           updated_at?: string
           user_id?: string
         }

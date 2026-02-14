@@ -9,6 +9,14 @@ export interface Subscription {
   status: 'active' | 'cancelled' | 'expired' | 'inactive';
   started_at: string | null;
   expires_at: string | null;
+  platform?: string;
+  store?: string;
+  product_id?: string;
+}
+
+export interface BoostStatus {
+  remaining_boosts: number;
+  last_used_at: string | null;
 }
 
 export interface PremiumFeatures {
@@ -31,8 +39,10 @@ interface PremiumContextType {
   remainingChats: number;
   canStartChat: boolean;
   loading: boolean;
+  boostStatus: BoostStatus;
   incrementChatCount: () => Promise<boolean>;
   refreshSubscription: () => Promise<void>;
+  useBoost: () => Promise<boolean>;
   FREE_CHAT_LIMIT: number;
 }
 
@@ -46,6 +56,7 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
   const [isPremium, setIsPremium] = useState(false);
   const [dailyChatCount, setDailyChatCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [boostStatus, setBoostStatus] = useState<BoostStatus>({ remaining_boosts: 0, last_used_at: null });
 
   const features: PremiumFeatures = {
     unlimitedChats: isPremium,
@@ -79,11 +90,20 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
 
       if (data) {
-        const sub = data as Subscription;
+        const sub: Subscription = {
+          id: data.id,
+          user_id: data.user_id,
+          plan_type: data.plan_type as Subscription['plan_type'],
+          status: data.status as Subscription['status'],
+          started_at: data.started_at,
+          expires_at: data.expires_at,
+          platform: data.platform,
+          store: data.store,
+          product_id: data.product_id || data.google_play_product_id,
+        };
         setSubscription(sub);
-        
-        // Check if premium is active
-        const isActive = sub.status === 'active' && 
+
+        const isActive = sub.status === 'active' &&
           (!sub.expires_at || new Date(sub.expires_at) > new Date());
         setIsPremium(isActive);
       } else {
@@ -93,6 +113,28 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error fetching subscription:', error);
       setIsPremium(false);
+    }
+  }, [user]);
+
+  const fetchBoostStatus = useCallback(async () => {
+    if (!user) {
+      setBoostStatus({ remaining_boosts: 0, last_used_at: null });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('boosts')
+        .select('remaining_boosts, last_used_at')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (data) {
+        setBoostStatus({ remaining_boosts: data.remaining_boosts, last_used_at: data.last_used_at });
+      }
+    } catch (error) {
+      console.error('Error fetching boost status:', error);
     }
   }, [user]);
 
@@ -116,14 +158,8 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
 
   const incrementChatCount = useCallback(async (): Promise<boolean> => {
     if (!user) return false;
-    
-    // Premium users can always start chats
     if (isPremium) return true;
-
-    // Check if at limit
-    if (dailyChatCount >= FREE_CHAT_LIMIT) {
-      return false;
-    }
+    if (dailyChatCount >= FREE_CHAT_LIMIT) return false;
 
     try {
       const { data, error } = await supabase.rpc('increment_chat_starts', {
@@ -139,11 +175,36 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     }
   }, [user, isPremium, dailyChatCount]);
 
+  const useBoost = useCallback(async (): Promise<boolean> => {
+    if (!user) return false;
+    if (boostStatus.remaining_boosts <= 0) return false;
+
+    try {
+      const { error } = await supabase
+        .from('boosts')
+        .update({
+          remaining_boosts: boostStatus.remaining_boosts - 1,
+          last_used_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      setBoostStatus(prev => ({
+        remaining_boosts: prev.remaining_boosts - 1,
+        last_used_at: new Date().toISOString(),
+      }));
+      return true;
+    } catch (error) {
+      console.error('Error using boost:', error);
+      return false;
+    }
+  }, [user, boostStatus.remaining_boosts]);
+
   const refreshSubscription = useCallback(async () => {
     setLoading(true);
-    await Promise.all([fetchSubscription(), fetchDailyChatCount()]);
+    await Promise.all([fetchSubscription(), fetchDailyChatCount(), fetchBoostStatus()]);
     setLoading(false);
-  }, [fetchSubscription, fetchDailyChatCount]);
+  }, [fetchSubscription, fetchDailyChatCount, fetchBoostStatus]);
 
   useEffect(() => {
     refreshSubscription();
@@ -158,8 +219,10 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
       remainingChats,
       canStartChat,
       loading,
+      boostStatus,
       incrementChatCount,
       refreshSubscription,
+      useBoost,
       FREE_CHAT_LIMIT,
     }}>
       {children}

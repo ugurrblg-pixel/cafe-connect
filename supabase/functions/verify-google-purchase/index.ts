@@ -157,6 +157,9 @@ serve(async (req) => {
       .upsert({
         user_id: userId,
         plan_type: planType,
+        platform: 'android',
+        store: 'google_play',
+        product_id: productId,
         google_play_purchase_token: purchaseToken,
         google_play_product_id: productId,
         status: isCancelled ? 'cancelled' : 'active',
