@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Search, Smartphone } from 'lucide-react';
+import { RefreshCw, Search, Smartphone, Apple } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SubscriptionRow {
@@ -14,6 +14,9 @@ interface SubscriptionRow {
   status: string;
   started_at: string | null;
   expires_at: string | null;
+  platform: string;
+  store: string;
+  product_id: string | null;
   google_play_product_id: string | null;
   created_at: string;
   profile_name?: string;
@@ -90,7 +93,8 @@ export default function AdminSubscriptions() {
     return (
       (s.profile_name || '').toLowerCase().includes(q) ||
       s.user_id.toLowerCase().includes(q) ||
-      (s.google_play_product_id || '').toLowerCase().includes(q)
+      (s.product_id || s.google_play_product_id || '').toLowerCase().includes(q) ||
+      (s.platform || '').toLowerCase().includes(q)
     );
   });
 
@@ -99,9 +103,9 @@ export default function AdminSubscriptions() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Abonelikler</h1>
-          <p className="text-muted-foreground text-sm flex items-center gap-1.5">
+         <p className="text-muted-foreground text-sm flex items-center gap-1.5">
             <Smartphone className="w-3.5 h-3.5" />
-            Google Play abonelikleri (salt okunur)
+            Google Play & App Store abonelikleri (salt okunur)
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => { setRefreshing(true); fetchSubscriptions(); }} disabled={refreshing}>
@@ -130,6 +134,7 @@ export default function AdminSubscriptions() {
             <thead>
               <tr className="border-b border-border bg-muted/50">
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Kullanıcı</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Platform</th>
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Plan</th>
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Product ID</th>
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Durum</th>
@@ -141,17 +146,17 @@ export default function AdminSubscriptions() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-b border-border">
-                    {Array.from({ length: 6 }).map((_, j) => (
+                    {Array.from({ length: 7 }).map((_, j) => (
                       <td key={j} className="px-4 py-3"><Skeleton className="h-5 w-20" /></td>
                     ))}
                   </tr>
                 ))
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                     <Smartphone className="w-8 h-8 mx-auto mb-2 opacity-30" />
                     Abonelik bulunamadı
-                  </td>
+                   </td>
                 </tr>
               ) : (
                 filtered.map(sub => (
@@ -160,9 +165,17 @@ export default function AdminSubscriptions() {
                       <p className="font-medium text-foreground">{sub.profile_name}</p>
                       <p className="text-xs text-muted-foreground font-mono">{sub.user_id.slice(0, 8)}...</p>
                     </td>
+                    <td className="px-4 py-3">
+                      <span className={cn(
+                        'text-xs px-2 py-1 rounded-full font-medium inline-flex items-center gap-1',
+                        sub.platform === 'ios' ? 'bg-blue-500/10 text-blue-600' : 'bg-green-500/10 text-green-600'
+                      )}>
+                        {sub.platform === 'ios' ? 'iOS' : 'Android'}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 capitalize text-foreground">{sub.plan_type}</td>
                     <td className="px-4 py-3">
-                      <span className="text-xs font-mono text-muted-foreground">{sub.google_play_product_id || 'N/A'}</span>
+                      <span className="text-xs font-mono text-muted-foreground">{sub.product_id || sub.google_play_product_id || 'N/A'}</span>
                     </td>
                     <td className="px-4 py-3">
                       <span className={cn('text-xs px-2 py-1 rounded-full font-medium', statusBadge(sub.status))}>{sub.status}</span>

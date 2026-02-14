@@ -11,7 +11,7 @@ import { usePremiumContext } from '@/contexts/PremiumContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   isBillingReady, getProducts, purchaseSubscription, restorePurchases,
-  BillingProduct,
+  BillingProduct, getStoreName, getStoreManagementUrl, detectPlatform,
 } from '@/lib/billing';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -166,7 +166,7 @@ export default function Subscription() {
             )}
           </div>
           <p className="text-xs text-center text-muted-foreground">
-            Aboneliğini yönetmek için Google Play &gt; Abonelikler bölümünü kullan.
+            Aboneliğini yönetmek için {getStoreName()} &gt; Abonelikler bölümünü kullan.
           </p>
         </div>
       </div>
@@ -338,7 +338,7 @@ export default function Subscription() {
         <div className="pt-2 pb-2 text-center space-y-2">
           <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/70">
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Ödemeler Google Play tarafından işlenir</span>
+            <span>Ödemeler {getStoreName()} tarafından işlenir</span>
           </div>
           {!billingReady && (
             <p className="text-xs text-muted-foreground/70 leading-relaxed">

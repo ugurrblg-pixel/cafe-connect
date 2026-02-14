@@ -6,7 +6,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { usePremiumContext } from '@/contexts/PremiumContext';
-import { BOOST_PACKAGES, PREMIUM_BOOST_BONUS_MINUTES, BoostPackage } from '@/lib/billing';
+import { BOOST_PACKAGES, PREMIUM_BOOST_BONUS_MINUTES, BoostPackage, getStoreName } from '@/lib/billing';
 import { cn } from '@/lib/utils';
 
 const BOOST_BENEFITS = [
@@ -215,7 +215,7 @@ export default function Boost() {
           <div className="flex items-start gap-2 p-3.5 rounded-xl bg-secondary/50">
             <Clock className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Boost süresince sadece bulunduğun kafe için geçerlidir. Ödemeler Google Play üzerinden işlenir.
+              Boost süresince sadece bulunduğun kafe için geçerlidir. Ödemeler {getStoreName()} üzerinden işlenir.
             </p>
           </div>
         </div>
