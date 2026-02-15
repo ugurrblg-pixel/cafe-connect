@@ -10,7 +10,14 @@ interface VerifyRequest {
   receiptData: string;
   productId: string;
   userId: string;
+  purchaseType?: 'subscription' | 'boost';
 }
+
+const BOOST_COUNTS: Record<string, number> = {
+  'cafemeet_boost_1': 1,
+  'cafemeet_boost_3': 3,
+  'cafemeet_boost_5': 5,
+};
 
 interface AppleVerifyResponse {
   status: number;
@@ -19,9 +26,16 @@ interface AppleVerifyResponse {
     expires_date_ms: string;
     purchase_date_ms: string;
     original_transaction_id: string;
-    is_in_intro_offer_period?: string;
     is_trial_period?: string;
   }>;
+  receipt?: {
+    in_app?: Array<{
+      product_id: string;
+      transaction_id: string;
+      purchase_date_ms: string;
+      quantity: string;
+    }>;
+  };
   pending_renewal_info?: Array<{
     auto_renew_status: string;
     product_id: string;
@@ -34,9 +48,9 @@ serve(async (req) => {
   }
 
   try {
-    const { receiptData, productId, userId }: VerifyRequest = await req.json();
+    const { receiptData, productId, userId, purchaseType }: VerifyRequest = await req.json();
 
-    console.log('Verifying Apple purchase:', { productId, userId, hasReceipt: !!receiptData });
+    console.log('Verifying Apple purchase:', { productId, userId, purchaseType, hasReceipt: !!receiptData });
 
     if (!receiptData || !productId || !userId) {
       return new Response(
@@ -61,8 +75,6 @@ serve(async (req) => {
 
     // Try production first, then sandbox
     let appleData = await verifyWithApple(receiptData, appSharedSecret, false);
-    
-    // Status 21007 means sandbox receipt sent to production
     if (appleData.status === 21007) {
       console.log('Sandbox receipt detected, retrying with sandbox URL');
       appleData = await verifyWithApple(receiptData, appSharedSecret, true);
@@ -76,7 +88,55 @@ serve(async (req) => {
       );
     }
 
-    // Find the matching subscription receipt
+    const isBoost = purchaseType === 'boost' || productId.startsWith('cafemeet_boost_');
+
+    if (isBoost) {
+      // Verify consumable purchase from receipt
+      const inAppPurchases = appleData.receipt?.in_app || [];
+      const matchingPurchase = inAppPurchases.find(p => p.product_id === productId);
+
+      if (!matchingPurchase) {
+        return new Response(
+          JSON.stringify({ verified: false, error: 'Boost purchase not found in receipt' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Add boosts
+      const boostCount = BOOST_COUNTS[productId] || 1;
+      const { data: existing } = await supabase
+        .from('boosts')
+        .select('remaining_boosts')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      const currentBoosts = existing?.remaining_boosts || 0;
+
+      const { error: boostError } = await supabase
+        .from('boosts')
+        .upsert({
+          user_id: userId,
+          remaining_boosts: currentBoosts + boostCount,
+          platform: 'ios',
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' });
+
+      if (boostError) {
+        console.error('Boost DB error:', boostError);
+        return new Response(
+          JSON.stringify({ verified: false, error: 'Failed to add boosts' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`Added ${boostCount} boosts for user ${userId}`);
+      return new Response(
+        JSON.stringify({ verified: true, boostsAdded: boostCount }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Subscription verification
     const receipts = appleData.latest_receipt_info || [];
     const matchingReceipt = receipts
       .filter(r => r.product_id === productId)
@@ -91,17 +151,8 @@ serve(async (req) => {
 
     const expiryTime = parseInt(matchingReceipt.expires_date_ms);
     const isExpired = expiryTime < Date.now();
-
-    // Check auto-renew status
     const renewalInfo = appleData.pending_renewal_info?.find(r => r.product_id === productId);
     const autoRenewing = renewalInfo?.auto_renew_status === '1';
-
-    console.log('Apple purchase verification result:', {
-      expiryTime: new Date(expiryTime).toISOString(),
-      isExpired,
-      autoRenewing,
-      transactionId: matchingReceipt.original_transaction_id
-    });
 
     if (isExpired) {
       return new Response(
@@ -110,12 +161,7 @@ serve(async (req) => {
       );
     }
 
-    // Determine plan type
-    const planType = productId.includes('yearly') ? 'yearly' 
-      : productId.includes('3month') ? 'monthly'
-      : productId.includes('monthly') ? 'monthly' 
-      : 'monthly';
-
+    const planType = productId.includes('yearly') ? 'yearly' : productId.includes('weekly') ? 'weekly' : 'monthly';
     const startedAt = new Date(parseInt(matchingReceipt.purchase_date_ms)).toISOString();
     const expiresAt = new Date(expiryTime).toISOString();
 
@@ -127,7 +173,7 @@ serve(async (req) => {
         product_id: productId,
         platform: 'ios',
         store: 'app_store',
-        last_receipt: receiptData.substring(0, 500), // Store truncated for reference
+        last_receipt: receiptData.substring(0, 500),
         status: autoRenewing ? 'active' : 'cancelled',
         started_at: startedAt,
         expires_at: expiresAt,
@@ -140,8 +186,6 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    console.log('Apple subscription verified and saved successfully');
 
     return new Response(
       JSON.stringify({
@@ -162,11 +206,7 @@ serve(async (req) => {
   }
 });
 
-async function verifyWithApple(
-  receiptData: string,
-  password: string,
-  useSandbox: boolean
-): Promise<AppleVerifyResponse> {
+async function verifyWithApple(receiptData: string, password: string, useSandbox: boolean): Promise<AppleVerifyResponse> {
   const url = useSandbox
     ? 'https://sandbox.itunes.apple.com/verifyReceipt'
     : 'https://buy.itunes.apple.com/verifyReceipt';
@@ -174,11 +214,7 @@ async function verifyWithApple(
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      'receipt-data': receiptData,
-      password,
-      'exclude-old-transactions': true,
-    }),
+    body: JSON.stringify({ 'receipt-data': receiptData, password, 'exclude-old-transactions': true }),
   });
 
   return await response.json();
