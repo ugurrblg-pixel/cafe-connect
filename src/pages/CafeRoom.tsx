@@ -66,7 +66,7 @@ export default function CafeRoom() {
     onUserJoined: handleUserJoined,
   });
   
-  const { sendWave, hasWavedAt, hasReceivedWaveFrom } = useWaves();
+  const { sendWave, hasWavedAt, hasReceivedWaveFrom, sentWaves } = useWaves();
   const { hasMatchWith, getMatchConversation, createConversationForMatch, matches } = useMatches();
   const { canStartChat, incrementChatCount, isPremium } = usePremium();
   const { isComplete: isProfileComplete } = useProfileCompletion();
@@ -180,6 +180,24 @@ export default function CafeRoom() {
 
   const handleWave = async (userId: string, userName: string) => {
     if (!id) return;
+
+    // Gate wave behind profile completion
+    if (!isProfileComplete) {
+      setGatedAction('wave' as GatedAction);
+      setShowProfileGate(true);
+      return;
+    }
+
+    // Daily wave limit for free users (3 per day)
+    if (!isPremium) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayWaves = sentWaves.filter(w => w.createdAt >= today);
+      if (todayWaves.length >= 3) {
+        setShowPaywall(true);
+        return;
+      }
+    }
     
     setWavingAt(userId);
     const result = await sendWave(userId, id);
