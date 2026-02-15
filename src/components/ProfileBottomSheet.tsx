@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Sheet,
   SheetContent,
@@ -16,6 +17,7 @@ import { MapPin, MessageCircle, Ban, Flag, MoreVertical } from 'lucide-react';
 import { useMessageRequests } from '@/hooks/useMessageRequests';
 import { useBlocking } from '@/hooks/useBlocking';
 import { useProfileViews } from '@/hooks/useProfileViews';
+import { useMatches } from '@/hooks/useMatches';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePremium } from '@/hooks/usePremium';
 import {
@@ -52,6 +54,8 @@ export function ProfileBottomSheet({ user, open, onOpenChange, cafeId }: Profile
   const { sendRequest, presetMessages, sentRequests } = useMessageRequests();
   const { blockUser, reportUser } = useBlocking();
   const { logProfileView } = useProfileViews();
+  const { hasMatchWith, getMatchConversation } = useMatches();
+  const navigate = useNavigate();
   
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [showBlockDialog, setShowBlockDialog] = useState(false);
@@ -60,7 +64,6 @@ export function ProfileBottomSheet({ user, open, onOpenChange, cafeId }: Profile
   // Log profile view when sheet opens
   useEffect(() => {
     if (open && user && currentUser && user.id !== currentUser.id) {
-      // Get the profile ID from the user object (it should be the profile ID, not user_id)
       logProfileView(user.id);
     }
   }, [open, user, currentUser, logProfileView]);
@@ -82,7 +85,11 @@ export function ProfileBottomSheet({ user, open, onOpenChange, cafeId }: Profile
     ? Math.floor((Date.now() - user.checkedInAt.getTime()) / 60000)
     : 0;
 
-  // Check if request already sent
+  // Check if matched
+  const isMatched = hasMatchWith(targetUserId);
+  const existingConversationId = getMatchConversation(targetUserId);
+
+  // Check if request already sent (only relevant for unmatched users)
   const alreadySentRequest = sentRequests.some(
     r => r.toUserId === targetUserId && r.cafeId === cafeId
   );
@@ -187,8 +194,23 @@ export function ProfileBottomSheet({ user, open, onOpenChange, cafeId }: Profile
               </span>
             </div>
 
-            {/* Message Request Button */}
-            {canMessage && currentUser && currentUser.id !== targetUserId && (
+            {/* Chat or Message Request Button */}
+            {currentUser && currentUser.id !== targetUserId && isMatched && (
+              <Button
+                onClick={() => {
+                  onOpenChange(false);
+                  if (existingConversationId) {
+                    navigate(`/chat/${existingConversationId}`);
+                  }
+                }}
+                className="mt-6 w-full max-w-xs"
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Mesaj Gönder
+              </Button>
+            )}
+
+            {canMessage && currentUser && currentUser.id !== targetUserId && !isMatched && (
               <Button
                 onClick={() => setShowRequestModal(true)}
                 disabled={alreadySentRequest}
@@ -200,7 +222,7 @@ export function ProfileBottomSheet({ user, open, onOpenChange, cafeId }: Profile
               </Button>
             )}
 
-            {!canMessage && currentUser && currentUser.id !== targetUserId && (
+            {!canMessage && currentUser && currentUser.id !== targetUserId && !isMatched && (
               <p className="mt-4 text-sm text-muted-foreground">
                 {user.allowDMs === false 
                   ? 'Bu kullanıcı mesaj kabul etmiyor' 

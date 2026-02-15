@@ -812,6 +812,10 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: number
       }
+      has_match_between: {
+        Args: { user_a: string; user_b: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
