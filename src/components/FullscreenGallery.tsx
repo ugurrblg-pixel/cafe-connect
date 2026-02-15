@@ -204,6 +204,12 @@ function GalleryImage({ src, alt, scale, translate }: { src: string; alt: string
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
 
+  // Reset loading state when src changes
+  useEffect(() => {
+    setLoaded(false);
+    setError(false);
+  }, [src]);
+
   return (
     <div className="relative w-full h-full flex items-center justify-center">
       {!loaded && !error && (
