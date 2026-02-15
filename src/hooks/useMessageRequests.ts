@@ -180,7 +180,22 @@ export function useMessageRequests() {
     }
 
     if (accept) {
-      // Create conversation
+      // First create a match (required for conversation creation)
+      const { error: matchError } = await supabase
+        .from('matches')
+        .insert({
+          user1_id: request.fromUserId,
+          user2_id: user.id,
+          cafe_id: request.cafeId,
+        });
+
+      if (matchError && matchError.code !== '23505') {
+        console.error('Error creating match:', matchError);
+        toast.error('Failed to create match');
+        return null;
+      }
+
+      // Create conversation (RLS now requires match to exist)
       const { data: conversation, error: convError } = await supabase
         .from('conversations')
         .insert({
@@ -196,6 +211,13 @@ export function useMessageRequests() {
         toast.error('Failed to create conversation');
         return null;
       }
+
+      // Update match with conversation_id
+      await supabase
+        .from('matches')
+        .update({ conversation_id: conversation.id })
+        .eq('user1_id', request.fromUserId)
+        .eq('user2_id', user.id);
 
       // Send the preset message as first message
       await supabase
