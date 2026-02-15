@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { User } from '@/types';
 import { PurposeBadge } from './PurposeBadge';
+import { VerifiedBadge } from './VerifiedBadge';
 import { InitialsAvatar } from './InitialsAvatar';
 import { cn } from '@/lib/utils';
 import { MessageCircle, Hand, Check, Loader2, Heart, Clock } from 'lucide-react';
@@ -67,6 +68,7 @@ export const UserCard = memo(function UserCard({ user, onMessage, onInteraction,
           <h3 className="font-semibold text-foreground truncate">
             {displayName}{user.age ? `, ${user.age}` : ''}
           </h3>
+          {user.isVerified && <VerifiedBadge size="sm" />}
           <PurposeBadge purpose={user.purpose} size="sm" />
         </div>
         <p className="text-sm text-muted-foreground line-clamp-2 mb-2">

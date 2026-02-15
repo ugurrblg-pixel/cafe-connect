@@ -54,6 +54,26 @@ export function ProfilePhotoManager({ photos, onPhotosChange }: ProfilePhotoMana
       const newPhotos = [...currentPhotos, publicUrl];
       onPhotosChange(newPhotos);
       toast.success('Fotoğraf yüklendi!');
+
+      // Run AI moderation in background
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const modRes = await supabase.functions.invoke('moderate-photo', {
+            body: { imageUrl: publicUrl },
+          });
+          if (modRes.data && !modRes.data.approved) {
+            // Remove the photo and notify user
+            onPhotosChange(currentPhotos); // revert
+            toast.error('Bu fotoğraf uygunsuz içerik nedeniyle reddedildi', {
+              description: modRes.data.reason || 'Lütfen farklı bir fotoğraf deneyin.',
+            });
+          }
+        }
+      } catch (modError) {
+        // Don't block upload if moderation fails
+        console.error('Photo moderation error:', modError);
+      }
     } catch (error) {
       console.error('Error uploading photo:', error);
       toast.error('Fotoğraf yüklenemedi');

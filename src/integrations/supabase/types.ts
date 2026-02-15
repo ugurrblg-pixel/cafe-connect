@@ -465,15 +465,20 @@ export type Database = {
           hide_last_seen: boolean
           hobbies: string[] | null
           id: string
+          is_verified: boolean
           is_visible: boolean | null
           name: string
           notifications_enabled: boolean
+          photo_moderation_status: string
           photo_url: string | null
           photo_urls: string[] | null
           purpose: string
           show_read_receipts: boolean
           updated_at: string
           user_id: string
+          verification_requested_at: string | null
+          verification_selfie_url: string | null
+          verification_status: string
         }
         Insert: {
           age?: number | null
@@ -485,15 +490,20 @@ export type Database = {
           hide_last_seen?: boolean
           hobbies?: string[] | null
           id?: string
+          is_verified?: boolean
           is_visible?: boolean | null
           name?: string
           notifications_enabled?: boolean
+          photo_moderation_status?: string
           photo_url?: string | null
           photo_urls?: string[] | null
           purpose?: string
           show_read_receipts?: boolean
           updated_at?: string
           user_id: string
+          verification_requested_at?: string | null
+          verification_selfie_url?: string | null
+          verification_status?: string
         }
         Update: {
           age?: number | null
@@ -505,15 +515,20 @@ export type Database = {
           hide_last_seen?: boolean
           hobbies?: string[] | null
           id?: string
+          is_verified?: boolean
           is_visible?: boolean | null
           name?: string
           notifications_enabled?: boolean
+          photo_moderation_status?: string
           photo_url?: string | null
           photo_urls?: string[] | null
           purpose?: string
           show_read_receipts?: boolean
           updated_at?: string
           user_id?: string
+          verification_requested_at?: string | null
+          verification_selfie_url?: string | null
+          verification_status?: string
         }
         Relationships: []
       }
