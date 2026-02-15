@@ -8,6 +8,8 @@ import { PremiumBadge } from '@/components/PremiumBadge';
 import { supabase } from '@/integrations/supabase/client';
 import { Purpose } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useProfileViews } from '@/hooks/useProfileViews';
+import { useActiveCheckIn } from '@/hooks/useActiveCheckIn';
 
 interface UserProfile {
   displayName: string;
@@ -24,7 +26,10 @@ export default function UserProfileView() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const { logProfileView } = useProfileViews();
+  const { activeCheckIn } = useActiveCheckIn();
+  
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -59,13 +64,17 @@ export default function UserProfileView() {
           isPremium,
         });
       }
-      setLoading(false);
+      setProfileLoading(false);
     };
 
     fetchProfile();
+    // Log profile view
+    if (userId) {
+      logProfileView(userId, activeCheckIn?.cafeId || null);
+    }
   }, [userId]);
 
-  if (loading) {
+  if (profileLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Header title="Profil" showBack />

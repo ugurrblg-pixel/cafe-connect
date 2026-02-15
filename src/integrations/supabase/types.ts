@@ -435,24 +435,35 @@ export type Database = {
       }
       profile_views: {
         Row: {
+          cafe_id: string | null
           id: string
           viewed_at: string
           viewed_profile_id: string
           viewer_id: string
         }
         Insert: {
+          cafe_id?: string | null
           id?: string
           viewed_at?: string
           viewed_profile_id: string
           viewer_id: string
         }
         Update: {
+          cafe_id?: string | null
           id?: string
           viewed_at?: string
           viewed_profile_id?: string
           viewer_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profile_views_cafe_id_fkey"
+            columns: ["cafe_id"]
+            isOneToOne: false
+            referencedRelation: "cafes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
