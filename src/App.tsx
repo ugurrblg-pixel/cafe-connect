@@ -12,6 +12,7 @@ import { LocationProvider } from "@/contexts/LocationContext";
 import { PremiumProvider } from "@/contexts/PremiumContext";
 import { lazy, Suspense, memo } from "react";
 import { AdminGuard } from "./components/admin/AdminGuard";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 // Lazy-load all page components for faster initial load
 const Discover = lazy(() => import("./pages/Discover"));
@@ -57,6 +58,7 @@ const AdminAuditLog = lazy(() => import("./pages/admin/AdminAuditLog"));
 // AdminPayments removed — Stripe not used
 const AdminSubscriptions = lazy(() => import("./pages/admin/AdminSubscriptions"));
 const AdminRevenue = lazy(() => import("./pages/admin/AdminRevenue"));
+const AdminVerification = lazy(() => import("./pages/admin/AdminVerification"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -155,6 +157,7 @@ function AppRoutes() {
         <Route path="/admin/subscriptions" element={<AdminGuard><SuspensePage><AdminSubscriptions /></SuspensePage></AdminGuard>} />
         <Route path="/admin/revenue" element={<AdminGuard><SuspensePage><AdminRevenue /></SuspensePage></AdminGuard>} />
         <Route path="/admin/audit-log" element={<AdminGuard><SuspensePage><AdminAuditLog /></SuspensePage></AdminGuard>} />
+        <Route path="/admin/verification" element={<AdminGuard><SuspensePage><AdminVerification /></SuspensePage></AdminGuard>} />
           
           <Route path="*" element={<NotFound />} />
       </Routes>
@@ -164,25 +167,27 @@ function AppRoutes() {
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner position="top-center" />
-      <BrowserRouter>
-        <I18nProvider>
-          <LocationProvider>
-            <AuthProvider>
-              <PremiumProvider>
-                <NotificationProvider>
-                  <AppRoutes />
-                </NotificationProvider>
-              </PremiumProvider>
-            </AuthProvider>
-          </LocationProvider>
-        </I18nProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner position="top-center" />
+        <BrowserRouter>
+          <I18nProvider>
+            <LocationProvider>
+              <AuthProvider>
+                <PremiumProvider>
+                  <NotificationProvider>
+                    <AppRoutes />
+                  </NotificationProvider>
+                </PremiumProvider>
+              </AuthProvider>
+            </LocationProvider>
+          </I18nProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
