@@ -13,6 +13,7 @@ import { PremiumProvider } from "@/contexts/PremiumContext";
 import { lazy, Suspense, memo } from "react";
 import { AdminGuard } from "./components/admin/AdminGuard";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { OfflineBanner } from "./components/OfflineBanner";
 
 // Lazy-load all page components for faster initial load
 const Discover = lazy(() => import("./pages/Discover"));
@@ -170,6 +171,7 @@ const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <OfflineBanner />
         <Toaster />
         <Sonner position="top-center" />
         <BrowserRouter>

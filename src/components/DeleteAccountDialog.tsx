@@ -38,7 +38,7 @@ export function DeleteAccountDialog({ open, onOpenChange, onConfirm }: DeleteAcc
         <AlertDialogHeader>
           <AlertDialogTitle>Hesabınızı silmek istediğinize emin misiniz?</AlertDialogTitle>
           <AlertDialogDescription className="space-y-2">
-            <span className="block">Bu işlem geri alınamaz. Profiliniz, sohbetleriniz ve eşleşmeleriniz kalıcı olarak silinecektir.</span>
+            <span className="block">Hesabınız 30 gün boyunca askıya alınacaktır. Bu süre içinde giriş yaparak hesabınızı geri alabilirsiniz. 30 gün sonra verileriniz kalıcı olarak silinecektir.</span>
             <span className="block font-medium text-foreground mt-3">
               Onaylamak için aşağıya <span className="text-destructive font-bold">SİL</span> yazın:
             </span>
