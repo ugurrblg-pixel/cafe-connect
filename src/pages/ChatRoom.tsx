@@ -23,6 +23,7 @@ import { DateSeparator, isDifferentDay } from '@/components/chat/DateSeparator';
 import { BlockDialog, ReportDialog } from '@/components/BlockReportDialog';
 import { ChatLimitBanner } from '@/components/chat/ChatLimitBanner';
 import { cn } from '@/lib/utils';
+import { containsProfanity, getProfanityError } from '@/lib/profanityFilter';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -213,6 +214,12 @@ export default function ChatRoom() {
       }
     }
     
+    // Profanity check
+    if (containsProfanity(messageInput)) {
+      toast.error(getProfanityError());
+      return;
+    }
+
     const contentToSend = messageInput;
     setMessageInput('');
     setTyping(false);
