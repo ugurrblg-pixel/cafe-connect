@@ -15,6 +15,7 @@ import { User, Loader2, MessageCircle, Users, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Purpose } from '@/types';
+import { containsProfanity, getProfanityError } from '@/lib/profanityFilter';
 
 interface ProfileData {
   id: string;
@@ -94,10 +95,22 @@ export default function ProfileEdit() {
       return;
     }
 
+    // Profanity check on display name
+    if (containsProfanity(trimmedName)) {
+      toast.error(getProfanityError());
+      return;
+    }
+
     // Validate bio
     const trimmedBio = profile.bio.trim();
     if (trimmedBio.length > 120) {
       toast.error('Bio must be 120 characters or less');
+      return;
+    }
+
+    // Profanity check on bio
+    if (containsProfanity(trimmedBio)) {
+      toast.error(getProfanityError());
       return;
     }
 
