@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Coffee, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { containsProfanity, getProfanityError } from '@/lib/profanityFilter';
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -24,6 +25,13 @@ export default function Auth() {
     setLoading(true);
 
     try {
+      // Profanity check on name during signup
+      if (!isLogin && containsProfanity(formData.name)) {
+        toast.error(getProfanityError());
+        setLoading(false);
+        return;
+      }
+
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
           email: formData.email,
