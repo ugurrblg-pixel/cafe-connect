@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  ArrowLeft, Zap, ArrowUp, Eye, Clock, Lock, Sparkles, Users, Crown, Check,
+  ArrowLeft, Zap, ArrowUp, Eye, Clock, Lock, Sparkles, Users, Crown, Check, Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { usePremiumContext } from '@/contexts/PremiumContext';
-import { BOOST_PACKAGES, PREMIUM_BOOST_BONUS_MINUTES, BoostPackage, getStoreName } from '@/lib/billing';
+import { BOOST_PACKAGES, PREMIUM_BOOST_BONUS_MINUTES, BoostPackage, getStoreName, initializeBilling, isBillingReady, purchaseBoost } from '@/lib/billing/index';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 const BOOST_BENEFITS = [
   { icon: ArrowUp, text: 'Kafede üst sıralarda görünürsün' },
@@ -67,10 +69,35 @@ function BoostPackageCard({
 
 export default function Boost() {
   const navigate = useNavigate();
-  const { isPremium } = usePremiumContext();
+  const { isPremium, refreshSubscription } = usePremiumContext();
+  const { user } = useAuth();
   const [isBoostActive] = useState(false);
   const [remainingMinutes] = useState(0);
   const [selectedPackage, setSelectedPackage] = useState<string>(BOOST_PACKAGES[0].productId);
+  const [billingReady, setBillingReady] = useState(false);
+  const [purchasing, setPurchasing] = useState(false);
+
+  useEffect(() => {
+    async function init() {
+      await initializeBilling();
+      const ready = await isBillingReady();
+      setBillingReady(ready);
+    }
+    init();
+  }, []);
+
+  const handlePurchaseBoost = async () => {
+    if (!user || !selectedPackage) return;
+    setPurchasing(true);
+    const result = await purchaseBoost(selectedPackage, user.id);
+    if (result.success) {
+      toast.success('Boost satın alındı! 🚀');
+      await refreshSubscription();
+    } else {
+      toast.error(result.error || 'Satın alma başarısız');
+    }
+    setPurchasing(false);
+  };
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -199,14 +226,25 @@ export default function Boost() {
         {/* CTA */}
         <div className="space-y-4 pt-2">
           <Button
-            disabled
-            className="w-full h-14 rounded-2xl text-lg font-semibold bg-muted text-muted-foreground cursor-not-allowed opacity-70"
+            onClick={handlePurchaseBoost}
+            disabled={!billingReady || purchasing}
+            className={cn(
+              "w-full h-14 rounded-2xl text-lg font-semibold",
+              billingReady
+                ? "bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white"
+                : "bg-muted text-muted-foreground cursor-not-allowed opacity-70"
+            )}
           >
-            <Lock className="w-5 h-5 mr-2" />
-            Boost Yakında
+            {purchasing ? (
+              <><Loader2 className="w-5 h-5 mr-2 animate-spin" />İşleniyor...</>
+            ) : billingReady ? (
+              <><Zap className="w-5 h-5 mr-2" />Boost Satın Al</>
+            ) : (
+              <><Lock className="w-5 h-5 mr-2" />Boost Yakında</>
+            )}
           </Button>
           <p className="text-sm text-muted-foreground text-center">
-            Boost özelliği çok yakında aktif edilecektir.
+            {billingReady ? `Ödemeler ${getStoreName()} üzerinden işlenir.` : 'Boost özelliği çok yakında aktif edilecektir.'}
           </p>
         </div>
 

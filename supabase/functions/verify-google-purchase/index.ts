@@ -10,75 +10,48 @@ interface VerifyRequest {
   purchaseToken: string;
   productId: string;
   userId: string;
+  purchaseType?: 'subscription' | 'boost';
 }
 
-interface GooglePlayVerifyResponse {
-  acknowledgementState?: number;
-  consumptionState?: number;
-  developerPayload?: string;
-  expiryTimeMillis?: string;
-  kind?: string;
-  orderId?: string;
-  paymentState?: number;
-  purchaseTimeMillis?: string;
-  purchaseType?: number;
-  startTimeMillis?: string;
-  autoRenewing?: boolean;
-  // Error fields
-  error?: {
-    code: number;
-    message: string;
-  };
-}
+// Boost product ID → count mapping
+const BOOST_COUNTS: Record<string, number> = {
+  'cafemeet_boost_1': 1,
+  'cafemeet_boost_3': 3,
+  'cafemeet_boost_5': 5,
+};
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const { purchaseToken, productId, userId }: VerifyRequest = await req.json();
+    const { purchaseToken, productId, userId, purchaseType }: VerifyRequest = await req.json();
 
-    console.log('Verifying purchase:', { productId, userId, hasToken: !!purchaseToken });
+    console.log('Verifying purchase:', { productId, userId, purchaseType, hasToken: !!purchaseToken });
 
-    // Validate required fields
     if (!purchaseToken || !productId || !userId) {
-      console.error('Missing required fields');
       return new Response(
         JSON.stringify({ verified: false, error: 'Missing required fields' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Initialize Supabase client with service role for database operations
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get Google Play API credentials from secrets
-    // You need to set these secrets:
-    // - GOOGLE_PLAY_PACKAGE_NAME: Your app's package name (e.g., app.lovable.cafehuddle)
-    // - GOOGLE_PLAY_SERVICE_ACCOUNT_KEY: JSON key from Google Cloud service account
     const packageName = Deno.env.get('GOOGLE_PLAY_PACKAGE_NAME');
     const serviceAccountKey = Deno.env.get('GOOGLE_PLAY_SERVICE_ACCOUNT_KEY');
 
     if (!packageName || !serviceAccountKey) {
       console.error('Google Play API credentials not configured');
-      
-      // For now, return a placeholder response indicating setup is needed
-      // DO NOT verify purchases without actual Google Play API verification
       return new Response(
-        JSON.stringify({ 
-          verified: false, 
-          error: 'Google Play verification not configured. Contact support.',
-          setup_required: true 
-        }),
+        JSON.stringify({ verified: false, error: 'Google Play verification not configured. Contact support.', setup_required: true }),
         { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Parse service account credentials
     let credentials;
     try {
       credentials = JSON.parse(serviceAccountKey);
@@ -90,53 +63,100 @@ serve(async (req) => {
       );
     }
 
-    // Get access token using service account
     const accessToken = await getGoogleAccessToken(credentials);
     if (!accessToken) {
-      console.error('Failed to get Google API access token');
       return new Response(
         JSON.stringify({ verified: false, error: 'Failed to authenticate with Google Play' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Verify subscription with Google Play API
+    const isBoost = purchaseType === 'boost' || productId.startsWith('cafemeet_boost_');
+
+    if (isBoost) {
+      // Verify consumable product
+      const verifyUrl = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${packageName}/purchases/products/${productId}/tokens/${purchaseToken}`;
+      
+      const googleResponse = await fetch(verifyUrl, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      });
+
+      const googleData = await googleResponse.json();
+
+      if (googleData.error) {
+        console.error('Google Play API error:', googleData.error);
+        return new Response(
+          JSON.stringify({ verified: false, error: `Verification failed: ${googleData.error.message}` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // purchaseState: 0 = purchased, 1 = canceled
+      if (googleData.purchaseState !== 0) {
+        return new Response(
+          JSON.stringify({ verified: false, error: 'Purchase not completed' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Add boosts to user
+      const boostCount = BOOST_COUNTS[productId] || 1;
+      const { data: existing } = await supabase
+        .from('boosts')
+        .select('remaining_boosts')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      const currentBoosts = existing?.remaining_boosts || 0;
+
+      const { error: boostError } = await supabase
+        .from('boosts')
+        .upsert({
+          user_id: userId,
+          remaining_boosts: currentBoosts + boostCount,
+          platform: 'android',
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' });
+
+      if (boostError) {
+        console.error('Boost DB error:', boostError);
+        return new Response(
+          JSON.stringify({ verified: false, error: 'Failed to add boosts' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`Added ${boostCount} boosts for user ${userId}`);
+      return new Response(
+        JSON.stringify({ verified: true, boostsAdded: boostCount }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verify subscription
     const verifyUrl = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${packageName}/purchases/subscriptions/${productId}/tokens/${purchaseToken}`;
-    
-    console.log('Calling Google Play API...');
     
     const googleResponse = await fetch(verifyUrl, {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     });
 
-    const googleData: GooglePlayVerifyResponse = await googleResponse.json();
+    const googleData = await googleResponse.json();
 
     if (googleData.error) {
       console.error('Google Play API error:', googleData.error);
       return new Response(
-        JSON.stringify({ 
-          verified: false, 
-          error: `Purchase verification failed: ${googleData.error.message}` 
-        }),
+        JSON.stringify({ verified: false, error: `Verification failed: ${googleData.error.message}` }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check if subscription is valid
     const expiryTime = googleData.expiryTimeMillis ? parseInt(googleData.expiryTimeMillis) : 0;
     const isExpired = expiryTime < Date.now();
     const isCancelled = !googleData.autoRenewing;
 
-    console.log('Purchase verification result:', {
-      expiryTime: new Date(expiryTime).toISOString(),
-      isExpired,
-      isCancelled,
-      orderId: googleData.orderId
-    });
+    console.log('Subscription verification:', { expiryTime: new Date(expiryTime).toISOString(), isExpired, isCancelled });
 
     if (isExpired) {
       return new Response(
@@ -145,11 +165,8 @@ serve(async (req) => {
       );
     }
 
-    // Subscription is valid - update database
-    const planType = productId.includes('yearly') ? 'yearly' : 'monthly';
-    const startedAt = googleData.startTimeMillis 
-      ? new Date(parseInt(googleData.startTimeMillis)).toISOString()
-      : new Date().toISOString();
+    const planType = productId.includes('yearly') ? 'yearly' : productId.includes('weekly') ? 'weekly' : 'monthly';
+    const startedAt = googleData.startTimeMillis ? new Date(parseInt(googleData.startTimeMillis)).toISOString() : new Date().toISOString();
     const expiresAt = new Date(expiryTime).toISOString();
 
     const { error: upsertError } = await supabase
@@ -175,15 +192,8 @@ serve(async (req) => {
       );
     }
 
-    console.log('Subscription verified and saved successfully');
-
     return new Response(
-      JSON.stringify({ 
-        verified: true, 
-        orderId: googleData.orderId,
-        expiresAt,
-        autoRenewing: googleData.autoRenewing
-      }),
+      JSON.stringify({ verified: true, orderId: googleData.orderId, expiresAt, autoRenewing: googleData.autoRenewing }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
@@ -196,85 +206,43 @@ serve(async (req) => {
   }
 });
 
-/**
- * Get OAuth2 access token using Google service account credentials
- */
-async function getGoogleAccessToken(credentials: {
-  client_email: string;
-  private_key: string;
-  token_uri?: string;
-}): Promise<string | null> {
+async function getGoogleAccessToken(credentials: { client_email: string; private_key: string; token_uri?: string }): Promise<string | null> {
   try {
     const tokenUri = credentials.token_uri || 'https://oauth2.googleapis.com/token';
     const scope = 'https://www.googleapis.com/auth/androidpublisher';
-
-    // Create JWT for service account authentication
     const now = Math.floor(Date.now() / 1000);
     const header = { alg: 'RS256', typ: 'JWT' };
-    const payload = {
-      iss: credentials.client_email,
-      scope: scope,
-      aud: tokenUri,
-      iat: now,
-      exp: now + 3600, // 1 hour
-    };
+    const payload = { iss: credentials.client_email, scope, aud: tokenUri, iat: now, exp: now + 3600 };
 
-    // Encode header and payload
     const encodedHeader = btoa(JSON.stringify(header));
     const encodedPayload = btoa(JSON.stringify(payload));
     const unsignedToken = `${encodedHeader}.${encodedPayload}`;
 
-    // Sign with private key
-    const privateKey = credentials.private_key;
     const key = await crypto.subtle.importKey(
-      'pkcs8',
-      pemToArrayBuffer(privateKey),
-      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-      false,
-      ['sign']
+      'pkcs8', pemToArrayBuffer(credentials.private_key),
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']
     );
-
-    const signature = await crypto.subtle.sign(
-      'RSASSA-PKCS1-v1_5',
-      key,
-      new TextEncoder().encode(unsignedToken)
-    );
-
+    const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(unsignedToken));
     const encodedSignature = btoa(String.fromCharCode(...new Uint8Array(signature)))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
     const jwt = `${unsignedToken}.${encodedSignature}`;
-
-    // Exchange JWT for access token
     const tokenResponse = await fetch(tokenUri, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
     });
-
     const tokenData = await tokenResponse.json();
     return tokenData.access_token || null;
-
   } catch (error) {
     console.error('Error getting access token:', error);
     return null;
   }
 }
 
-/**
- * Convert PEM-encoded private key to ArrayBuffer
- */
 function pemToArrayBuffer(pem: string): ArrayBuffer {
-  const base64 = pem
-    .replace('-----BEGIN PRIVATE KEY-----', '')
-    .replace('-----END PRIVATE KEY-----', '')
-    .replace(/\n/g, '');
+  const base64 = pem.replace('-----BEGIN PRIVATE KEY-----', '').replace('-----END PRIVATE KEY-----', '').replace(/\n/g, '');
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return bytes.buffer;
 }

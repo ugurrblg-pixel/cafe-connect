@@ -10,9 +10,9 @@ import { useProfileCompletion } from '@/hooks/useProfileCompletion';
 import { usePremiumContext } from '@/contexts/PremiumContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
-  isBillingReady, getProducts, purchaseSubscription, restorePurchases,
+  initializeBilling, isBillingReady, getProducts, purchaseSubscription, restorePurchases,
   BillingProduct, getStoreName, getStoreManagementUrl, detectPlatform,
-} from '@/lib/billing';
+} from '@/lib/billing/index';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -90,11 +90,13 @@ export default function Subscription() {
 
   useEffect(() => {
     async function init() {
+      // Initialize native billing SDK first
+      await initializeBilling();
       const ready = await isBillingReady();
       setBillingReady(ready);
       const prods = await getProducts();
       setProducts(prods);
-      // Default select the 3-month plan (most popular)
+      // Default select the popular plan
       const popular = prods.find(p => p.badge);
       setSelectedProduct(popular?.productId || prods[0]?.productId || null);
     }
