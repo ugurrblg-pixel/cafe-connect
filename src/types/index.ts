@@ -11,6 +11,7 @@ export interface User {
   allowDMs: boolean;
   isOnline: boolean;
   isVisible?: boolean;
+  isVerified?: boolean;
   checkedInAt?: Date;
   lastActiveAt?: Date;
   cafeId?: string;

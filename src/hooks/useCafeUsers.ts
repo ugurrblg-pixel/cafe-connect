@@ -33,6 +33,7 @@ interface CafeUser {
   purpose: 'chat' | 'friendship' | 'dating';
   allowDMs: boolean;
   isVisible: boolean;
+  isVerified: boolean;
   checkedInAt: Date;
   lastActiveAt: Date; // Derived from presence heartbeat
   userId: string;
@@ -113,7 +114,7 @@ export function useCafeUsers(cafeId: string, options: UseCafeUsersOptions = {}) 
     // Fetch profiles
     const { data: profilesData, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, user_id, name, display_name, age, bio, photo_url, photo_urls, purpose, allow_dms, is_visible, hobbies')
+      .select('id, user_id, name, display_name, age, bio, photo_url, photo_urls, purpose, allow_dms, is_visible, hobbies, is_verified')
       .in('user_id', userIds);
 
     if (profilesError) {
@@ -148,6 +149,7 @@ export function useCafeUsers(cafeId: string, options: UseCafeUsersOptions = {}) 
           purpose: profile.purpose as 'chat' | 'friendship' | 'dating',
           allowDMs: profile.allow_dms,
           isVisible: profile.is_visible ?? true,
+          isVerified: profile.is_verified ?? false,
           checkedInAt: new Date(checkIn.check_in_time),
           lastActiveAt,
           hobbies: (profile.hobbies as string[]) || [],

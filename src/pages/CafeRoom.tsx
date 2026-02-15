@@ -339,6 +339,7 @@ export default function CafeRoom() {
                     purpose: activeUser.purpose,
                     allowDMs: activeUser.allowDMs,
                     isOnline: true,
+                    isVerified: activeUser.isVerified,
                     checkedInAt: activeUser.checkedInAt,
                     lastActiveAt: activeUser.lastActiveAt,
                   }}
