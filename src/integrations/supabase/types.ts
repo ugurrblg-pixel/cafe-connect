@@ -601,6 +601,47 @@ export type Database = {
         }
         Relationships: []
       }
+      sparks: {
+        Row: {
+          cafe_id: string
+          created_at: string
+          expires_at: string
+          from_user_id: string
+          id: string
+          responded_at: string | null
+          status: string
+          to_user_id: string
+        }
+        Insert: {
+          cafe_id: string
+          created_at?: string
+          expires_at?: string
+          from_user_id: string
+          id?: string
+          responded_at?: string | null
+          status?: string
+          to_user_id: string
+        }
+        Update: {
+          cafe_id?: string
+          created_at?: string
+          expires_at?: string
+          from_user_id?: string
+          id?: string
+          responded_at?: string | null
+          status?: string
+          to_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sparks_cafe_id_fkey"
+            columns: ["cafe_id"]
+            isOneToOne: false
+            referencedRelation: "cafes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           created_at: string
@@ -815,6 +856,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_send_spark: { Args: { target_user_id: string }; Returns: boolean }
       check_mutual_wave: {
         Args: { target_cafe_id: string; user_a: string; user_b: string }
         Returns: boolean
@@ -823,7 +865,12 @@ export type Database = {
         Args: { user_id: string }
         Returns: number
       }
+      expire_stale_sparks: { Args: never; Returns: undefined }
       get_daily_chat_starts: {
+        Args: { target_user_id: string }
+        Returns: number
+      }
+      get_daily_spark_count: {
         Args: { target_user_id: string }
         Returns: number
       }

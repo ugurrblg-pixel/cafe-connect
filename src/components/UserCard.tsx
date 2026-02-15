@@ -16,11 +16,12 @@ interface UserCardProps {
   onTap?: () => void;
   waveState?: WaveState;
   isWaving?: boolean;
+  sparkButton?: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
 }
 
-export const UserCard = memo(function UserCard({ user, onMessage, onInteraction, onTap, waveState = 'none', isWaving = false, className, style }: UserCardProps) {
+export const UserCard = memo(function UserCard({ user, onMessage, onInteraction, onTap, waveState = 'none', isWaving = false, sparkButton, className, style }: UserCardProps) {
   const timeAgo = user.checkedInAt
     ? Math.floor((Date.now() - user.checkedInAt.getTime()) / 60000)
     : 0;
@@ -102,6 +103,9 @@ export const UserCard = memo(function UserCard({ user, onMessage, onInteraction,
           </button>
         )}
         
+        {/* Spark button */}
+        {sparkButton}
+
         {/* Wave button with state */}
         <button
           onClick={() => onInteraction?.('wave')}
