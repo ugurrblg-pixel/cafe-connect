@@ -21,7 +21,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Search, MoreVertical, Ban, AlertTriangle, ShieldOff, Eye, EyeOff, ImageOff, Trash2 } from 'lucide-react';
+import { Search, MoreVertical, Ban, AlertTriangle, ShieldOff, Eye, EyeOff, ImageOff, Trash2, Crown, CrownIcon } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -60,6 +67,10 @@ export default function AdminUsers() {
   const [bans, setBans] = useState<Record<string, BanInfo>>({});
   const [deletePhotoTarget, setDeletePhotoTarget] = useState<{ userId: string; photoUrl: string; index: number } | null>(null);
   const [softDeleteTarget, setSoftDeleteTarget] = useState<UserRow | null>(null);
+  const [premiumDialogOpen, setPremiumDialogOpen] = useState(false);
+  const [premiumPlanType, setPremiumPlanType] = useState<'weekly' | 'monthly' | 'yearly'>('monthly');
+  const [premiumDuration, setPremiumDuration] = useState<'1m' | '3m' | '6m' | '1y' | 'unlimited'>('1m');
+  const [subscriptionStatus, setSubscriptionStatus] = useState<Record<string, boolean>>({});
 
   const fetchUsers = useCallback(async () => {
     const { data, error } = await supabase
@@ -86,6 +97,22 @@ export default function AdminUsers() {
           }
         });
         setBans(banMap);
+      }
+      // Fetch subscription status
+      const { data: subData } = await supabase
+        .from('subscriptions')
+        .select('user_id, status, expires_at')
+        .in('user_id', userIds)
+        .eq('status', 'active');
+
+      if (subData) {
+        const subMap: Record<string, boolean> = {};
+        subData.forEach(s => {
+          if (!s.expires_at || new Date(s.expires_at) > new Date()) {
+            subMap[s.user_id] = true;
+          }
+        });
+        setSubscriptionStatus(subMap);
       }
     }
     setLoading(false);
@@ -221,6 +248,80 @@ export default function AdminUsers() {
     }
   };
 
+  const handleGrantPremium = async () => {
+    if (!selectedUser || !currentUser) return;
+
+    const durationMap: Record<string, number> = {
+      '1m': 30, '3m': 90, '6m': 180, '1y': 365, 'unlimited': 3650,
+    };
+    const days = durationMap[premiumDuration];
+    const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+
+    // Check if subscription exists
+    const { data: existing } = await supabase
+      .from('subscriptions')
+      .select('id')
+      .eq('user_id', selectedUser.user_id)
+      .maybeSingle();
+
+    let error;
+    if (existing) {
+      ({ error } = await supabase
+        .from('subscriptions')
+        .update({
+          plan_type: premiumPlanType,
+          status: 'active',
+          started_at: new Date().toISOString(),
+          expires_at: expiresAt,
+          platform: 'admin_granted',
+          store: 'admin',
+        })
+        .eq('user_id', selectedUser.user_id));
+    } else {
+      ({ error } = await supabase
+        .from('subscriptions')
+        .insert({
+          user_id: selectedUser.user_id,
+          plan_type: premiumPlanType,
+          status: 'active',
+          started_at: new Date().toISOString(),
+          expires_at: expiresAt,
+          platform: 'admin_granted',
+          store: 'admin',
+        }));
+    }
+
+    if (!error) {
+      await logAuditAction('grant_premium', selectedUser.user_id, 'subscription', {
+        plan_type: premiumPlanType,
+        duration: premiumDuration,
+        expires_at: expiresAt,
+      });
+      toast.success(`Premium granted to ${selectedUser.display_name || selectedUser.name}`);
+      setPremiumDialogOpen(false);
+      fetchUsers();
+    } else {
+      toast.error('Failed to grant premium: ' + error.message);
+    }
+  };
+
+  const handleRevokePremium = async (userId: string) => {
+    if (!currentUser) return;
+
+    const { error } = await supabase
+      .from('subscriptions')
+      .update({ status: 'cancelled', expires_at: new Date().toISOString() })
+      .eq('user_id', userId);
+
+    if (!error) {
+      await logAuditAction('revoke_premium', userId, 'subscription');
+      toast.success('Premium revoked');
+      fetchUsers();
+    } else {
+      toast.error('Failed to revoke premium');
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="mb-6 flex items-center justify-between">
@@ -273,6 +374,7 @@ export default function AdminUsers() {
                 filteredUsers.map((u) => {
                   const isBanned = !!bans[u.user_id];
                   const isHidden = u.is_visible === false;
+                  const isPremiumUser = !!subscriptionStatus[u.user_id];
                   const displayName = u.display_name || u.name || 'Anonymous';
                   return (
                     <tr key={u.user_id} className={cn(
@@ -289,6 +391,7 @@ export default function AdminUsers() {
                           <div>
                             <p className="font-medium text-foreground flex items-center gap-1.5">
                               {displayName}
+                              {isPremiumUser && <Crown className="w-3.5 h-3.5 text-yellow-500" />}
                               {isHidden && <EyeOff className="w-3 h-3 text-muted-foreground" />}
                             </p>
                             <p className="text-xs text-muted-foreground truncate max-w-[180px]">{u.user_id}</p>
@@ -332,6 +435,16 @@ export default function AdminUsers() {
                             <DropdownMenuItem onClick={() => { setSelectedUser(u); setWarnDialogOpen(true); }}>
                               <AlertTriangle className="w-4 h-4 mr-2" /> Warn
                             </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            {isPremiumUser ? (
+                              <DropdownMenuItem onClick={() => handleRevokePremium(u.user_id)} className="text-destructive focus:text-destructive">
+                                <Crown className="w-4 h-4 mr-2" /> Revoke Premium
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem onClick={() => { setSelectedUser(u); setPremiumDialogOpen(true); }}>
+                                <Crown className="w-4 h-4 mr-2" /> Grant Premium
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
                             {isBanned ? (
                               <DropdownMenuItem onClick={() => handleUnban(u.user_id)}>
@@ -534,6 +647,58 @@ export default function AdminUsers() {
           <DialogFooter>
             <Button variant="ghost" onClick={() => setSoftDeleteTarget(null)}>Cancel</Button>
             <Button variant="destructive" onClick={handleSoftDelete}>Soft Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Grant Premium Dialog */}
+      <Dialog open={premiumDialogOpen} onOpenChange={setPremiumDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Crown className="w-5 h-5 text-yellow-500" />
+              Grant Premium
+            </DialogTitle>
+            <DialogDescription>
+              Grant premium subscription to {selectedUser?.display_name || selectedUser?.name}. This will be logged in the audit trail.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1.5 block">Plan Type</label>
+              <Select value={premiumPlanType} onValueChange={(v) => setPremiumPlanType(v as any)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="yearly">Yearly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1.5 block">Duration</label>
+              <Select value={premiumDuration} onValueChange={(v) => setPremiumDuration(v as any)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1m">1 Month</SelectItem>
+                  <SelectItem value="3m">3 Months</SelectItem>
+                  <SelectItem value="6m">6 Months</SelectItem>
+                  <SelectItem value="1y">1 Year</SelectItem>
+                  <SelectItem value="unlimited">Unlimited (10 years)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPremiumDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleGrantPremium}>
+              <Crown className="w-4 h-4 mr-2" />
+              Grant Premium
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
