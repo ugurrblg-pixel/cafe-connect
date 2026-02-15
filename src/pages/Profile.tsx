@@ -12,11 +12,12 @@ import { useNotifications } from '@/contexts/NotificationContext';
 import { usePremium } from '@/hooks/usePremium';
 import { supabase } from '@/integrations/supabase/client';
 import { Purpose } from '@/types';
-import { Edit2, Shield, Bell, HelpCircle, LogOut, MessageCircle, Users, Heart, Eye, EyeOff, BellOff, BellRing, Loader2, Crown, ChevronRight, Zap, Trash2 } from 'lucide-react';
+import { Edit2, Shield, Bell, HelpCircle, LogOut, MessageCircle, Users, Heart, Eye, EyeOff, BellOff, BellRing, Loader2, Crown, ChevronRight, Zap, Trash2, ShieldCheck } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { VerificationRequest } from '@/components/VerificationRequest';
 
 interface Profile {
   id: string;
@@ -31,6 +32,7 @@ interface Profile {
   is_visible: boolean;
   notifications_enabled: boolean;
   hobbies: string[];
+  verification_status: string;
 }
 
 export default function Profile() {
@@ -68,6 +70,7 @@ export default function Profile() {
           is_visible: data.is_visible ?? true,
           notifications_enabled: data.notifications_enabled ?? true,
           hobbies: (data.hobbies as string[]) || [],
+          verification_status: data.verification_status || 'none',
         });
       }
       setLoading(false);
@@ -315,6 +318,15 @@ export default function Profile() {
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </div>
+        </section>
+
+        {/* Verification Section */}
+        <section className="card-elevated p-4 mb-4">
+          <h2 className="font-semibold text-foreground mb-3">Hesap Doğrulama</h2>
+          <VerificationRequest
+            verificationStatus={profile.verification_status}
+            onStatusChange={(status) => setProfile({ ...profile, verification_status: status })}
+          />
         </section>
 
         {/* Bio Section */}

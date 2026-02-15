@@ -68,6 +68,7 @@ export default function ChatRoom() {
   // Rate limiting: track messages sent in first minute of conversation
   const sentTimestampsRef = useRef<number[]>([]);
   const conversationStartRef = useRef<number | null>(null);
+  const profanityCountRef = useRef(0);
 
   // Typing indicator with debouncing
   const { isOtherUserTyping, setTyping, hideTypingImmediately } = useTypingIndicator(
@@ -214,9 +215,17 @@ export default function ChatRoom() {
       }
     }
     
-    // Profanity check
+    // Profanity check with escalating warnings
     if (containsProfanity(messageInput)) {
-      toast.error(getProfanityError());
+      profanityCountRef.current += 1;
+      if (profanityCountRef.current >= 3) {
+        toast.error('Tekrarlayan ihlaller hesabınızın askıya alınmasına neden olabilir!', {
+          description: 'Lütfen uygun bir dil kullanın.',
+          duration: 5000,
+        });
+      } else {
+        toast.error(getProfanityError());
+      }
       return;
     }
 
