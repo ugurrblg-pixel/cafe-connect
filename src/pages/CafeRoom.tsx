@@ -119,6 +119,14 @@ export default function CafeRoom() {
       return;
     }
 
+    // Require at least one profile photo
+    if (!profile?.photo_url) {
+      toast.error('Check-in için profil fotoğrafı gerekli', {
+        description: 'Profil sayfasından fotoğraf ekleyebilirsin.',
+      });
+      return;
+    }
+
     const success = await checkIn();
     if (success) {
       toast.success("You're now visible at " + cafe.name, {
