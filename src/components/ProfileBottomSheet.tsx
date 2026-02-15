@@ -210,23 +210,9 @@ export function ProfileBottomSheet({ user, open, onOpenChange, cafeId }: Profile
               </Button>
             )}
 
-            {canMessage && currentUser && currentUser.id !== targetUserId && !isMatched && (
-              <Button
-                onClick={() => setShowRequestModal(true)}
-                disabled={alreadySentRequest}
-                className="mt-6 w-full max-w-xs"
-                variant={alreadySentRequest ? 'secondary' : 'default'}
-              >
-                <MessageCircle className="w-4 h-4 mr-2" />
-                {alreadySentRequest ? 'İstek Gönderildi' : 'Mesaj İsteği Gönder'}
-              </Button>
-            )}
-
-            {!canMessage && currentUser && currentUser.id !== targetUserId && !isMatched && (
+            {!isMatched && currentUser && currentUser.id !== targetUserId && (
               <p className="mt-4 text-sm text-muted-foreground">
-                {user.allowDMs === false 
-                  ? 'Bu kullanıcı mesaj kabul etmiyor' 
-                  : 'Mesaj göndermek için profilinizde DM\'leri açın'}
+                Sohbet başlatmak için önce el sallayın 👋
               </p>
             )}
           </div>
