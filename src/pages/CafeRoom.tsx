@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { UserCard } from '@/components/UserCard';
+import { SparkButton } from '@/components/SparkButton';
 import { CheckInButton } from '@/components/CheckInButton';
 import { ProfileBottomSheet } from '@/components/ProfileBottomSheet';
 import { IntentFilterChips, FilterOption } from '@/components/IntentFilterChips';
@@ -9,11 +10,13 @@ import { ConnectionIndicator } from '@/components/ConnectionIndicator';
 import { CafeImage } from '@/components/CafeImage';
 import { ChatLimitIndicator } from '@/components/ChatLimitIndicator';
 import { PaywallModal } from '@/components/PaywallModal';
+import { SparkPaywallModal } from '@/components/SparkPaywallModal';
 import { ProfileGateModal, GatedAction } from '@/components/ProfileGateModal';
 import { useCheckIn } from '@/hooks/useCheckIn';
 import { useCafeUsers } from '@/hooks/useCafeUsers';
 import { useCafes } from '@/hooks/useCafes';
 import { useWaves } from '@/hooks/useWaves';
+import { useSparks } from '@/hooks/useSparks';
 import { useMatches } from '@/hooks/useMatches';
 import { usePremium } from '@/hooks/usePremium';
 import { useProfileCompletion } from '@/hooks/useProfileCompletion';
@@ -67,6 +70,7 @@ export default function CafeRoom() {
   });
   
   const { sendWave, hasWavedAt, hasReceivedWaveFrom, sentWaves } = useWaves();
+  const { sendSpark, hasSentSparkTo, canSendSpark, dailySparkCount, sparkLimit } = useSparks();
   const { hasMatchWith, getMatchConversation, createConversationForMatch, matches } = useMatches();
   const { canStartChat, incrementChatCount, isPremium } = usePremium();
   const { isComplete: isProfileComplete } = useProfileCompletion();
@@ -76,8 +80,11 @@ export default function CafeRoom() {
   const [intentFilter, setIntentFilter] = useState<FilterOption>('all');
   const [wavingAt, setWavingAt] = useState<string | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showSparkPaywall, setShowSparkPaywall] = useState(false);
+  const [sparkPaywallTrigger, setSparkPaywallTrigger] = useState<'send_limit' | 'reveal_sender' | 'accept_spark'>('send_limit');
   const [showProfileGate, setShowProfileGate] = useState(false);
   const [gatedAction, setGatedAction] = useState<GatedAction>('check-in');
+  const [sparkingAt, setSparkingAt] = useState<string | null>(null);
 
   const cafe = cafes.find((c) => c.id === id);
   
@@ -231,8 +238,32 @@ export default function CafeRoom() {
     if (type === 'wave') {
       handleWave(userId, userName);
     } else {
-      // Remove coffee and eye contact for now - focus on waves
       toast.info('Coming soon!');
+    }
+  };
+
+  const handleSendSpark = async (userId: string, userName: string) => {
+    if (!isProfileComplete) {
+      setGatedAction('wave' as GatedAction);
+      setShowProfileGate(true);
+      return;
+    }
+
+    if (!canSendSpark) {
+      setSparkPaywallTrigger('send_limit');
+      setShowSparkPaywall(true);
+      return;
+    }
+
+    if (!id) return;
+    setSparkingAt(userId);
+    const result = await sendSpark(userId, id);
+    setSparkingAt(null);
+
+    if (result.success) {
+      toast.success(`☕ ${userName} kişisine ilgi gönderildi!`, {
+        description: '30 dakika içinde geçerli',
+      });
     }
   };
 
@@ -362,6 +393,14 @@ export default function CafeRoom() {
                   isWaving={wavingAt === activeUser.userId}
                   onTap={() => handleUserTap(activeUser)}
                   style={{ animationDelay: `${index * 100}ms` } as React.CSSProperties}
+                  sparkButton={
+                    <SparkButton
+                      onSend={() => handleSendSpark(activeUser.userId, activeUser.displayName || activeUser.name)}
+                      hasSent={hasSentSparkTo(activeUser.userId, id || '')}
+                      isSending={sparkingAt === activeUser.userId}
+                      disabled={!isCheckedIn}
+                    />
+                  }
                 />
               ))}
             </div>
@@ -420,6 +459,13 @@ export default function CafeRoom() {
         isOpen={showPaywall}
         onClose={() => setShowPaywall(false)}
         trigger="chat_limit"
+      />
+
+      {/* Spark Paywall Modal */}
+      <SparkPaywallModal
+        isOpen={showSparkPaywall}
+        onClose={() => setShowSparkPaywall(false)}
+        trigger={sparkPaywallTrigger}
       />
 
       {/* Profile Gate Modal */}

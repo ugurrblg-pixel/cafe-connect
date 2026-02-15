@@ -4,8 +4,11 @@ import { Header } from '@/components/Header';
 import { InitialsAvatar } from '@/components/InitialsAvatar';
 import { PageLayout } from '@/components/PageLayout';
 import { MatchActionSheet } from '@/components/MatchActionSheet';
+import { SparkReceivedList } from '@/components/SparkReceivedList';
+import { SparkPaywallModal } from '@/components/SparkPaywallModal';
 import { useWaves } from '@/hooks/useWaves';
 import { useMatches } from '@/hooks/useMatches';
+import { useSparks } from '@/hooks/useSparks';
 import { useCafes } from '@/hooks/useCafes';
 import { useLongPress } from '@/hooks/useLongPress';
 import { Hand, Heart, Loader2, MessageSquare, Coffee, Sparkles, Crown, Lightbulb, UserMinus } from 'lucide-react';
@@ -39,17 +42,19 @@ export default function Notifications() {
   const navigate = useNavigate();
   const { incomingWaves, sendWave, hasWavedAt, loading: wavesLoading } = useWaves();
   const { matches, createConversationForMatch, loading: matchesLoading } = useMatches();
+  const { incomingSparks, acceptSpark, rejectSpark, loading: sparksLoading } = useSparks();
   const { cafes } = useCafes();
   const [processingWave, setProcessingWave] = useState<string | null>(null);
   const [processingMatch, setProcessingMatch] = useState<string | null>(null);
+  const [showSparkPaywall, setShowSparkPaywall] = useState(false);
+  const [sparkPaywallTrigger, setSparkPaywallTrigger] = useState<'send_limit' | 'reveal_sender' | 'accept_spark'>('reveal_sender');
   
   // Match deletion state
   const [selectedMatch, setSelectedMatch] = useState<MatchData | null>(null);
   const [showMatchActionSheet, setShowMatchActionSheet] = useState(false);
-  // Track deleted matches locally (UI only)
   const [deletedMatches, setDeletedMatches] = useState<Set<string>>(new Set());
 
-  const loading = wavesLoading || matchesLoading;
+  const loading = wavesLoading || matchesLoading || sparksLoading;
 
   const getCafeName = (cafeId: string) => {
     return cafes.find(c => c.id === cafeId)?.name || 'bir kafe';
@@ -120,11 +125,20 @@ export default function Notifications() {
         <Header title="Bildirimler" />
 
         <main className="pt-16">
-          <Tabs defaultValue="waves" className="w-full">
-            <TabsList className="w-full grid grid-cols-2 mx-4 mt-2" style={{ width: 'calc(100% - 2rem)' }}>
+          <Tabs defaultValue="sparks" className="w-full">
+            <TabsList className="w-full grid grid-cols-3 mx-4 mt-2" style={{ width: 'calc(100% - 2rem)' }}>
+              <TabsTrigger value="sparks" className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                İlgiler
+                {incomingSparks.length > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs rounded-full">
+                    {incomingSparks.length}
+                  </span>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="waves" className="flex items-center gap-2">
                 <Hand className="w-4 h-4" />
-                El Sallamalar
+                Selam
                 {pendingWaves.length > 0 && (
                   <span className="ml-1 px-1.5 py-0.5 bg-primary text-primary-foreground text-xs rounded-full">
                     {pendingWaves.length}
@@ -133,7 +147,7 @@ export default function Notifications() {
               </TabsTrigger>
               <TabsTrigger value="matches" className="flex items-center gap-2">
                 <Heart className="w-4 h-4" />
-                Eşleşmeler
+                Eşleş
                 {visibleMatches.length > 0 && (
                   <span className="ml-1 px-1.5 py-0.5 bg-accent text-accent-foreground text-xs rounded-full">
                     {visibleMatches.length}
@@ -141,6 +155,27 @@ export default function Notifications() {
                 )}
               </TabsTrigger>
             </TabsList>
+
+            {/* Sparks Tab */}
+            <TabsContent value="sparks" className="mt-2 px-4">
+              {loading ? (
+                <div className="space-y-3">
+                  {[1, 2].map((i) => (
+                    <Skeleton key={i} className="h-24 w-full rounded-xl" />
+                  ))}
+                </div>
+              ) : (
+                <SparkReceivedList
+                  sparks={incomingSparks}
+                  onAccept={acceptSpark}
+                  onReject={rejectSpark}
+                  onShowPaywall={() => {
+                    setSparkPaywallTrigger('reveal_sender');
+                    setShowSparkPaywall(true);
+                  }}
+                />
+              )}
+            </TabsContent>
 
             <TabsContent value="waves" className="mt-2 px-4">
               {loading ? (
@@ -243,6 +278,14 @@ export default function Notifications() {
           onOpenChange={setShowMatchActionSheet}
           userName={selectedMatch?.otherUser?.displayName || ''}
           onUnmatch={handleUnmatch}
+        />
+
+        {/* Spark Paywall Modal */}
+        <SparkPaywallModal
+          isOpen={showSparkPaywall}
+          onClose={() => setShowSparkPaywall(false)}
+          trigger={sparkPaywallTrigger}
+          sparkCount={incomingSparks.length}
         />
       </div>
     </PageLayout>
