@@ -1,16 +1,17 @@
 import { Header } from '@/components/Header';
 import { PageLayout } from '@/components/PageLayout';
 import { Mail, Clock, MessageSquare } from 'lucide-react';
+import { useI18n } from '@/contexts/I18nContext';
 
 export default function ContactUs() {
+  const { t } = useI18n();
+
   return (
     <PageLayout>
       <div className="min-h-screen bg-background pb-24">
-        <Header title="Bize Ulaşın" showBack />
+        <Header title={t.contact.title} showBack />
         <main className="pt-16 px-4 space-y-4">
-          <p className="text-muted-foreground text-sm mt-2">
-            Soru, öneri veya geri bildirimleriniz için bizimle iletişime geçebilirsiniz.
-          </p>
+          <p className="text-muted-foreground text-sm mt-2">{t.contact.intro}</p>
 
           <section className="card-elevated p-4">
             <div className="flex items-start gap-3">
@@ -18,10 +19,8 @@ export default function ContactUs() {
                 <Mail className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-foreground mb-1">E-posta</h3>
-                <a href="mailto:destek@cafemeet.app" className="text-sm text-primary underline">
-                  destek@cafemeet.app
-                </a>
+                <h3 className="font-semibold text-foreground mb-1">{t.contact.emailTitle}</h3>
+                <a href="mailto:destek@cafemeet.app" className="text-sm text-primary underline">destek@cafemeet.app</a>
               </div>
             </div>
           </section>
@@ -32,10 +31,8 @@ export default function ContactUs() {
                 <Clock className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-foreground mb-1">Yanıt Süresi</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  E-postalara genellikle 24–48 saat içinde yanıt verilir.
-                </p>
+                <h3 className="font-semibold text-foreground mb-1">{t.contact.responseTime}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{t.contact.responseTimeDesc}</p>
               </div>
             </div>
           </section>
@@ -46,10 +43,8 @@ export default function ContactUs() {
                 <MessageSquare className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-foreground mb-1">Geri Bildirim</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  CafeMeet'i geliştirmemize yardımcı olmak için görüş ve önerilerinizi bekliyoruz.
-                </p>
+                <h3 className="font-semibold text-foreground mb-1">{t.contact.feedback}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{t.contact.feedbackDesc}</p>
               </div>
             </div>
           </section>
