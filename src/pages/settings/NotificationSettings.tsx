@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { MessageCircle, Heart, MapPin, Crown, Loader2 } from 'lucide-react';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface NotificationPrefs {
   new_messages: boolean;
@@ -23,6 +24,7 @@ const defaultPrefs: NotificationPrefs = {
 
 export default function NotificationSettings() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [prefs, setPrefs] = useState<NotificationPrefs>(defaultPrefs);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -47,21 +49,21 @@ export default function NotificationSettings() {
     await supabase.from('profiles').update({ notifications_enabled: !allOff }).eq('user_id', user.id);
 
     setSaving(false);
-    toast.success('Bildirim ayarları güncellendi');
+    toast.success(t.notifSettings.updated);
   };
 
   const toggleItems: { key: keyof NotificationPrefs; label: string; description: string; icon: React.ReactNode }[] = [
-    { key: 'new_messages', label: 'Yeni Mesajlar', description: 'Yeni mesaj geldiğinde bildirim al', icon: <MessageCircle className="w-5 h-5 text-primary" /> },
-    { key: 'new_matches', label: 'Yeni Eşleşmeler', description: 'Biri seninle eşleştiğinde bildirim al', icon: <Heart className="w-5 h-5 text-destructive" /> },
-    { key: 'nearby_cafes', label: 'Yakındaki Kafeler', description: 'Yakınında popüler kafeler olduğunda bildir', icon: <MapPin className="w-5 h-5 text-accent" /> },
-    { key: 'premium_promotions', label: 'Kampanyalar', description: 'Özel teklifler ve kampanya bildirimleri', icon: <Crown className="w-5 h-5 text-primary" /> },
+    { key: 'new_messages', label: t.notifSettings.newMessages, description: t.notifSettings.newMessagesDesc, icon: <MessageCircle className="w-5 h-5 text-primary" /> },
+    { key: 'new_matches', label: t.notifSettings.newMatches, description: t.notifSettings.newMatchesDesc, icon: <Heart className="w-5 h-5 text-destructive" /> },
+    { key: 'nearby_cafes', label: t.notifSettings.nearbyCafes, description: t.notifSettings.nearbyCafesDesc, icon: <MapPin className="w-5 h-5 text-accent" /> },
+    { key: 'premium_promotions', label: t.notifSettings.promotions, description: t.notifSettings.promotionsDesc, icon: <Crown className="w-5 h-5 text-primary" /> },
   ];
 
   if (loading) {
     return (
       <PageLayout>
         <div className="min-h-screen bg-background pb-24">
-          <Header title="Bildirim Ayarları" showBack />
+          <Header title={t.notifSettings.title} showBack />
           <main className="pt-16 px-4 flex justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </main>
@@ -73,14 +75,11 @@ export default function NotificationSettings() {
   return (
     <PageLayout>
       <div className="min-h-screen bg-background pb-24">
-        <Header title="Bildirim Ayarları" showBack />
+        <Header title={t.notifSettings.title} showBack />
         <main className="pt-16 px-4">
           <section className="card-elevated overflow-hidden">
             {toggleItems.map(({ key, label, description, icon }, idx) => (
-              <div
-                key={key}
-                className={`flex items-center justify-between p-4 ${idx < toggleItems.length - 1 ? 'border-b border-border' : ''}`}
-              >
+              <div key={key} className={`flex items-center justify-between p-4 ${idx < toggleItems.length - 1 ? 'border-b border-border' : ''}`}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">{icon}</div>
                   <div>
@@ -92,9 +91,7 @@ export default function NotificationSettings() {
               </div>
             ))}
           </section>
-          <p className="text-xs text-muted-foreground text-center mt-4 px-4">
-            Bildirimleri tamamen kapatmak için tüm seçenekleri devre dışı bırakın.
-          </p>
+          <p className="text-xs text-muted-foreground text-center mt-4 px-4">{t.notifSettings.disableAll}</p>
         </main>
       </div>
     </PageLayout>
