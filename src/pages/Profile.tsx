@@ -10,6 +10,7 @@ import { DeleteAccountDialog } from '@/components/DeleteAccountDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { usePremium } from '@/hooks/usePremium';
+import { useI18n } from '@/contexts/I18nContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Purpose } from '@/types';
 import { Edit2, Shield, Bell, HelpCircle, LogOut, MessageCircle, Users, Heart, Eye, EyeOff, BellOff, BellRing, Loader2, Crown, ChevronRight, Zap, Trash2, ShieldCheck } from 'lucide-react';
@@ -40,6 +41,7 @@ export default function Profile() {
   const { user, signOut, refreshProfile } = useAuth();
   const { isSubscribed, isSupported, permission, subscribe, unsubscribe } = useNotifications();
   const { isPremium } = usePremium();
+  const { t, formatString } = useI18n();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [notificationLoading, setNotificationLoading] = useState(false);
@@ -47,141 +49,88 @@ export default function Profile() {
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user) return;
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching profile:', error);
-      } else if (data) {
+      const { data, error } = await supabase.from('profiles').select('*').eq('user_id', user.id).maybeSingle();
+      if (error) { console.error('Error fetching profile:', error); }
+      else if (data) {
         setProfile({
-          id: data.id,
-          name: data.name || user.user_metadata?.name || 'Anonymous',
-          display_name: data.display_name || '',
-          age: data.age,
-          bio: data.bio || '',
-          photo_url: data.photo_url || '',
-          photo_urls: (data.photo_urls as string[]) || [],
-          purpose: data.purpose as Purpose,
-          allow_dms: data.allow_dms,
-          is_visible: data.is_visible ?? true,
-          notifications_enabled: data.notifications_enabled ?? true,
-          hobbies: (data.hobbies as string[]) || [],
-          verification_status: data.verification_status || 'none',
+          id: data.id, name: data.name || user.user_metadata?.name || 'Anonymous',
+          display_name: data.display_name || '', age: data.age, bio: data.bio || '',
+          photo_url: data.photo_url || '', photo_urls: (data.photo_urls as string[]) || [],
+          purpose: data.purpose as Purpose, allow_dms: data.allow_dms,
+          is_visible: data.is_visible ?? true, notifications_enabled: data.notifications_enabled ?? true,
+          hobbies: (data.hobbies as string[]) || [], verification_status: data.verification_status || 'none',
         });
       }
       setLoading(false);
     };
-
     fetchProfile();
   }, [user]);
 
   const purposes: { value: Purpose; label: string; icon: React.ReactNode }[] = [
-    { value: 'chat', label: 'Chat', icon: <MessageCircle className="w-4 h-4" /> },
-    { value: 'friendship', label: 'Friendship', icon: <Users className="w-4 h-4" /> },
-    { value: 'dating', label: 'Dating', icon: <Heart className="w-4 h-4" /> },
+    { value: 'chat', label: t.intents.chat, icon: <MessageCircle className="w-4 h-4" /> },
+    { value: 'friendship', label: t.intents.friendship, icon: <Users className="w-4 h-4" /> },
+    { value: 'dating', label: t.intents.dating, icon: <Heart className="w-4 h-4" /> },
   ];
 
   const handlePurposeChange = async (purpose: Purpose) => {
     if (!profile) return;
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({ purpose })
-      .eq('id', profile.id);
-
-    if (error) {
-      toast.error('Failed to update purpose');
-      return;
-    }
-
+    const { error } = await supabase.from('profiles').update({ purpose }).eq('id', profile.id);
+    if (error) { toast.error('Failed to update purpose'); return; }
     setProfile({ ...profile, purpose });
-    toast.success(`Purpose updated to ${purpose}`);
+    toast.success(formatString(t.profile.purposeUpdated, { purpose }));
   };
 
   const handleDMToggle = async (enabled: boolean) => {
     if (!profile) return;
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({ allow_dms: enabled })
-      .eq('id', profile.id);
-
-    if (error) {
-      toast.error('Failed to update DM settings');
-      return;
-    }
-
+    const { error } = await supabase.from('profiles').update({ allow_dms: enabled }).eq('id', profile.id);
+    if (error) { toast.error('Failed to update DM settings'); return; }
     setProfile({ ...profile, allow_dms: enabled });
-    toast.success(enabled ? 'Direct messages enabled' : 'Direct messages disabled');
+    toast.success(enabled ? t.profile.dmEnabled : t.profile.dmDisabled);
   };
 
   const handleNotificationToggle = async () => {
     if (!profile) return;
     setNotificationLoading(true);
-    
     try {
       if (isSubscribed) {
-        // Unsubscribe from browser push AND update DB preference
         await unsubscribe();
         await supabase.from('profiles').update({ notifications_enabled: false }).eq('id', profile.id);
         setProfile({ ...profile, notifications_enabled: false });
       } else {
-        // Subscribe to browser push AND update DB preference
         await subscribe();
         await supabase.from('profiles').update({ notifications_enabled: true }).eq('id', profile.id);
         setProfile({ ...profile, notifications_enabled: true });
       }
-    } finally {
-      setNotificationLoading(false);
-    }
+    } finally { setNotificationLoading(false); }
   };
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  const handleLogout = async () => {
-    await signOut();
-    navigate('/auth');
-  };
+  const handleLogout = async () => { await signOut(); navigate('/auth'); };
 
   const handleDeleteAccount = async () => {
     if (!user || !profile) return;
-    
     try {
-      // Soft delete: hide profile, deactivate conversations, remove check-ins
       await Promise.all([
-        supabase.from('profiles').update({ is_visible: false, bio: '[deleted]', display_name: 'Silinmiş Kullanıcı', photo_url: null, photo_urls: [] }).eq('user_id', user.id),
+        supabase.from('profiles').update({ is_visible: false, bio: '[deleted]', display_name: 'Deleted User', photo_url: null, photo_urls: [] }).eq('user_id', user.id),
         supabase.from('conversations').update({ is_active: false }).or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`),
         supabase.from('check_ins').delete().eq('user_id', user.id),
       ]);
-
       await signOut();
       navigate('/auth');
-      toast.success('Hesabınız silindi');
+      toast.success(t.profile.accountDeleted);
     } catch {
-      toast.error('Hesap silinemedi, lütfen tekrar deneyin');
+      toast.error(t.profile.accountDeleteFailed);
     }
   };
 
   const displayName = profile?.display_name || profile?.name || 'Anonymous';
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2) || 'U';
-  };
-
   if (loading) {
     return (
       <PageLayout>
         <div className="min-h-screen bg-background pb-24">
-          <Header title="Profile" showMenu />
+          <Header title={t.profile.title} showMenu />
           <main className="pt-16 px-4">
             <div className="flex flex-col items-center py-6">
               <Skeleton className="w-28 h-28 rounded-full mb-4" />
@@ -205,75 +154,35 @@ export default function Profile() {
   return (
     <PageLayout>
       <div className="min-h-screen bg-background pb-24">
-        <Header title="Profile" showMenu />
+        <Header title={t.profile.title} showMenu />
 
         <main className="pt-16 px-4">
         {/* Profile Header */}
         <div className="flex flex-col items-center py-6 animate-scale-in">
-          {/* Profile Photo Carousel */}
-          <ProfilePhotoCarousel
-            photos={profile.photo_urls}
-            avatarUrl={profile.photo_url}
-            name={displayName}
-            size="lg"
-            className="mb-4"
-          />
-          
+          <ProfilePhotoCarousel photos={profile.photo_urls} avatarUrl={profile.photo_url} name={displayName} size="lg" className="mb-4" />
           <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-foreground">
-              {displayName}{profile.age ? `, ${profile.age}` : ''}
-            </h1>
+            <h1 className="text-2xl font-bold text-foreground">{displayName}{profile.age ? `, ${profile.age}` : ''}</h1>
             {isPremium && <PremiumBadge size="sm" />}
           </div>
-          
-          {/* Visibility Badge */}
-          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs mb-2 ${
-            profile.is_visible ? 'bg-accent/20 text-accent-foreground' : 'bg-muted text-muted-foreground'
-          }`}>
-            {profile.is_visible ? (
-              <>
-                <Eye className="w-3 h-3" />
-                <span>Görünür</span>
-              </>
-            ) : (
-              <>
-                <EyeOff className="w-3 h-3" />
-                <span>Gizli</span>
-              </>
-            )}
+          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs mb-2 ${profile.is_visible ? 'bg-accent/20 text-accent-foreground' : 'bg-muted text-muted-foreground'}`}>
+            {profile.is_visible ? (<><Eye className="w-3 h-3" /><span>{t.profile.visible}</span></>) : (<><EyeOff className="w-3 h-3" /><span>{t.profile.hidden}</span></>)}
           </div>
-          
           <PurposeBadge purpose={profile.purpose} />
-          <button
-            onClick={() => navigate('/profile/edit')}
-            className="mt-3 flex items-center gap-2 text-primary text-sm font-medium"
-          >
-            <Edit2 className="w-4 h-4" />
-            Edit Profile
+          <button onClick={() => navigate('/profile/edit')} className="mt-3 flex items-center gap-2 text-primary text-sm font-medium">
+            <Edit2 className="w-4 h-4" />{t.profile.editProfile}
           </button>
         </div>
 
         {/* Premium Section */}
-        <section 
-          className="card-elevated p-4 mb-4 cursor-pointer hover:bg-secondary/30 transition-colors"
-          onClick={() => navigate('/subscription')}
-        >
+        <section className="card-elevated p-4 mb-4 cursor-pointer hover:bg-secondary/30 transition-colors" onClick={() => navigate('/subscription')}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                isPremium 
-                  ? 'bg-gradient-to-br from-amber-400 to-orange-500' 
-                  : 'bg-secondary'
-              }`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isPremium ? 'bg-gradient-to-br from-amber-400 to-orange-500' : 'bg-secondary'}`}>
                 <Crown className={`w-5 h-5 ${isPremium ? 'text-white' : 'text-muted-foreground'}`} />
               </div>
               <div>
-                <p className="font-medium text-foreground">
-                  {isPremium ? 'Premium Aktif' : 'CafeMeet Premium'}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {isPremium ? 'Tüm özellikler açık' : 'Sınırsız sohbet ve daha fazlası'}
-                </p>
+                <p className="font-medium text-foreground">{isPremium ? t.profile.premiumActive : 'CafeMeet Premium'}</p>
+                <p className="text-sm text-muted-foreground">{isPremium ? t.profile.allFeaturesUnlocked : t.profile.unlimitedChatAndMore}</p>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
@@ -281,73 +190,58 @@ export default function Profile() {
         </section>
 
         {/* Boost Section */}
-        <section 
-          className="card-elevated p-4 mb-4 cursor-pointer hover:bg-secondary/30 transition-colors"
-          onClick={() => navigate('/boost')}
-        >
+        <section className="card-elevated p-4 mb-4 cursor-pointer hover:bg-secondary/30 transition-colors" onClick={() => navigate('/boost')}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
                 <Zap className="w-5 h-5 text-white fill-white" />
               </div>
               <div>
-                <p className="font-medium text-foreground">Boost</p>
-                <p className="text-sm text-muted-foreground">Kafede öne çık</p>
+                <p className="font-medium text-foreground">{t.profile.boost}</p>
+                <p className="text-sm text-muted-foreground">{t.profile.standOutInCafes}</p>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </div>
         </section>
 
-        {/* Profile Viewers - Premium feature */}
-        <section 
-          className="card-elevated p-4 mb-4 cursor-pointer hover:bg-secondary/30 transition-colors"
-          onClick={() => navigate('/profile/viewers')}
-        >
+        {/* Profile Viewers */}
+        <section className="card-elevated p-4 mb-4 cursor-pointer hover:bg-secondary/30 transition-colors" onClick={() => navigate('/profile/viewers')}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
                 <Eye className="w-5 h-5 text-muted-foreground" />
               </div>
               <div>
-                <p className="font-medium text-foreground">Profil Görüntüleyenler</p>
-                <p className="text-sm text-muted-foreground">
-                  {isPremium ? 'Seni kimlerin görüntülediğini gör' : 'Premium özellik'}
-                </p>
+                <p className="font-medium text-foreground">{t.profile.profileViewers}</p>
+                <p className="text-sm text-muted-foreground">{isPremium ? t.profile.seeWhoViewedYou : t.profile.premiumFeature}</p>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </div>
         </section>
 
-        {/* Verification Section */}
+        {/* Verification */}
         <section className="card-elevated p-4 mb-4">
-          <h2 className="font-semibold text-foreground mb-3">Hesap Doğrulama</h2>
-          <VerificationRequest
-            verificationStatus={profile.verification_status}
-            onStatusChange={(status) => setProfile({ ...profile, verification_status: status })}
-          />
+          <h2 className="font-semibold text-foreground mb-3">{t.profile.accountVerification}</h2>
+          <VerificationRequest verificationStatus={profile.verification_status} onStatusChange={(status) => setProfile({ ...profile, verification_status: status })} />
         </section>
 
-        {/* Bio Section */}
+        {/* Bio */}
         <section className="card-elevated p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-foreground">About</h2>
-            <button onClick={() => navigate('/profile/edit')} className="text-primary p-1">
-              <Edit2 className="w-4 h-4" />
-            </button>
+            <h2 className="font-semibold text-foreground">{t.profile.about}</h2>
+            <button onClick={() => navigate('/profile/edit')} className="text-primary p-1"><Edit2 className="w-4 h-4" /></button>
           </div>
-          <p className="text-muted-foreground">{profile.bio || 'Add a bio to tell others about yourself'}</p>
+          <p className="text-muted-foreground">{profile.bio || t.profile.addBio}</p>
         </section>
 
-        {/* Hobbies Section */}
+        {/* Hobbies */}
         {profile.hobbies && profile.hobbies.length > 0 && (
           <section className="card-elevated p-4 mb-4">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold text-foreground">Hobiler</h2>
-              <button onClick={() => navigate('/profile/edit')} className="text-primary p-1">
-                <Edit2 className="w-4 h-4" />
-              </button>
+              <h2 className="font-semibold text-foreground">{t.profile.hobbies}</h2>
+              <button onClick={() => navigate('/profile/edit')} className="text-primary p-1"><Edit2 className="w-4 h-4" /></button>
             </div>
             <HobbyDisplay hobbies={profile.hobbies} />
           </section>
@@ -355,18 +249,10 @@ export default function Profile() {
 
         {/* Purpose Selection */}
         <section className="card-elevated p-4 mb-4">
-          <h2 className="font-semibold text-foreground mb-4">I'm here for</h2>
+          <h2 className="font-semibold text-foreground mb-4">{t.profile.imHereFor}</h2>
           <div className="flex gap-2">
             {purposes.map(({ value, label, icon }) => (
-              <button
-                key={value}
-                onClick={() => handlePurposeChange(value)}
-                className={`flex-1 py-3 px-3 rounded-xl flex flex-col items-center gap-2 transition-all ${
-                  profile.purpose === value
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary text-secondary-foreground hover:bg-muted'
-                }`}
-              >
+              <button key={value} onClick={() => handlePurposeChange(value)} className={`flex-1 py-3 px-3 rounded-xl flex flex-col items-center gap-2 transition-all ${profile.purpose === value ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-muted'}`}>
                 {icon}
                 <span className="text-sm font-medium">{label}</span>
               </button>
@@ -376,44 +262,22 @@ export default function Profile() {
 
         {/* Notification Settings */}
         <section className="card-elevated p-4 mb-4">
-          <h2 className="font-semibold text-foreground mb-4">Bildirimler</h2>
+          <h2 className="font-semibold text-foreground mb-4">{t.profile.notificationSection}</h2>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isSubscribed ? 'bg-primary/10' : 'bg-secondary'}`}>
-                {isSubscribed ? (
-                  <BellRing className="w-5 h-5 text-primary" />
-                ) : (
-                  <BellOff className="w-5 h-5 text-muted-foreground" />
-                )}
+                {isSubscribed ? <BellRing className="w-5 h-5 text-primary" /> : <BellOff className="w-5 h-5 text-muted-foreground" />}
               </div>
               <div>
-                <p className="font-medium text-foreground">Push Bildirimleri</p>
+                <p className="font-medium text-foreground">{t.profile.pushNotifications}</p>
                 <p className="text-sm text-muted-foreground">
-                  {!isSupported 
-                    ? 'Tarayıcınız desteklemiyor'
-                    : permission === 'denied'
-                    ? 'Bildirimler engellendi'
-                    : isSubscribed 
-                    ? 'Wave, match ve mesaj bildirimleri alın'
-                    : 'Bildirimleri aktif edin'
-                  }
+                  {!isSupported ? t.profile.browserNotSupport : permission === 'denied' ? t.profile.notificationsBlocked : isSubscribed ? t.profile.waveMatchNotifs : t.profile.enableNotifs}
                 </p>
               </div>
             </div>
             {isSupported && permission !== 'denied' && (
-              <Button
-                variant={isSubscribed ? 'outline' : 'default'}
-                size="sm"
-                onClick={handleNotificationToggle}
-                disabled={notificationLoading}
-              >
-                {notificationLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : isSubscribed ? (
-                  'Kapat'
-                ) : (
-                  'Aç'
-                )}
+              <Button variant={isSubscribed ? 'outline' : 'default'} size="sm" onClick={handleNotificationToggle} disabled={notificationLoading}>
+                {notificationLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : isSubscribed ? t.profile.turnOff : t.profile.turnOn}
               </Button>
             )}
           </div>
@@ -421,15 +285,15 @@ export default function Profile() {
 
         {/* Privacy Settings */}
         <section className="card-elevated p-4 mb-4">
-          <h2 className="font-semibold text-foreground mb-4">Gizlilik</h2>
+          <h2 className="font-semibold text-foreground mb-4">{t.profile.privacy}</h2>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center">
                 <MessageCircle className="w-5 h-5 text-muted-foreground" />
               </div>
               <div>
-                <p className="font-medium text-foreground">Mesajlara İzin Ver</p>
-                <p className="text-sm text-muted-foreground">Diğerlerinin size mesaj atmasına izin verin</p>
+                <p className="font-medium text-foreground">{t.profile.allowMessages}</p>
+                <p className="text-sm text-muted-foreground">{t.profile.allowOthersMessage}</p>
               </div>
             </div>
             <Switch checked={profile.allow_dms} onCheckedChange={handleDMToggle} />
@@ -439,31 +303,23 @@ export default function Profile() {
         {/* Settings Links */}
         <section className="card-elevated overflow-hidden">
           {[
-            { icon: Shield, label: 'Güvenlik & Gizlilik', color: 'text-accent', onClick: () => navigate('/settings/safety') },
-            { icon: Bell, label: 'Bildirimler', color: 'text-primary', onClick: () => navigate('/settings/notifications') },
-            { icon: HelpCircle, label: 'Yardım & Destek', color: 'text-muted-foreground', onClick: () => navigate('/settings/help') },
-            { icon: LogOut, label: 'Çıkış Yap', color: 'text-destructive', onClick: handleLogout },
-            { icon: Trash2, label: 'Hesabı Sil', color: 'text-destructive', onClick: () => setShowDeleteDialog(true) },
+            { icon: Shield, label: t.profile.safetyPrivacy, color: 'text-accent', onClick: () => navigate('/settings/safety') },
+            { icon: Bell, label: t.profile.notificationsLink, color: 'text-primary', onClick: () => navigate('/settings/notifications') },
+            { icon: HelpCircle, label: t.profile.helpSupport, color: 'text-muted-foreground', onClick: () => navigate('/settings/help') },
+            { icon: LogOut, label: t.profile.signOutLink, color: 'text-destructive', onClick: handleLogout },
+            { icon: Trash2, label: t.profile.deleteAccount, color: 'text-destructive', onClick: () => setShowDeleteDialog(true) },
           ].map(({ icon: Icon, label, color, onClick }) => (
-            <button
-              key={label}
-              onClick={onClick}
-              className="w-full p-4 flex items-center gap-3 hover:bg-secondary/50 transition-colors border-b border-border last:border-b-0"
-            >
+            <button key={label} onClick={onClick} className="w-full p-4 flex items-center gap-3 hover:bg-secondary/50 transition-colors border-b border-border last:border-b-0">
               <Icon className={`w-5 h-5 ${color}`} />
               <span className="font-medium text-foreground">{label}</span>
-              {label !== 'Çıkış Yap' && label !== 'Hesabı Sil' && (
+              {label !== t.profile.signOutLink && label !== t.profile.deleteAccount && (
                 <ChevronRight className="w-4 h-4 text-muted-foreground ml-auto" />
               )}
             </button>
           ))}
         </section>
 
-        <DeleteAccountDialog
-          open={showDeleteDialog}
-          onOpenChange={setShowDeleteDialog}
-          onConfirm={handleDeleteAccount}
-        />
+        <DeleteAccountDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog} onConfirm={handleDeleteAccount} />
       </main>
       </div>
     </PageLayout>
