@@ -10,11 +10,17 @@ const CACHE_FRESHNESS_MS = 60 * 24 * 60 * 60 * 1000;
 const DB_MIN_VENUES = 15;
 const SEARCH_RADIUS = 1200;
 
-// Venue types to search (NO restaurant)
 const VENUE_TYPES = ['cafe', 'bar', 'night_club'] as const;
 
-// Types that trigger exclusion
-const EXCLUDED_TYPES = ['restaurant'];
+// Types that trigger immediate exclusion
+const EXCLUDED_TYPES = ['restaurant', 'meal_takeaway', 'meal_delivery'];
+
+// Name blacklist - case-insensitive
+const NAME_BLACKLIST = [
+  'kebap', 'kebab', 'ızgara', 'izgara', 'doner', 'döner',
+  'pide', 'börek', 'borek', 'lokanta', 'tantuni', 'çorba', 'corba',
+  'restaurant', 'grill', 'steak', 'burger', 'pizza',
+];
 
 interface GooglePlace {
   place_id: string;
@@ -47,6 +53,42 @@ function mapCategory(types: string[]): string {
   if (types.includes('night_club')) return 'night_club';
   if (types.includes('bar')) return 'bar';
   return 'cafe';
+}
+
+/** Returns true if the place should be EXCLUDED */
+function isExcludedByType(types: string[]): boolean {
+  return types.some((t) => EXCLUDED_TYPES.includes(t));
+}
+
+/** Returns true if the place name contains a blacklisted word */
+function isExcludedByName(name: string): boolean {
+  const lower = name.toLocaleLowerCase('tr-TR');
+  return NAME_BLACKLIST.some((word) => lower.includes(word));
+}
+
+/** Returns true if the place passes strict acceptance rules */
+function isAcceptedVenue(place: GooglePlace): boolean {
+  const types = place.types || [];
+  const lower = place.name.toLocaleLowerCase('tr-TR');
+
+  // Rule 1: Exclude by type
+  if (isExcludedByType(types)) return false;
+
+  // Rule 2: Exclude by name blacklist
+  if (isExcludedByName(place.name)) return false;
+
+  // Rule 3: Exclude permanently closed
+  if (place.business_status === 'CLOSED_PERMANENTLY') return false;
+
+  // Rule 4: Strict acceptance per category
+  if (types.includes('night_club')) return true;
+  if (types.includes('bar')) return true;
+  if (types.includes('cafe')) {
+    // For cafes, require "cafe" or "coffee" in the name
+    return lower.includes('cafe') || lower.includes('café') || lower.includes('coffee') || lower.includes('kahve');
+  }
+
+  return false;
 }
 
 Deno.serve(async (req) => {
@@ -130,7 +172,9 @@ Deno.serve(async (req) => {
 
     // Parallel fetch for all venue types
     const fetches = VENUE_TYPES.map(async (type) => {
-      const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${SEARCH_RADIUS}&type=${type}&key=${GOOGLE_PLACES_KEY}`;
+      // Add keyword=cafe for cafe type to improve result quality
+      const keyword = type === 'cafe' ? '&keyword=cafe' : '';
+      const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${SEARCH_RADIUS}&type=${type}${keyword}&key=${GOOGLE_PLACES_KEY}`;
       try {
         const res = await fetch(url);
         if (!res.ok) {
@@ -143,11 +187,7 @@ Deno.serve(async (req) => {
           return;
         }
         for (const place of data.results || []) {
-          // Exclude restaurants
-          if (place.types?.some((t) => EXCLUDED_TYPES.includes(t))) continue;
-          // Exclude permanently closed
-          if (place.business_status === 'CLOSED_PERMANENTLY') continue;
-          if (!seenIds.has(place.place_id)) {
+          if (!seenIds.has(place.place_id) && isAcceptedVenue(place)) {
             seenIds.add(place.place_id);
             allPlaces.push(place);
           }
@@ -158,9 +198,9 @@ Deno.serve(async (req) => {
     });
 
     await Promise.all(fetches);
-    console.log(`Google returned ${allPlaces.length} unique venues`);
+    console.log(`Google returned ${allPlaces.length} accepted venues (after strict filtering)`);
 
-    // --- Step 3: Upsert to DB ---
+    // --- Step 3: Upsert ONLY filtered venues to DB ---
     if (allPlaces.length > 0) {
       const rows = allPlaces.map((p) => ({
         google_place_id: p.place_id,
