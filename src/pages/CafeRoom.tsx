@@ -196,6 +196,12 @@ export default function CafeRoom() {
   const handleWave = async (userId: string, userName: string) => {
     if (!id) return;
 
+    // Require check-in to wave
+    if (!isCheckedIn) {
+      toast.info('El sallamak için önce check-in yap ☕');
+      return;
+    }
+
     // Gate wave behind profile completion
     if (!isProfileComplete) {
       setGatedAction('wave' as GatedAction);
