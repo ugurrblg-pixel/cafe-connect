@@ -13,7 +13,7 @@ const SEARCH_RADIUS = 1200;
 const VENUE_TYPES = ['cafe', 'bar', 'night_club'] as const;
 
 // Types that trigger immediate exclusion
-const EXCLUDED_TYPES = ['restaurant', 'meal_takeaway', 'meal_delivery'];
+const EXCLUDED_TYPES = ['restaurant', 'meal_takeaway', 'meal_delivery', 'food'];
 
 // Name blacklist - case-insensitive
 const NAME_BLACKLIST = [
@@ -153,10 +153,18 @@ Deno.serve(async (req) => {
       userCounts[c.cafe_id] = (userCounts[c.cafe_id] || 0) + 1;
     });
 
+    // Re-filter cached venues in memory (safety net for legacy data)
+    const validVenues = nearbyVenues.filter((v) => {
+      const name = v.name || '';
+      if (isExcludedByName(name)) return false;
+      if (!['cafe', 'bar', 'night_club'].includes(v.category)) return false;
+      return true;
+    });
+
     // If enough cached venues, return immediately
-    if (nearbyVenues.length >= DB_MIN_VENUES) {
-      console.log(`Cache hit: ${nearbyVenues.length} venues`);
-      return respond(nearbyVenues, userCounts, 'cache');
+    if (validVenues.length >= DB_MIN_VENUES) {
+      console.log(`Cache hit: ${validVenues.length} venues (filtered from ${nearbyVenues.length})`);
+      return respond(validVenues, userCounts, 'cache');
     }
 
     // --- Step 2: Call Google Places API ---
@@ -209,7 +217,7 @@ Deno.serve(async (req) => {
         latitude: p.geometry.location.lat,
         longitude: p.geometry.location.lng,
         category: mapCategory(p.types),
-        is_open: p.opening_hours?.open_now ?? false,
+        is_open: p.opening_hours?.open_now ?? null,
         rating: 4.5,
         image_url: '',
         opening_hours: null,
@@ -235,7 +243,11 @@ Deno.serve(async (req) => {
 
     const filteredFinal = (finalVenues || []).filter(
       (v) => v.latitude && v.longitude && haversineDistance(lat, lng, v.latitude, v.longitude) <= SEARCH_RADIUS
-    );
+    ).filter((v) => {
+      if (isExcludedByName(v.name || '')) return false;
+      if (!['cafe', 'bar', 'night_club'].includes(v.category)) return false;
+      return true;
+    });
 
     console.log(`Returning ${filteredFinal.length} venues (google_places)`);
     return respond(filteredFinal, userCounts, 'google_places');
@@ -261,7 +273,7 @@ function respond(
     latitude: v.latitude,
     longitude: v.longitude,
     category: v.category || 'cafe',
-    is_open: v.is_open ?? false,
+    is_open: v.is_open ?? null,
     image_url: v.image_url || '',
     opening_hours: v.opening_hours || null,
     activeUsers: userCounts[v.id] || 0,

@@ -79,7 +79,7 @@ export function useNearbyCafes(): UseNearbyCafesResult {
           distanceMeters,
           imageUrl: cafe.image_url || '',
           activeUsers: cafe.activeUsers || 0,
-          isOpen: cafe.is_open ?? false,
+          isOpen: cafe.is_open ?? null,
           openingHours: cafe.opening_hours || null,
           latitude: cafe.latitude,
           longitude: cafe.longitude,
