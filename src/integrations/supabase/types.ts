@@ -83,7 +83,7 @@ export type Database = {
           google_place_id: string | null
           id: string
           image_url: string | null
-          is_open: boolean
+          is_open: boolean | null
           last_synced_at: string | null
           latitude: number | null
           longitude: number | null
@@ -99,7 +99,7 @@ export type Database = {
           google_place_id?: string | null
           id?: string
           image_url?: string | null
-          is_open?: boolean
+          is_open?: boolean | null
           last_synced_at?: string | null
           latitude?: number | null
           longitude?: number | null
@@ -115,7 +115,7 @@ export type Database = {
           google_place_id?: string | null
           id?: string
           image_url?: string | null
-          is_open?: boolean
+          is_open?: boolean | null
           last_synced_at?: string | null
           latitude?: number | null
           longitude?: number | null

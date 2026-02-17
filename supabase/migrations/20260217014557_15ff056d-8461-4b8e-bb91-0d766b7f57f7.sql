@@ -1,0 +1,1 @@
+ALTER TABLE public.cafes ALTER COLUMN is_open DROP NOT NULL;
