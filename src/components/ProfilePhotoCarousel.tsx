@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FullscreenGallery } from './FullscreenGallery';
+import { filterPhotosForViewer } from '@/lib/photoAccess';
 
 const DEFAULT_PLACEHOLDER = '/placeholder.svg';
 
@@ -12,6 +13,8 @@ interface ProfilePhotoCarouselProps {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
   enableFullscreen?: boolean;
+  isViewerPremium?: boolean;
+  isTargetPremium?: boolean;
 }
 
 export function ProfilePhotoCarousel({
@@ -21,12 +24,18 @@ export function ProfilePhotoCarousel({
   size = 'lg',
   className,
   enableFullscreen = true,
+  isViewerPremium = true,
+  isTargetPremium = false,
 }: ProfilePhotoCarouselProps) {
   // Safe array: filter nulls/empty, fallback to avatarUrl, then placeholder
   const validPhotos = (photos ?? []).filter((p): p is string => typeof p === 'string' && p.trim() !== '');
+  
+  // Apply photo access rules
+  const accessiblePhotos = filterPhotosForViewer(validPhotos, isViewerPremium, isTargetPremium);
+  
   const displayPhotos =
-    validPhotos.length > 0
-      ? validPhotos
+    accessiblePhotos.length > 0
+      ? accessiblePhotos
       : avatarUrl && avatarUrl.trim()
         ? [avatarUrl]
         : [];
