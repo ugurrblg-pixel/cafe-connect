@@ -160,7 +160,21 @@ export function useWaves(): UseWavesReturn {
           });
 
         if (!matchExists) {
-          // First create the conversation
+          // First create the match (needed for conversation RLS policy)
+          const { error: matchError } = await supabase
+            .from('matches')
+            .insert({
+              user1_id: user.id,
+              user2_id: toUserId,
+              cafe_id: cafeId,
+            });
+
+          if (matchError && matchError.code !== '23505') {
+            console.error('Error creating match:', matchError);
+            return { success: true, isMatch: true };
+          }
+
+          // Now create the conversation (RLS requires match to exist)
           const { data: newConversation, error: convError } = await supabase
             .from('conversations')
             .insert({
@@ -176,24 +190,18 @@ export function useWaves(): UseWavesReturn {
             return { success: true, isMatch: true };
           }
 
-          // Create the match with conversation_id
-          const { error: matchError } = await supabase
+          // Update match with conversation_id
+          await supabase
             .from('matches')
-            .insert({
-              user1_id: user.id,
-              user2_id: toUserId,
-              cafe_id: cafeId,
-              conversation_id: newConversation.id,
-            });
-
-          if (matchError && matchError.code !== '23505') {
-            console.error('Error creating match:', matchError);
-          }
+            .update({ conversation_id: newConversation.id })
+            .eq('user1_id', user.id)
+            .eq('user2_id', toUserId)
+            .eq('cafe_id', cafeId);
 
           // Send match notification to the other user
           sendMatchNotification(toUserId, myName, newConversation.id);
 
-          toast.success("It's a match! You can now chat 💬");
+          toast.success("Eşleştiniz! Artık sohbet edebilirsiniz 💬");
         }
 
         return { success: true, isMatch: true };
