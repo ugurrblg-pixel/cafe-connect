@@ -70,10 +70,10 @@ function isExcludedByName(name: string): boolean {
 /** Returns true if the place passes strict acceptance rules */
 function isAcceptedVenue(place: GooglePlace): boolean {
   const types = place.types || [];
-  const lower = place.name.toLocaleLowerCase('tr-TR');
 
-  // Rule 1: Exclude by type
-  if (isExcludedByType(types)) return false;
+  // Rule 1: Must have at least one venue type
+  const hasVenueType = types.some((t) => VENUE_TYPES.includes(t as any));
+  if (!hasVenueType) return false;
 
   // Rule 2: Exclude by name blacklist
   if (isExcludedByName(place.name)) return false;
@@ -81,15 +81,12 @@ function isAcceptedVenue(place: GooglePlace): boolean {
   // Rule 3: Exclude permanently closed
   if (place.business_status === 'CLOSED_PERMANENTLY') return false;
 
-  // Rule 4: Strict acceptance per category
-  if (types.includes('night_club')) return true;
-  if (types.includes('bar')) return true;
-  if (types.includes('cafe')) {
-    // For cafes, require "cafe" or "coffee" in the name
-    return lower.includes('cafe') || lower.includes('café') || lower.includes('coffee') || lower.includes('kahve');
-  }
+  // Rule 4: If it's ONLY a restaurant/food (no cafe/bar/night_club), exclude
+  // But if it has both cafe AND restaurant types, allow it
+  const isOnlyFood = !hasVenueType && types.some((t) => EXCLUDED_TYPES.includes(t));
+  if (isOnlyFood) return false;
 
-  return false;
+  return true;
 }
 
 Deno.serve(async (req) => {
