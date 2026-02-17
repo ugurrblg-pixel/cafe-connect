@@ -1,8 +1,7 @@
 import { memo } from 'react';
 import { Cafe } from '@/types';
 import { cn } from '@/lib/utils';
-import { MapPin, Users, Clock } from 'lucide-react';
-import { getCafeStatus, getStatusColors } from '@/lib/openingHours';
+import { MapPin, Users } from 'lucide-react';
 import { useI18n } from '@/contexts/I18nContext';
 import { CafeImage } from '@/components/CafeImage';
 import { formatActiveUserCount } from '@/lib/photoAccess';
@@ -16,20 +15,6 @@ interface CafeCardProps {
 
 export const CafeCard = memo(function CafeCard({ cafe, onClick, className, style }: CafeCardProps) {
   const { t } = useI18n();
-  
-  // Get live status from opening hours
-  const hoursStatus = getCafeStatus(cafe.openingHours);
-  const statusColors = getStatusColors(hoursStatus.status);
-
-  // Get localized status text
-  const getStatusText = () => {
-    switch (hoursStatus.status) {
-      case 'open': return t.cafeStatus.open;
-      case 'closing-soon': return t.cafeStatus.closingSoon;
-      case 'closed': return t.cafeStatus.closed;
-      default: return t.cafeStatus.hoursUnknown;
-    }
-  };
 
   return (
     <button
@@ -56,18 +41,20 @@ export const CafeCard = memo(function CafeCard({ cafe, onClick, className, style
             {formatActiveUserCount(cafe.activeUsers)} {t.common.here}
           </div>
         )}
-        {/* Status badge */}
+        {/* Open/Closed badge */}
         <div
           className={cn(
-            'absolute bottom-3 left-3 px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1',
-            statusColors.bg,
-            statusColors.text
+            'absolute bottom-3 left-3 px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1.5',
+            cafe.isOpen
+              ? 'bg-accent/90 text-accent-foreground'
+              : 'bg-destructive/90 text-destructive-foreground'
           )}
         >
-          {hoursStatus.status === 'closing-soon' && (
-            <Clock className="w-3 h-3 animate-pulse" />
-          )}
-          {getStatusText()}
+          <span className={cn(
+            'w-2 h-2 rounded-full',
+            cafe.isOpen ? 'bg-accent-foreground/60' : 'bg-destructive-foreground/60'
+          )} />
+          {cafe.isOpen ? (t.cafeStatus?.open || 'Açık') : (t.cafeStatus?.closed || 'Kapalı')}
         </div>
       </div>
 
@@ -82,14 +69,6 @@ export const CafeCard = memo(function CafeCard({ cafe, onClick, className, style
               <span>{cafe.distance}</span>
             </div>
           )}
-          {/* Show opening hours info */}
-          <div className={cn(
-            'flex items-center gap-1 truncate',
-            hoursStatus.status === 'closing-soon' && 'text-warning font-medium'
-          )}>
-            <Clock className="w-4 h-4 shrink-0" />
-            <span className="truncate">{hoursStatus.label}</span>
-          </div>
         </div>
       </div>
     </button>

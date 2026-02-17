@@ -5,72 +5,48 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-// Dynamic radius thresholds
-const RADIUS_STEPS = [500, 800, 1200];
-const MIN_VENUES_TARGET = 15;
-const MIN_VENUES_EXPANDED = 10;
-
 // Cache freshness: 60 days
-const CACHE_FRESHNESS_DAYS = 60;
+const CACHE_FRESHNESS_MS = 60 * 24 * 60 * 60 * 1000;
+const DB_MIN_VENUES = 15;
+const SEARCH_RADIUS = 1200;
 
-// Grid cell size for caching (~1km)
-const GRID_CELL_SIZE = 0.009;
+// Venue types to search (NO restaurant)
+const VENUE_TYPES = ['cafe', 'bar', 'night_club'] as const;
+
+// Types that trigger exclusion
+const EXCLUDED_TYPES = ['restaurant'];
 
 interface GooglePlace {
   place_id: string;
   name: string;
-  geometry: {
-    location: {
-      lat: number;
-      lng: number;
-    };
-  };
+  geometry: { location: { lat: number; lng: number } };
   types: string[];
+  opening_hours?: { open_now?: boolean };
   business_status?: string;
-  opening_hours?: {
-    open_now?: boolean;
-  };
 }
 
-interface GooglePlacesResponse {
+interface GoogleResponse {
   results: GooglePlace[];
   status: string;
-  next_page_token?: string;
+  error_message?: string;
 }
 
-function getGridCell(lat: number, lng: number) {
-  return {
-    gridLat: Math.floor(lat / GRID_CELL_SIZE) * GRID_CELL_SIZE,
-    gridLng: Math.floor(lng / GRID_CELL_SIZE) * GRID_CELL_SIZE,
-  };
-}
-
-function mapGoogleTypeToCategory(types: string[]): string {
-  if (types.includes('night_club') || types.includes('bar')) return 'bar';
-  if (types.includes('restaurant')) return 'restaurant';
-  if (types.includes('cafe')) return 'cafe';
-  return 'cafe'; // default
-}
-
-function getCafesInRadius(
-  cafes: any[],
-  lat: number,
-  lng: number,
-  radiusMeters: number
-): any[] {
+function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371000;
-  return cafes.filter((cafe) => {
-    if (!cafe.latitude || !cafe.longitude) return false;
-    const dLat = ((cafe.latitude - lat) * Math.PI) / 180;
-    const dLon = ((cafe.longitude - lng) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos((lat * Math.PI) / 180) *
-        Math.cos((cafe.latitude * Math.PI) / 180) *
-        Math.sin(dLon / 2) ** 2;
-    const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return dist <= radiusMeters;
-  });
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function mapCategory(types: string[]): string {
+  if (types.includes('night_club')) return 'night_club';
+  if (types.includes('bar')) return 'bar';
+  return 'cafe';
 }
 
 Deno.serve(async (req) => {
@@ -81,225 +57,178 @@ Deno.serve(async (req) => {
   try {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const GOOGLE_PLACES_API_KEY = Deno.env.get('GOOGLE_PLACES_API_KEY');
+    const GOOGLE_PLACES_KEY = Deno.env.get('GOOGLE_PLACES_API_KEY');
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error('Missing Supabase configuration');
     }
 
-    const { latitude, longitude } = await req.json();
+    const body = await req.json();
+    const { latitude, longitude } = body;
+    const lat = latitude ?? body.lat;
+    const lng = longitude ?? body.lng;
 
-    if (!latitude || !longitude) {
+    if (!lat || !lng) {
       return new Response(
-        JSON.stringify({ error: 'latitude and longitude are required' }),
+        JSON.stringify({ error: 'lat and lng are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Searching for venues near ${latitude}, ${longitude}`);
+    console.log(`Venue search: ${lat}, ${lng}`);
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Step 1: Fetch all cached cafes within max radius (1200m bounding box)
-    const maxRadius = RADIUS_STEPS[RADIUS_STEPS.length - 1];
-    const latDelta = maxRadius / 111000;
-    const lngDelta = maxRadius / (111000 * Math.cos((latitude * Math.PI) / 180));
+    // --- Step 1: Check DB cache (bounding box for 1200m) ---
+    const latDelta = SEARCH_RADIUS / 111000;
+    const lngDelta = SEARCH_RADIUS / (111000 * Math.cos((lat * Math.PI) / 180));
+    const cacheThreshold = new Date(Date.now() - CACHE_FRESHNESS_MS).toISOString();
 
-    const cacheThreshold = new Date(
-      Date.now() - CACHE_FRESHNESS_DAYS * 24 * 60 * 60 * 1000
-    ).toISOString();
-
-    const { data: allCachedCafes, error: cacheError } = await supabase
+    const { data: cachedVenues, error: cacheErr } = await supabase
       .from('cafes')
       .select('*')
-      .gte('latitude', latitude - latDelta)
-      .lte('latitude', latitude + latDelta)
-      .gte('longitude', longitude - lngDelta)
-      .lte('longitude', longitude + lngDelta)
+      .gte('latitude', lat - latDelta)
+      .lte('latitude', lat + latDelta)
+      .gte('longitude', lng - lngDelta)
+      .lte('longitude', lng + lngDelta)
       .gte('last_synced_at', cacheThreshold);
 
-    if (cacheError) {
-      console.error('Cache fetch error:', cacheError);
-    }
+    if (cacheErr) console.error('Cache error:', cacheErr);
 
-    const cachedCafes = allCachedCafes || [];
+    // Filter by actual distance
+    const nearbyVenues = (cachedVenues || []).filter(
+      (v) => v.latitude && v.longitude && haversineDistance(lat, lng, v.latitude, v.longitude) <= SEARCH_RADIUS
+    );
 
-    // Step 2: Dynamic radius logic - check DB first
-    let selectedRadius = RADIUS_STEPS[0]; // 500m
-    let cafesInRadius = getCafesInRadius(cachedCafes, latitude, longitude, RADIUS_STEPS[0]);
-
-    if (cafesInRadius.length < MIN_VENUES_TARGET) {
-      // Expand to 800m
-      cafesInRadius = getCafesInRadius(cachedCafes, latitude, longitude, RADIUS_STEPS[1]);
-      selectedRadius = RADIUS_STEPS[1];
-    }
-
-    if (cafesInRadius.length < MIN_VENUES_EXPANDED) {
-      // Expand to 1200m
-      cafesInRadius = getCafesInRadius(cachedCafes, latitude, longitude, RADIUS_STEPS[2]);
-      selectedRadius = RADIUS_STEPS[2];
-    }
-
-    // Step 3: Get active check-in counts
-    const { data: checkInsData } = await supabase
+    // Get active check-in counts
+    const { data: checkIns } = await supabase
       .from('check_ins')
       .select('cafe_id')
       .gt('expiry_time', new Date().toISOString());
 
-    const activeUserCounts: Record<string, number> = {};
-    (checkInsData || []).forEach((checkIn) => {
-      activeUserCounts[checkIn.cafe_id] = (activeUserCounts[checkIn.cafe_id] || 0) + 1;
+    const userCounts: Record<string, number> = {};
+    (checkIns || []).forEach((c) => {
+      userCounts[c.cafe_id] = (userCounts[c.cafe_id] || 0) + 1;
     });
 
-    // Step 4: If we have enough cached venues, return them
-    if (cafesInRadius.length >= MIN_VENUES_EXPANDED) {
-      const result = cafesInRadius.map((cafe) => ({
-        ...cafe,
-        activeUsers: activeUserCounts[cafe.id] || 0,
-      }));
-
-      console.log(`Returning ${result.length} cached venues (radius: ${selectedRadius}m)`);
-      return new Response(
-        JSON.stringify({
-          cafes: result,
-          source: 'cache',
-          radius: selectedRadius,
-          count: result.length,
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // If enough cached venues, return immediately
+    if (nearbyVenues.length >= DB_MIN_VENUES) {
+      console.log(`Cache hit: ${nearbyVenues.length} venues`);
+      return respond(nearbyVenues, userCounts, 'cache');
     }
 
-    // Step 5: Cache miss or insufficient - call Google Places API
-    if (!GOOGLE_PLACES_API_KEY) {
-      console.warn('No Google Places API key configured, returning cached results only');
-      const result = cafesInRadius.map((cafe) => ({
-        ...cafe,
-        activeUsers: activeUserCounts[cafe.id] || 0,
-      }));
-      return new Response(
-        JSON.stringify({
-          cafes: result,
-          source: 'cache_fallback',
-          radius: selectedRadius,
-          count: result.length,
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // --- Step 2: Call Google Places API ---
+    if (!GOOGLE_PLACES_KEY) {
+      console.warn('GOOGLE_PLACES_API_KEY not set, returning cache only');
+      return respond(nearbyVenues, userCounts, 'cache_fallback');
     }
 
-    console.log(`Fetching from Google Places API (radius: ${maxRadius}m)...`);
+    console.log('Cache miss, calling Google Places API...');
 
-    // Search for venue types
-    const venueTypes = ['cafe', 'bar', 'night_club', 'restaurant'];
     const allPlaces: GooglePlace[] = [];
-    const seenPlaceIds = new Set<string>();
+    const seenIds = new Set<string>();
 
-    for (const type of venueTypes) {
-      const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=${maxRadius}&type=${type}&key=${GOOGLE_PLACES_API_KEY}`;
-
+    // Parallel fetch for all venue types
+    const fetches = VENUE_TYPES.map(async (type) => {
+      const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${SEARCH_RADIUS}&type=${type}&key=${GOOGLE_PLACES_KEY}`;
       try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          console.error(`Google API error for type ${type}: ${response.status}`);
-          continue;
+        const res = await fetch(url);
+        if (!res.ok) {
+          console.error(`Google API ${type}: HTTP ${res.status}`);
+          return;
         }
-        const data: GooglePlacesResponse = await response.json();
-
+        const data: GoogleResponse = await res.json();
         if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-          console.error(`Google API status for ${type}: ${data.status}`);
-          continue;
+          console.error(`Google API ${type}: ${data.status} - ${data.error_message || ''}`);
+          return;
         }
-
         for (const place of data.results || []) {
-          if (!seenPlaceIds.has(place.place_id)) {
-            seenPlaceIds.add(place.place_id);
+          // Exclude restaurants
+          if (place.types?.some((t) => EXCLUDED_TYPES.includes(t))) continue;
+          // Exclude permanently closed
+          if (place.business_status === 'CLOSED_PERMANENTLY') continue;
+          if (!seenIds.has(place.place_id)) {
+            seenIds.add(place.place_id);
             allPlaces.push(place);
           }
         }
       } catch (err) {
-        console.error(`Error fetching ${type}:`, err);
+        console.error(`Google fetch error (${type}):`, err);
       }
-    }
+    });
 
+    await Promise.all(fetches);
     console.log(`Google returned ${allPlaces.length} unique venues`);
 
-    // Step 6: Upsert venues into database
+    // --- Step 3: Upsert to DB ---
     if (allPlaces.length > 0) {
-      const cafesToUpsert = allPlaces.map((place) => ({
-        google_place_id: place.place_id,
-        name: place.name,
-        address: '', // Not fetching details to save API costs
-        latitude: place.geometry.location.lat,
-        longitude: place.geometry.location.lng,
+      const rows = allPlaces.map((p) => ({
+        google_place_id: p.place_id,
+        name: p.name,
+        address: '',
+        latitude: p.geometry.location.lat,
+        longitude: p.geometry.location.lng,
+        category: mapCategory(p.types),
+        is_open: p.opening_hours?.open_now ?? false,
         rating: 4.5,
-        is_open: place.opening_hours?.open_now ?? true,
         image_url: '',
         opening_hours: null,
         last_synced_at: new Date().toISOString(),
       }));
 
-      const { error: upsertError } = await supabase
+      const { error: upsertErr } = await supabase
         .from('cafes')
-        .upsert(cafesToUpsert, {
-          onConflict: 'google_place_id',
-          ignoreDuplicates: false,
-        });
+        .upsert(rows, { onConflict: 'google_place_id', ignoreDuplicates: false });
 
-      if (upsertError) {
-        console.error('Upsert error:', upsertError);
-      } else {
-        console.log(`Upserted ${cafesToUpsert.length} venues`);
-      }
+      if (upsertErr) console.error('Upsert error:', upsertErr);
+      else console.log(`Upserted ${rows.length} venues`);
     }
 
-    // Step 7: Re-fetch all venues in max radius (including newly inserted)
-    const { data: finalCafes, error: fetchError } = await supabase
+    // --- Step 4: Re-fetch all venues in radius ---
+    const { data: finalVenues } = await supabase
       .from('cafes')
       .select('*')
-      .gte('latitude', latitude - latDelta)
-      .lte('latitude', latitude + latDelta)
-      .gte('longitude', longitude - lngDelta)
-      .lte('longitude', longitude + lngDelta);
+      .gte('latitude', lat - latDelta)
+      .lte('latitude', lat + latDelta)
+      .gte('longitude', lng - lngDelta)
+      .lte('longitude', lng + lngDelta);
 
-    if (fetchError) {
-      throw new Error(`Error fetching venues: ${fetchError.message}`);
-    }
-
-    // Apply dynamic radius to final results
-    let finalFiltered = getCafesInRadius(finalCafes || [], latitude, longitude, RADIUS_STEPS[0]);
-    let finalRadius = RADIUS_STEPS[0];
-
-    if (finalFiltered.length < MIN_VENUES_TARGET) {
-      finalFiltered = getCafesInRadius(finalCafes || [], latitude, longitude, RADIUS_STEPS[1]);
-      finalRadius = RADIUS_STEPS[1];
-    }
-    if (finalFiltered.length < MIN_VENUES_EXPANDED) {
-      finalFiltered = getCafesInRadius(finalCafes || [], latitude, longitude, RADIUS_STEPS[2]);
-      finalRadius = RADIUS_STEPS[2];
-    }
-
-    const result = finalFiltered.map((cafe) => ({
-      ...cafe,
-      activeUsers: activeUserCounts[cafe.id] || 0,
-    }));
-
-    console.log(`Returning ${result.length} venues (radius: ${finalRadius}m, source: google_places)`);
-
-    return new Response(
-      JSON.stringify({
-        cafes: result,
-        source: 'google_places',
-        radius: finalRadius,
-        count: result.length,
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    const filteredFinal = (finalVenues || []).filter(
+      (v) => v.latitude && v.longitude && haversineDistance(lat, lng, v.latitude, v.longitude) <= SEARCH_RADIUS
     );
+
+    console.log(`Returning ${filteredFinal.length} venues (google_places)`);
+    return respond(filteredFinal, userCounts, 'google_places');
   } catch (error) {
-    console.error('Error in nearby-cafes function:', error);
+    console.error('Edge function error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
+
+function respond(
+  venues: any[],
+  userCounts: Record<string, number>,
+  source: string
+) {
+  const cafes = venues.map((v) => ({
+    id: v.id,
+    place_id: v.google_place_id,
+    name: v.name,
+    address: v.address || '',
+    latitude: v.latitude,
+    longitude: v.longitude,
+    category: v.category || 'cafe',
+    is_open: v.is_open ?? false,
+    image_url: v.image_url || '',
+    opening_hours: v.opening_hours || null,
+    activeUsers: userCounts[v.id] || 0,
+  }));
+
+  return new Response(
+    JSON.stringify({ cafes, source, count: cafes.length }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
