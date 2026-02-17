@@ -15,6 +15,7 @@ interface Cafe {
   latitude: number | null;
   longitude: number | null;
   googlePlaceId: string | null;
+  category: string;
 }
 
 interface UseNearbyCafesResult {
@@ -78,11 +79,12 @@ export function useNearbyCafes(): UseNearbyCafesResult {
           distanceMeters,
           imageUrl: cafe.image_url || '',
           activeUsers: cafe.activeUsers || 0,
-          isOpen: cafe.is_open ?? true,
+          isOpen: cafe.is_open ?? false,
           openingHours: cafe.opening_hours || null,
           latitude: cafe.latitude,
           longitude: cafe.longitude,
-          googlePlaceId: cafe.google_place_id,
+          googlePlaceId: cafe.place_id || cafe.google_place_id,
+          category: cafe.category || 'cafe',
         };
       });
 

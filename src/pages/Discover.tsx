@@ -7,7 +7,6 @@ import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
 import { useNearbyCafes } from '@/hooks/useNearbyCafes';
 import { useLocation } from '@/contexts/LocationContext';
 import { useI18n } from '@/contexts/I18nContext';
-import { getCafeStatus } from '@/lib/openingHours';
 import { MapPin, Coffee, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -53,21 +52,14 @@ export default function Discover() {
     }
   };
 
-  // Filter cafes based on live opening hours status
+  // Filter cafes based on is_open status from API
   const filteredCafes = useMemo(() => {
     if (!showOpenOnly) return cafes;
-    
-    return cafes.filter((cafe) => {
-      const status = getCafeStatus(cafe.openingHours);
-      return status.status === 'open' || status.status === 'closing-soon';
-    });
+    return cafes.filter((cafe) => cafe.isOpen);
   }, [cafes, showOpenOnly]);
 
   const closedCount = useMemo(() => {
-    return cafes.filter((cafe) => {
-      const status = getCafeStatus(cafe.openingHours);
-      return status.status === 'closed';
-    }).length;
+    return cafes.filter((cafe) => !cafe.isOpen).length;
   }, [cafes]);
 
   const activeCafes = filteredCafes.filter((cafe) => cafe.activeUsers > 0);

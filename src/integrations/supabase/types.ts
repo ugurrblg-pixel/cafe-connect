@@ -77,6 +77,7 @@ export type Database = {
       cafes: {
         Row: {
           address: string
+          category: string
           created_at: string
           distance: string | null
           google_place_id: string | null
@@ -92,6 +93,7 @@ export type Database = {
         }
         Insert: {
           address?: string
+          category?: string
           created_at?: string
           distance?: string | null
           google_place_id?: string | null
@@ -107,6 +109,7 @@ export type Database = {
         }
         Update: {
           address?: string
+          category?: string
           created_at?: string
           distance?: string | null
           google_place_id?: string | null
