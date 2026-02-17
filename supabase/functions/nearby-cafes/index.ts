@@ -20,6 +20,7 @@ const NAME_BLACKLIST = [
   'kebap', 'kebab', 'ızgara', 'izgara', 'doner', 'döner',
   'pide', 'börek', 'borek', 'lokanta', 'tantuni', 'çorba', 'corba',
   'restaurant', 'grill', 'steak', 'burger', 'pizza',
+  'çiğ köfte', 'komagene', 'little caesars', 'domino', 'ev yemekleri',
 ];
 
 interface GooglePlace {

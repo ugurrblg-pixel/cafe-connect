@@ -41,23 +41,29 @@ export const CafeCard = memo(function CafeCard({ cafe, onClick, className, style
             {formatActiveUserCount(cafe.activeUsers)} {t.common.here}
           </div>
         )}
-        {/* Open/Closed badge - only show if status is known */}
-        {cafe.isOpen !== null && (
-          <div
-            className={cn(
-              'absolute bottom-3 left-3 px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1.5',
-              cafe.isOpen
-                ? 'bg-accent/90 text-accent-foreground'
-                : 'bg-destructive/90 text-destructive-foreground'
-            )}
-          >
-            <span className={cn(
-              'w-2 h-2 rounded-full',
-              cafe.isOpen ? 'bg-accent-foreground/60' : 'bg-destructive-foreground/60'
-            )} />
-            {cafe.isOpen ? (t.cafeStatus?.open || 'Açık') : (t.cafeStatus?.closed || 'Kapalı')}
-          </div>
-        )}
+        {/* Open/Closed/Unknown badge */}
+        <div
+          className={cn(
+            'absolute bottom-3 left-3 px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1.5',
+            cafe.isOpen === true
+              ? 'bg-accent/90 text-accent-foreground'
+              : cafe.isOpen === false
+                ? 'bg-destructive/90 text-destructive-foreground'
+                : 'bg-muted/90 text-muted-foreground'
+          )}
+        >
+          <span className={cn(
+            'w-2 h-2 rounded-full',
+            cafe.isOpen === true ? 'bg-accent-foreground/60'
+              : cafe.isOpen === false ? 'bg-destructive-foreground/60'
+                : 'bg-muted-foreground/60'
+          )} />
+          {cafe.isOpen === true
+            ? (t.cafeStatus?.open || 'Açık')
+            : cafe.isOpen === false
+              ? (t.cafeStatus?.closed || 'Kapalı')
+              : 'Bilinmiyor'}
+        </div>
       </div>
 
       {/* Content */}
