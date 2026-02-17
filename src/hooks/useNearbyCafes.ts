@@ -22,6 +22,7 @@ interface UseNearbyCafesResult {
   loading: boolean;
   error: string | null;
   source: 'cache' | 'google_places' | 'openstreetmap' | 'cache_fallback' | null;
+  radius: number | null;
   fetchNearbyCafes: (coords: Coordinates) => Promise<void>;
 }
 
@@ -30,18 +31,18 @@ export function useNearbyCafes(): UseNearbyCafesResult {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [source, setSource] = useState<'cache' | 'google_places' | 'openstreetmap' | 'cache_fallback' | null>(null);
+  const [radius, setRadius] = useState<number | null>(null);
 
   const fetchNearbyCafes = useCallback(async (coords: Coordinates) => {
     setLoading(true);
     setError(null);
 
     try {
-      // Call the edge function with expanded search radius (3km)
+      // Call the edge function - dynamic radius is handled server-side
       const { data, error: fnError } = await supabase.functions.invoke('nearby-cafes', {
         body: {
           latitude: coords.latitude,
           longitude: coords.longitude,
-          radius: 3000,
         },
       });
 
@@ -54,6 +55,7 @@ export function useNearbyCafes(): UseNearbyCafesResult {
       }
 
       setSource(data.source);
+      setRadius(data.radius || null);
 
       // Format cafes with distance calculations
       const formattedCafes: Cafe[] = (data.cafes || []).map((cafe: any) => {
@@ -108,6 +110,7 @@ export function useNearbyCafes(): UseNearbyCafesResult {
     loading,
     error,
     source,
+    radius,
     fetchNearbyCafes,
   };
 }

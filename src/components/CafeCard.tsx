@@ -5,6 +5,7 @@ import { MapPin, Users, Clock } from 'lucide-react';
 import { getCafeStatus, getStatusColors } from '@/lib/openingHours';
 import { useI18n } from '@/contexts/I18nContext';
 import { CafeImage } from '@/components/CafeImage';
+import { formatActiveUserCount } from '@/lib/photoAccess';
 
 interface CafeCardProps {
   cafe: Cafe;
@@ -52,7 +53,7 @@ export const CafeCard = memo(function CafeCard({ cafe, onClick, className, style
         {cafe.activeUsers > 0 && (
           <div className="absolute top-3 right-3 bg-primary text-primary-foreground px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
             <Users className="w-3 h-3" />
-            {cafe.activeUsers} {t.common.here}
+            {formatActiveUserCount(cafe.activeUsers)} {t.common.here}
           </div>
         )}
         {/* Status badge */}
