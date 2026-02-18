@@ -89,6 +89,32 @@ function isAcceptedVenue(place: GooglePlace): boolean {
   return true;
 }
 
+/** Fetch fresh open_now status from Google Places for the area */
+async function fetchFreshOpenStatus(
+  lat: number,
+  lng: number,
+  apiKey: string
+): Promise<Record<string, boolean | null>> {
+  const statusMap: Record<string, boolean | null> = {};
+  const fetches = VENUE_TYPES.map(async (type) => {
+    const keyword = type === 'cafe' ? '&keyword=cafe' : '';
+    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${SEARCH_RADIUS}&type=${type}${keyword}&key=${apiKey}`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const data: GoogleResponse = await res.json();
+      if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') return;
+      for (const place of data.results || []) {
+        if (!statusMap.hasOwnProperty(place.place_id)) {
+          statusMap[place.place_id] = place.opening_hours?.open_now ?? null;
+        }
+      }
+    } catch (_) {}
+  });
+  await Promise.all(fetches);
+  return statusMap;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -159,9 +185,40 @@ Deno.serve(async (req) => {
       return true;
     });
 
-    // If enough cached venues, return immediately
+    // If enough cached venues, refresh is_open status from Google then return
     if (validVenues.length >= DB_MIN_VENUES) {
       console.log(`Cache hit: ${validVenues.length} venues (filtered from ${nearbyVenues.length})`);
+      
+      // Refresh is_open status from Google API if key is available
+      if (GOOGLE_PLACES_KEY) {
+        try {
+          const freshOpenStatus = await fetchFreshOpenStatus(lat, lng, GOOGLE_PLACES_KEY);
+          if (Object.keys(freshOpenStatus).length > 0) {
+            // Update validVenues with fresh is_open data
+            for (const v of validVenues) {
+              if (v.google_place_id && freshOpenStatus.hasOwnProperty(v.google_place_id)) {
+                v.is_open = freshOpenStatus[v.google_place_id];
+              }
+            }
+            // Batch update is_open in DB
+            const updates = validVenues
+              .filter((v) => v.google_place_id && freshOpenStatus.hasOwnProperty(v.google_place_id))
+              .map((v) => ({
+                id: v.id,
+                is_open: freshOpenStatus[v.google_place_id!],
+              }));
+            if (updates.length > 0) {
+              for (const u of updates) {
+                await supabase.from('cafes').update({ is_open: u.is_open }).eq('id', u.id);
+              }
+              console.log(`Updated is_open for ${updates.length} cached venues`);
+            }
+          }
+        } catch (err) {
+          console.error('Error refreshing open status:', err);
+        }
+      }
+      
       return respond(validVenues, userCounts, 'cache');
     }
 
