@@ -71,7 +71,7 @@ export default function CafeRoom() {
   
   const { sendWave, hasWavedAt, hasReceivedWaveFrom, sentWaves } = useWaves();
   const { sendSpark, hasSentSparkTo, canSendSpark, dailySparkCount, sparkLimit } = useSparks();
-  const { hasMatchWith, getMatchConversation, createConversationForMatch, matches } = useMatches();
+  const { hasMatchWith, getMatchConversation, createConversationForMatch, matches, refetch: refetchMatches } = useMatches();
   const { canStartChat, incrementChatCount, isPremium } = usePremium();
   const { isComplete: isProfileComplete } = useProfileCompletion();
   
@@ -226,15 +226,23 @@ export default function CafeRoom() {
     
     if (result.success) {
       if (result.isMatch) {
-        toast.success(`You and ${userName} waved at each other! 🎉`, {
-          description: 'Chat is now unlocked',
+        toast.success(`${userName} ile eşleştiniz! 🎉`, {
+          description: 'Sohbete yönlendiriliyorsunuz...',
         });
-      } else if (hasReceivedWaveFrom(userId, id)) {
-        // They already waved at us, so this should create a match
-        toast.success(`You matched with ${userName}! 🎉`);
+        // Navigate to messages after short delay to let match/conversation be created
+        setTimeout(async () => {
+          // Refetch matches to get the new conversation
+          await refetchMatches();
+          const convId = getMatchConversation(userId);
+          if (convId) {
+            navigate(`/chat/${convId}`);
+          } else {
+            navigate('/messages');
+          }
+        }, 1500);
       } else {
-        toast.success(`👋 You waved at ${userName}!`, {
-          description: 'They\'ll be notified',
+        toast.success(`👋 ${userName} kişisine el salladın!`, {
+          description: 'Bildirim gönderildi',
         });
       }
     }
