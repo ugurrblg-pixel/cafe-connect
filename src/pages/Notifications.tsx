@@ -10,6 +10,7 @@ import { useWaves } from '@/hooks/useWaves';
 import { useMatches } from '@/hooks/useMatches';
 import { useSparks } from '@/hooks/useSparks';
 import { useCafes } from '@/hooks/useCafes';
+import { useActiveCheckIn } from '@/hooks/useActiveCheckIn';
 import { useLongPress } from '@/hooks/useLongPress';
 import { Hand, Heart, Loader2, MessageSquare, Coffee, Sparkles, Crown, Lightbulb, UserMinus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -44,6 +45,7 @@ export default function Notifications() {
   const { matches, createConversationForMatch, loading: matchesLoading } = useMatches();
   const { incomingSparks, acceptSpark, rejectSpark, loading: sparksLoading } = useSparks();
   const { cafes } = useCafes();
+  const { activeCheckIn } = useActiveCheckIn();
   const [processingWave, setProcessingWave] = useState<string | null>(null);
   const [processingMatch, setProcessingMatch] = useState<string | null>(null);
   const [showSparkPaywall, setShowSparkPaywall] = useState(false);
@@ -61,6 +63,12 @@ export default function Notifications() {
   };
 
   const handleWaveBack = async (wave: typeof incomingWaves[0]) => {
+    // Require active check-in at the same cafe to wave back
+    if (!activeCheckIn || activeCheckIn.cafeId !== wave.cafeId) {
+      toast.info('El sallamak için önce o kafeye check-in yap ☕');
+      return;
+    }
+
     setProcessingWave(wave.id);
     
     const result = await sendWave(wave.fromUserId, wave.cafeId);
