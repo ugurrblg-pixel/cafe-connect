@@ -34,6 +34,7 @@ interface Profile {
   notifications_enabled: boolean;
   hobbies: string[];
   verification_status: string;
+  phone: string | null;
 }
 
 export default function Profile() {
@@ -59,6 +60,7 @@ export default function Profile() {
           purpose: data.purpose as Purpose, allow_dms: data.allow_dms,
           is_visible: data.is_visible ?? true, notifications_enabled: data.notifications_enabled ?? true,
           hobbies: (data.hobbies as string[]) || [], verification_status: data.verification_status || 'none',
+          phone: (data as any).phone || null,
         });
       }
       setLoading(false);
@@ -246,18 +248,17 @@ export default function Profile() {
                 </div>
               </div>
             )}
-            {user?.phone && (
+            {profile.phone ? (
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center">
                   <Phone className="w-4 h-4 text-muted-foreground" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-muted-foreground">Telefon</p>
-                  <p className="text-sm font-medium text-foreground truncate">{user.phone}</p>
+                  <p className="text-sm font-medium text-foreground truncate">{profile.phone}</p>
                 </div>
               </div>
-            )}
-            {!user?.phone && (
+            ) : (
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center">
                   <Phone className="w-4 h-4 text-muted-foreground" />
