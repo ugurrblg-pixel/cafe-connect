@@ -201,8 +201,11 @@ export default function Notifications() {
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
                       <div className="flex items-center gap-4">
-                        {/* Avatar */}
-                        <div className="flex-shrink-0">
+                        {/* Avatar - clickable to profile */}
+                        <div
+                          className="flex-shrink-0 cursor-pointer"
+                          onClick={() => wave.fromUserId && navigate(`/profile/${wave.fromUserId}`)}
+                        >
                           {wave.fromUser?.photoUrl ? (
                             <img
                               src={wave.fromUser.photoUrl}
@@ -218,9 +221,12 @@ export default function Notifications() {
                           )}
                         </div>
 
-                        {/* Content */}
+                        {/* Content - name clickable to profile */}
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-foreground">
+                          <p
+                            className="font-semibold text-foreground cursor-pointer hover:underline"
+                            onClick={() => wave.fromUserId && navigate(`/profile/${wave.fromUserId}`)}
+                          >
                             {wave.fromUser?.displayName || 'Biri'} sana el salladı 👋
                           </p>
                           <p className="text-sm text-muted-foreground">
@@ -270,6 +276,7 @@ export default function Notifications() {
                       isProcessing={processingMatch === match.id}
                       onOpenChat={() => handleOpenChat(match)}
                       onLongPress={() => handleLongPressMatch(match)}
+                      onViewProfile={() => match.otherUser?.userId && navigate(`/profile/${match.otherUser.userId}`)}
                     />
                   ))}
                 </div>
@@ -307,12 +314,14 @@ function MatchCard({
   isProcessing,
   onOpenChat,
   onLongPress,
+  onViewProfile,
 }: {
   match: MatchData;
   index: number;
   isProcessing: boolean;
   onOpenChat: () => void;
   onLongPress: () => void;
+  onViewProfile: () => void;
 }) {
   const longPressHandlers = useLongPress({
     onLongPress,
@@ -329,8 +338,11 @@ function MatchCard({
       style={{ animationDelay: `${index * 50}ms` }}
     >
       <div className="flex items-center gap-4">
-        {/* Avatar */}
-        <div className="flex-shrink-0 relative">
+        {/* Avatar - clickable to profile */}
+        <div
+          className="flex-shrink-0 relative cursor-pointer"
+          onClick={(e) => { e.stopPropagation(); onViewProfile(); }}
+        >
           {match.otherUser?.photoUrl ? (
             <img
               src={match.otherUser.photoUrl}
@@ -349,9 +361,12 @@ function MatchCard({
           </div>
         </div>
 
-        {/* Content */}
+        {/* Content - name clickable to profile */}
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-foreground">
+          <p
+            className="font-semibold text-foreground cursor-pointer hover:underline"
+            onClick={(e) => { e.stopPropagation(); onViewProfile(); }}
+          >
             {match.otherUser?.displayName || 'Biri'} ile eşleştin!
           </p>
           <p className="text-sm text-muted-foreground">
