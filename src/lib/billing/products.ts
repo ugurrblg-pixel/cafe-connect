@@ -15,6 +15,7 @@ export const BOOST_PRODUCT_IDS = {
   BOOST_1: 'cafemeet_boost_1',
   BOOST_3: 'cafemeet_boost_3',
   BOOST_5: 'cafemeet_boost_5',
+  BOOST_10: 'cafemeet_boost_10',
 } as const;
 
 // All subscription product IDs
@@ -29,6 +30,7 @@ export const ALL_BOOST_IDS = [
   BOOST_PRODUCT_IDS.BOOST_1,
   BOOST_PRODUCT_IDS.BOOST_3,
   BOOST_PRODUCT_IDS.BOOST_5,
+  BOOST_PRODUCT_IDS.BOOST_10,
 ];
 
 // Fallback display products (used when native store prices can't be fetched)
@@ -97,6 +99,15 @@ export const BOOST_PACKAGES: BoostPackage[] = [
     unitPrice: '₺30,00',
     premiumPrice: '₺119,99',
     premiumPriceAmountMicros: 119990000,
+  },
+  {
+    productId: BOOST_PRODUCT_IDS.BOOST_10,
+    count: 10,
+    price: '₺249,99',
+    priceAmountMicros: 249990000,
+    unitPrice: '₺25,00',
+    premiumPrice: '₺199,99',
+    premiumPriceAmountMicros: 199990000,
   },
 ];
 
