@@ -20,7 +20,7 @@ export default function ContactUs() {
               </div>
               <div>
                 <h3 className="font-semibold text-foreground mb-1">{t.contact.emailTitle}</h3>
-                <a href="mailto:destek@cafemeet.app" className="text-sm text-primary underline">destek@cafemeet.app</a>
+                <a href="mailto:support@cafemeet.co" className="text-sm text-primary underline">support@cafemeet.co</a>
               </div>
             </div>
           </section>
