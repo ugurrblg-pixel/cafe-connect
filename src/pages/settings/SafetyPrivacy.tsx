@@ -114,30 +114,6 @@ export default function SafetyPrivacy() {
             </div>
           </section>
 
-          {/* Profile Visibility */}
-          <section className="card-elevated p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
-                  <EyeOff className="w-5 h-5 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Profilimi Gizle</p>
-                  <p className="text-sm text-muted-foreground">
-                    Keşfet ve kafe listelerinde görünmezsiniz
-                  </p>
-                </div>
-              </div>
-              {visibilityLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-              ) : (
-                <Switch
-                  checked={!isVisible}
-                  onCheckedChange={handleVisibilityToggle}
-                />
-              )}
-            </div>
-          </section>
 
           {/* Blocked Users */}
           <section className="card-elevated p-4">
