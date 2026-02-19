@@ -35,26 +35,15 @@ export function useProfileViews() {
     }
 
     try {
-      // Get profile ID
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) {
-        setLoading(false);
-        return;
-      }
-
       // Fetch views with pagination (last 7 days)
+      // viewed_profile_id stores auth user_id (not profile table id)
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
       const { data, error } = await supabase
         .from('profile_views')
         .select('id, viewer_id, viewed_at, cafe_id')
-        .eq('viewed_profile_id', profile.id)
+        .eq('viewed_profile_id', user.id)
         .gte('viewed_at', sevenDaysAgo.toISOString())
         .order('viewed_at', { ascending: false })
         .range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1);
@@ -116,7 +105,7 @@ export function useProfileViews() {
         const { count } = await supabase
           .from('profile_views')
           .select('id', { count: 'exact', head: true })
-          .eq('viewed_profile_id', profile.id)
+          .eq('viewed_profile_id', user.id)
           .gte('viewed_at', todayStart.toISOString());
 
         setTodayCount(count || 0);
