@@ -61,16 +61,16 @@ export function ProfileBottomSheet({ user, open, onOpenChange, cafeId }: Profile
   const [showBlockDialog, setShowBlockDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
 
+  const targetUserId = user?.userId || user?.id || '';
+
   // Log profile view when sheet opens
   useEffect(() => {
-    if (open && user && currentUser && user.id !== currentUser.id) {
-      logProfileView(user.id);
+    if (open && user && currentUser && targetUserId && targetUserId !== currentUser.id) {
+      logProfileView(targetUserId, cafeId || null);
     }
-  }, [open, user, currentUser, logProfileView]);
+  }, [open, user, currentUser, targetUserId, cafeId, logProfileView]);
 
   if (!user) return null;
-
-  const targetUserId = user.userId || user.id;
 
   const getInitials = (name: string) => {
     return name
