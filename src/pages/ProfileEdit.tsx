@@ -253,24 +253,6 @@ export default function ProfileEdit() {
             />
           </div>
 
-          {/* Visibility Toggle */}
-          <div className="card-elevated p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Kafelerde Görünür</p>
-                  <p className="text-sm text-muted-foreground">Check-in yaptığında diğerleri seni görebilir</p>
-                </div>
-              </div>
-              <Switch
-                checked={profile.is_visible}
-                onCheckedChange={(checked) => setProfile(prev => ({ ...prev, is_visible: checked }))}
-              />
-            </div>
-          </div>
 
           <Button
             onClick={handleSave}
