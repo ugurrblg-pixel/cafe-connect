@@ -432,7 +432,7 @@ export const translations = {
       locationData: 'Location Data',
       locationDataDesc: 'Your location information is only processed when the app is in the foreground and actively being used. There is no background location tracking. Your exact location is never shared with other users.',
       yourRights: 'Your Rights',
-      yourRightsDesc: 'You can request access to your data, request corrections, or delete your account to have all your data removed. For requests, contact support@cafemeet.app.',
+      yourRightsDesc: 'You can request access to your data, request corrections, or delete your account to have all your data removed. For requests, contact support@cafemeet.co.',
       lastUpdated: 'Last updated: February 2026',
     },
 
@@ -945,7 +945,7 @@ export const translations = {
       locationData: 'Konum Verisi',
       locationDataDesc: 'Konum bilginiz yalnızca uygulama ön plandayken ve aktif olarak kullanıldığında işlenir. Arka planda konum takibi yapılmaz. Tam konumunuz diğer kullanıcılarla paylaşılmaz.',
       yourRights: 'Haklarınız',
-      yourRightsDesc: 'Verilerinize erişim talep edebilir, düzeltme isteyebilir veya hesabınızı silerek tüm verilerinizin kaldırılmasını sağlayabilirsiniz. Talepleriniz için destek@cafemeet.app adresine ulaşabilirsiniz.',
+      yourRightsDesc: 'Verilerinize erişim talep edebilir, düzeltme isteyebilir veya hesabınızı silerek tüm verilerinizin kaldırılmasını sağlayabilirsiniz. Talepleriniz için support@cafemeet.co adresine ulaşabilirsiniz.',
       lastUpdated: 'Son güncelleme: Şubat 2026',
     },
 
