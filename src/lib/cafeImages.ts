@@ -11,6 +11,10 @@ const CAFE_PLACEHOLDERS = [
   '/placeholders/cafes/cafe-4.jpg',
   '/placeholders/cafes/cafe-5.jpg',
   '/placeholders/cafes/cafe-6.jpg',
+  '/placeholders/cafes/cafe-7.jpg',
+  '/placeholders/cafes/cafe-8.jpg',
+  '/placeholders/cafes/cafe-9.jpg',
+  '/placeholders/cafes/cafe-10.jpg',
 ];
 
 /**
