@@ -166,9 +166,6 @@ export default function Profile() {
             <h1 className="text-2xl font-bold text-foreground">{displayName}{profile.age ? `, ${profile.age}` : ''}</h1>
             {isPremium && <PremiumBadge size="sm" />}
           </div>
-          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs mb-2 ${profile.is_visible ? 'bg-accent/20 text-accent-foreground' : 'bg-muted text-muted-foreground'}`}>
-            {profile.is_visible ? (<><Eye className="w-3 h-3" /><span>{t.profile.visible}</span></>) : (<><EyeOff className="w-3 h-3" /><span>{t.profile.hidden}</span></>)}
-          </div>
           <PurposeBadge purpose={profile.purpose} />
           <button onClick={() => navigate('/profile/edit')} className="mt-3 flex items-center gap-2 text-primary text-sm font-medium">
             <Edit2 className="w-4 h-4" />{t.profile.editProfile}
@@ -328,22 +325,6 @@ export default function Profile() {
           </div>
         </section>
 
-        {/* Privacy Settings */}
-        <section className="card-elevated p-4 mb-4">
-          <h2 className="font-semibold text-foreground mb-4">{t.profile.privacy}</h2>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center">
-                <MessageCircle className="w-5 h-5 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="font-medium text-foreground">{t.profile.allowMessages}</p>
-                <p className="text-sm text-muted-foreground">{t.profile.allowOthersMessage}</p>
-              </div>
-            </div>
-            <Switch checked={profile.allow_dms} onCheckedChange={handleDMToggle} />
-          </div>
-        </section>
 
         {/* Settings Links */}
         <section className="card-elevated overflow-hidden">
