@@ -474,6 +474,7 @@ export type Database = {
           allow_dms: boolean
           bio: string | null
           boosted_until: string | null
+          coffee_preference: string | null
           created_at: string
           display_name: string | null
           hide_last_seen: boolean
@@ -489,6 +490,7 @@ export type Database = {
           photo_urls: string[] | null
           purpose: string
           show_read_receipts: boolean
+          social_energy: string | null
           updated_at: string
           user_id: string
           verification_requested_at: string | null
@@ -500,6 +502,7 @@ export type Database = {
           allow_dms?: boolean
           bio?: string | null
           boosted_until?: string | null
+          coffee_preference?: string | null
           created_at?: string
           display_name?: string | null
           hide_last_seen?: boolean
@@ -515,6 +518,7 @@ export type Database = {
           photo_urls?: string[] | null
           purpose?: string
           show_read_receipts?: boolean
+          social_energy?: string | null
           updated_at?: string
           user_id: string
           verification_requested_at?: string | null
@@ -526,6 +530,7 @@ export type Database = {
           allow_dms?: boolean
           bio?: string | null
           boosted_until?: string | null
+          coffee_preference?: string | null
           created_at?: string
           display_name?: string | null
           hide_last_seen?: boolean
@@ -541,6 +546,7 @@ export type Database = {
           photo_urls?: string[] | null
           purpose?: string
           show_read_receipts?: boolean
+          social_energy?: string | null
           updated_at?: string
           user_id?: string
           verification_requested_at?: string | null
@@ -790,6 +796,35 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      user_favorite_venues: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_favorite_venues_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "cafes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
