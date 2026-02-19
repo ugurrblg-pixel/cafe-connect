@@ -124,16 +124,21 @@ export function useCheckIn(cafeId: string) {
   useEffect(() => {
     if (!isCheckedIn || !currentCheckIn) return;
 
+    const updateActivity = async () => {
+      await supabase
+        .from('check_ins')
+        .update({ last_active_at: new Date().toISOString() })
+        .eq('id', currentCheckIn.id);
+    };
+
     const updateActivityAndVerifyLocation = async () => {
       // First, verify user is still within cafe radius
       const locationResult = await verifyLocation();
       
       if (!locationResult.valid && locationResult.distance !== undefined) {
-        // GPS returned a valid position but user is out of range
         gpsFailureCountRef.current++;
         
         if (gpsFailureCountRef.current >= GPS_FAILURE_GRACE_COUNT) {
-          // Only auto-checkout after consecutive failures (grace period)
           toast.info('Kafeden ayrıldın, otomatik check-out yapıldı', {
             description: `${formatDistance(locationResult.distance)} uzaklaştın`,
           });
@@ -150,34 +155,32 @@ export function useCheckIn(cafeId: string) {
           return;
         }
       } else if (!locationResult.valid && locationResult.error) {
-        // GPS error (no position) - don't auto-checkout, just skip this check
-        // Never auto-checkout due to temporary GPS loss
         return;
       } else {
-        // User is in range - reset failure counter
         gpsFailureCountRef.current = 0;
       }
 
-      // Update activity timestamp
-      await supabase
-        .from('check_ins')
-        .update({ last_active_at: new Date().toISOString() })
-        .eq('id', currentCheckIn.id);
+      await updateActivity();
     };
 
-    // Update immediately on mount (skip location check on first run)
-    const initialUpdate = async () => {
-      await supabase
-        .from('check_ins')
-        .update({ last_active_at: new Date().toISOString() })
-        .eq('id', currentCheckIn.id);
-    };
-    initialUpdate();
+    // Update immediately on mount
+    updateActivity();
 
     // Then update every 5 minutes with location verification
     const interval = setInterval(updateActivityAndVerifyLocation, ACTIVITY_PING_INTERVAL_MS);
 
-    return () => clearInterval(interval);
+    // Re-ping activity when app returns from background
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        updateActivity();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [isCheckedIn, currentCheckIn?.id, verifyLocation]);
 
   const checkIn = async () => {
