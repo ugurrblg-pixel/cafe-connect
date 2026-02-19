@@ -476,6 +476,7 @@ export type Database = {
           boosted_until: string | null
           coffee_preference: string | null
           created_at: string
+          date_of_birth: string | null
           display_name: string | null
           hide_last_seen: boolean
           hobbies: string[] | null
@@ -504,6 +505,7 @@ export type Database = {
           boosted_until?: string | null
           coffee_preference?: string | null
           created_at?: string
+          date_of_birth?: string | null
           display_name?: string | null
           hide_last_seen?: boolean
           hobbies?: string[] | null
@@ -532,6 +534,7 @@ export type Database = {
           boosted_until?: string | null
           coffee_preference?: string | null
           created_at?: string
+          date_of_birth?: string | null
           display_name?: string | null
           hide_last_seen?: boolean
           hobbies?: string[] | null

@@ -13,7 +13,7 @@ import { usePremium } from '@/hooks/usePremium';
 import { useI18n } from '@/contexts/I18nContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Purpose } from '@/types';
-import { Edit2, Shield, Bell, HelpCircle, LogOut, MessageCircle, Users, Heart, Eye, EyeOff, BellOff, BellRing, Loader2, Crown, ChevronRight, Zap, Trash2, ShieldCheck, Mail, Phone, User as UserIcon } from 'lucide-react';
+import { Edit2, Shield, Bell, HelpCircle, LogOut, MessageCircle, Users, Heart, Eye, EyeOff, BellOff, BellRing, Loader2, Crown, ChevronRight, Zap, Trash2, ShieldCheck, Mail, Phone, User as UserIcon, CalendarDays } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -35,6 +35,7 @@ interface Profile {
   hobbies: string[];
   verification_status: string;
   phone: string | null;
+  date_of_birth: string | null;
 }
 
 export default function Profile() {
@@ -61,6 +62,7 @@ export default function Profile() {
           is_visible: data.is_visible ?? true, notifications_enabled: data.notifications_enabled ?? true,
           hobbies: (data.hobbies as string[]) || [], verification_status: data.verification_status || 'none',
           phone: (data as any).phone || null,
+          date_of_birth: (data as any).date_of_birth || null,
         });
       }
       setLoading(false);
@@ -262,6 +264,29 @@ export default function Profile() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-muted-foreground">Telefon</p>
+                  <p className="text-sm text-muted-foreground italic">Eklenmedi</p>
+                </div>
+              </div>
+            )}
+            {profile.date_of_birth ? (
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center">
+                  <CalendarDays className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-muted-foreground">Doğum Tarihi</p>
+                  <p className="text-sm font-medium text-foreground truncate">
+                    {new Date(profile.date_of_birth).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center">
+                  <CalendarDays className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-muted-foreground">Doğum Tarihi</p>
                   <p className="text-sm text-muted-foreground italic">Eklenmedi</p>
                 </div>
               </div>
