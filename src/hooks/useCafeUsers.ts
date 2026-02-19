@@ -94,14 +94,9 @@ export function useCafeUsers(cafeId: string, options: UseCafeUsersOptions = {}) 
       return;
     }
 
-    // Filter out inactive users (no DB activity in last 15 minutes)
-    // This is a fallback - presence heartbeat is the primary activity indicator
-    const now = Date.now();
-    const activeCheckIns = checkInsData.filter((checkIn) => {
-      if (!checkIn.last_active_at) return true;
-      const lastActive = new Date(checkIn.last_active_at).getTime();
-      return now - lastActive < INACTIVITY_TIMEOUT_MS;
-    });
+    // Don't filter by last_active_at aggressively — check-in expiry is the source of truth
+    // The RLS policy already filters expired check-ins (expiry_time > now())
+    const activeCheckIns = checkInsData;
 
     if (activeCheckIns.length === 0) {
       setUsers([]);
@@ -305,7 +300,18 @@ export function useCafeUsers(cafeId: string, options: UseCafeUsersOptions = {}) 
     // Send heartbeat every 30 seconds
     const interval = setInterval(sendHeartbeat, 30000);
 
-    return () => clearInterval(interval);
+    // Re-track presence when app returns from background
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        sendHeartbeat();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [user, options.joinPresence, options.isCheckedIn, options.displayName, options.photoUrl, options.purpose]);
 
   // Disconnect presence on checkout
