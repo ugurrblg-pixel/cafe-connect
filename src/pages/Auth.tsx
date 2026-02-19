@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Coffee, Mail, Lock, User, Eye, EyeOff, Phone, CalendarIcon } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Link } from 'react-router-dom';
 import { containsProfanity, getProfanityError } from '@/lib/profanityFilter';
 import { useI18n } from '@/contexts/I18nContext';
 
@@ -16,6 +18,7 @@ export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -258,7 +261,24 @@ export default function Auth() {
             </div>
           </div>
 
-          <Button type="submit" className="w-full h-12" disabled={loading}>
+          {!isLogin && (
+            <div className="flex items-start space-x-2">
+              <Checkbox
+                id="terms"
+                checked={acceptedTerms}
+                onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+                className="mt-0.5"
+              />
+              <label htmlFor="terms" className="text-xs text-muted-foreground leading-snug cursor-pointer">
+                <Link to="/settings/terms" className="text-primary underline">Kullanım Koşullarını</Link>
+                {' '}ve{' '}
+                <Link to="/settings/privacy" className="text-primary underline">Gizlilik Politikasını</Link>
+                {' '}kabul ediyorum.
+              </label>
+            </div>
+          )}
+
+          <Button type="submit" className="w-full h-12" disabled={loading || (!isLogin && !acceptedTerms)}>
             {loading ? t.auth.loading : isLogin ? t.auth.signIn : t.auth.signUp}
           </Button>
         </form>
