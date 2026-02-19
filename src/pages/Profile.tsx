@@ -13,7 +13,7 @@ import { usePremium } from '@/hooks/usePremium';
 import { useI18n } from '@/contexts/I18nContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Purpose } from '@/types';
-import { Edit2, Shield, Bell, HelpCircle, LogOut, MessageCircle, Users, Heart, Eye, EyeOff, BellOff, BellRing, Loader2, Crown, ChevronRight, Zap, Trash2, ShieldCheck } from 'lucide-react';
+import { Edit2, Shield, Bell, HelpCircle, LogOut, MessageCircle, Users, Heart, Eye, EyeOff, BellOff, BellRing, Loader2, Crown, ChevronRight, Zap, Trash2, ShieldCheck, Mail, Phone, User as UserIcon } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -225,6 +225,50 @@ export default function Profile() {
         <section className="card-elevated p-4 mb-4">
           <h2 className="font-semibold text-foreground mb-3">{t.profile.accountVerification}</h2>
           <VerificationRequest verificationStatus={profile.verification_status} onStatusChange={(status) => setProfile({ ...profile, verification_status: status })} />
+        </section>
+
+        {/* Account Info - Only visible to the user */}
+        <section className="card-elevated p-4 mb-4">
+          <h2 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+            <UserIcon className="w-4 h-4" />
+            Hesap Bilgileri
+          </h2>
+          <p className="text-xs text-muted-foreground mb-3">Bu bilgiler sadece sana görünür.</p>
+          <div className="space-y-3">
+            {user?.email && (
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center">
+                  <Mail className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-muted-foreground">E-posta</p>
+                  <p className="text-sm font-medium text-foreground truncate">{user.email}</p>
+                </div>
+              </div>
+            )}
+            {user?.phone && (
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center">
+                  <Phone className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-muted-foreground">Telefon</p>
+                  <p className="text-sm font-medium text-foreground truncate">{user.phone}</p>
+                </div>
+              </div>
+            )}
+            {!user?.phone && (
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center">
+                  <Phone className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-muted-foreground">Telefon</p>
+                  <p className="text-sm text-muted-foreground italic">Eklenmedi</p>
+                </div>
+              </div>
+            )}
+          </div>
         </section>
 
         {/* Bio */}
