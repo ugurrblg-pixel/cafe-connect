@@ -483,6 +483,7 @@ export type Database = {
           is_visible: boolean | null
           name: string
           notifications_enabled: boolean
+          phone: string | null
           photo_moderation_status: string
           photo_url: string | null
           photo_urls: string[] | null
@@ -508,6 +509,7 @@ export type Database = {
           is_visible?: boolean | null
           name?: string
           notifications_enabled?: boolean
+          phone?: string | null
           photo_moderation_status?: string
           photo_url?: string | null
           photo_urls?: string[] | null
@@ -533,6 +535,7 @@ export type Database = {
           is_visible?: boolean | null
           name?: string
           notifications_enabled?: boolean
+          phone?: string | null
           photo_moderation_status?: string
           photo_url?: string | null
           photo_urls?: string[] | null
