@@ -7,6 +7,7 @@ import type { BillingProduct, BoostPackage } from './types';
 export const PREMIUM_PRODUCT_IDS = {
   WEEKLY: 'cafemeet_premium_weekly',
   MONTHLY: 'cafemeet_premium_monthly',
+  THREE_MONTH: 'cafemeet_premium_3month',
   YEARLY: 'cafemeet_premium_yearly',
 } as const;
 
@@ -22,6 +23,7 @@ export const BOOST_PRODUCT_IDS = {
 export const ALL_SUBSCRIPTION_IDS = [
   PREMIUM_PRODUCT_IDS.WEEKLY,
   PREMIUM_PRODUCT_IDS.MONTHLY,
+  PREMIUM_PRODUCT_IDS.THREE_MONTH,
   PREMIUM_PRODUCT_IDS.YEARLY,
 ];
 
@@ -59,6 +61,18 @@ export const PREMIUM_PRODUCTS: BillingProduct[] = [
     perMonthPrice: '₺129,99/ay',
   },
   {
+    productId: PREMIUM_PRODUCT_IDS.THREE_MONTH,
+    title: '3 Aylık',
+    description: 'En popüler, en avantajlı plan',
+    price: '₺299,99',
+    priceAmountMicros: 299990000,
+    priceCurrencyCode: 'TRY',
+    type: 'subscription',
+    subscriptionPeriod: 'P3M',
+    badge: 'En Popüler',
+    perMonthPrice: '₺100,00/ay',
+  },
+  {
     productId: PREMIUM_PRODUCT_IDS.YEARLY,
     title: 'Yıllık',
     description: 'Maksimum tasarruf',
@@ -67,6 +81,7 @@ export const PREMIUM_PRODUCTS: BillingProduct[] = [
     priceCurrencyCode: 'TRY',
     type: 'subscription',
     subscriptionPeriod: 'P1Y',
+    hidden: true,
     perMonthPrice: '₺66,67/ay',
   },
 ];

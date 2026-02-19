@@ -17,6 +17,7 @@ const BOOST_COUNTS: Record<string, number> = {
   'cafemeet_boost_1': 1,
   'cafemeet_boost_3': 3,
   'cafemeet_boost_5': 5,
+  'cafemeet_boost_10': 10,
 };
 
 interface AppleVerifyResponse {
