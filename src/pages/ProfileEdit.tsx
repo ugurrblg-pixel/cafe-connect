@@ -11,7 +11,10 @@ import { Label } from '@/components/ui/label';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { HobbySelector } from '@/components/HobbySelector';
 import { ProfilePhotoManager } from '@/components/ProfilePhotoManager';
-import { Loader2, MessageCircle, Users, Heart, Camera, Pencil, Compass, Sparkles } from 'lucide-react';
+import { FavoriteVenuesSelector } from '@/components/profile/FavoriteVenuesSelector';
+import { CoffeePreferenceSelector } from '@/components/profile/CoffeePreferenceSelector';
+import { SocialEnergySelector } from '@/components/profile/SocialEnergySelector';
+import { Loader2, MessageCircle, Users, Heart, Camera, Pencil, Compass, Sparkles, MapPin, Coffee, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Purpose } from '@/types';
@@ -26,6 +29,8 @@ interface ProfileData {
   is_visible: boolean;
   purpose: Purpose;
   hobbies: string[];
+  coffee_preference: string | null;
+  social_energy: string | null;
 }
 
 export default function ProfileEdit() {
@@ -33,6 +38,7 @@ export default function ProfileEdit() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [favoriteVenueIds, setFavoriteVenueIds] = useState<string[]>([]);
   const [profile, setProfile] = useState<ProfileData>({
     id: '',
     display_name: '',
@@ -42,21 +48,32 @@ export default function ProfileEdit() {
     is_visible: true,
     purpose: 'friendship',
     hobbies: [],
+    coffee_preference: null,
+    social_energy: null,
   });
 
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user) return;
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, display_name, bio, photo_url, photo_urls, is_visible, purpose, hobbies')
-        .eq('user_id', user.id)
-        .maybeSingle();
 
-      if (error) {
-        console.error('Error fetching profile:', error);
+      // Fetch profile and favorite venues in parallel
+      const [profileRes, favRes] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('id, display_name, bio, photo_url, photo_urls, is_visible, purpose, hobbies, coffee_preference, social_energy')
+          .eq('user_id', user.id)
+          .maybeSingle(),
+        supabase
+          .from('user_favorite_venues')
+          .select('venue_id')
+          .eq('user_id', user.id),
+      ]);
+
+      if (profileRes.error) {
+        console.error('Error fetching profile:', profileRes.error);
         toast.error('Profil yüklenemedi');
-      } else if (data) {
+      } else if (profileRes.data) {
+        const data = profileRes.data;
         setProfile({
           id: data.id,
           display_name: data.display_name || '',
@@ -66,8 +83,15 @@ export default function ProfileEdit() {
           is_visible: data.is_visible ?? true,
           purpose: (data.purpose as Purpose) || 'friendship',
           hobbies: (data.hobbies as string[]) || [],
+          coffee_preference: (data as any).coffee_preference || null,
+          social_energy: (data as any).social_energy || null,
         });
       }
+
+      if (!favRes.error && favRes.data) {
+        setFavoriteVenueIds(favRes.data.map(f => f.venue_id));
+      }
+
       setLoading(false);
     };
     fetchProfile();
@@ -86,41 +110,62 @@ export default function ProfileEdit() {
     if (trimmedName.length > 50) { toast.error('İsim en fazla 50 karakter olabilir'); return; }
     if (containsProfanity(trimmedName)) { toast.error(getProfanityError()); return; }
 
-    // Block repetitive characters (e.g. "aaaa", "ababab") and meaningless input
+    // Block repetitive characters, meaningless input, only numbers
     const lowerName = trimmedName.toLowerCase();
-    const uniqueChars = new Set(lowerName.replace(/\s/g, '')).size;
-    const hasOnlyRepeating = /^(.)\1+$/.test(lowerName.replace(/\s/g, ''));
-    const hasRepeatingPattern = /^(.{1,3})\1{2,}$/.test(lowerName.replace(/\s/g, ''));
-    const hasOnlySpecialChars = /^[^a-zA-ZçğıöşüÇĞİÖŞÜ0-9]+$/.test(lowerName.replace(/\s/g, ''));
+    const strippedName = lowerName.replace(/\s/g, '');
+    const uniqueChars = new Set(strippedName).size;
+    const hasOnlyRepeating = /^(.)\1+$/.test(strippedName);
+    const hasRepeatingPattern = /^(.{1,3})\1{2,}$/.test(strippedName);
+    const hasOnlySpecialChars = /^[^a-zA-ZçğıöşüÇĞİÖŞÜ0-9]+$/.test(strippedName);
     const hasExcessiveRepeats = /(.)\1{3,}/.test(lowerName);
+    const hasOnlyNumbers = /^[0-9]+$/.test(strippedName);
+    const letterCount = (strippedName.match(/[a-zA-ZçğıöşüÇĞİÖŞÜ]/g) || []).length;
 
-    if (hasOnlyRepeating || hasRepeatingPattern || hasOnlySpecialChars || uniqueChars < 2 || hasExcessiveRepeats) {
+    if (hasOnlyRepeating || hasRepeatingPattern || hasOnlySpecialChars || uniqueChars < 2 || hasExcessiveRepeats || hasOnlyNumbers || letterCount < 2) {
       toast.error('Lütfen geçerli bir isim girin');
       return;
     }
 
     const trimmedBio = profile.bio.trim();
     if (trimmedBio.length > 120) { toast.error('Bio en fazla 120 karakter olabilir'); return; }
+    if (trimmedBio && trimmedBio.length < 20) { toast.error('Bio en az 20 karakter olmalı'); return; }
     if (containsProfanity(trimmedBio)) { toast.error(getProfanityError()); return; }
+
+    // Validate bio: block meaningless inputs
+    if (trimmedBio) {
+      const hasOnlyEmojis = /^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+$/u.test(trimmedBio);
+      const hasOnlyNums = /^[0-9\s]+$/.test(trimmedBio);
+      const hasBioRepeats = /(.)\1{3,}/.test(trimmedBio);
+      if (hasOnlyEmojis || hasOnlyNums || hasBioRepeats) {
+        toast.error('Lütfen anlamlı bir bio yazın');
+        return;
+      }
+    }
 
     setSaving(true);
     const mainPhotoUrl = profile.photo_urls.length > 0 ? profile.photo_urls[0] : profile.photo_url;
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        display_name: trimmedName,
-        bio: trimmedBio,
-        photo_url: mainPhotoUrl,
-        photo_urls: profile.photo_urls,
-        is_visible: profile.is_visible,
-        purpose: profile.purpose,
-        hobbies: profile.hobbies,
-      })
-      .eq('id', profile.id);
+    // Save profile + favorite venues in parallel
+    const [profileRes] = await Promise.all([
+      supabase
+        .from('profiles')
+        .update({
+          display_name: trimmedName,
+          bio: trimmedBio,
+          photo_url: mainPhotoUrl,
+          photo_urls: profile.photo_urls,
+          is_visible: profile.is_visible,
+          purpose: profile.purpose,
+          hobbies: profile.hobbies,
+          coffee_preference: profile.coffee_preference,
+          social_energy: profile.social_energy,
+        } as any)
+        .eq('id', profile.id),
+      saveFavoriteVenues(),
+    ]);
 
-    if (error) {
-      console.error('Error saving profile:', error);
+    if (profileRes.error) {
+      console.error('Error saving profile:', profileRes.error);
       toast.error('Profil kaydedilemedi');
     } else {
       toast.success('Profil kaydedildi!');
@@ -129,15 +174,30 @@ export default function ProfileEdit() {
     setSaving(false);
   };
 
-  // Completion calculation
+  const saveFavoriteVenues = async () => {
+    if (!user) return;
+
+    // Delete existing, insert new
+    await supabase.from('user_favorite_venues').delete().eq('user_id', user.id);
+
+    if (favoriteVenueIds.length > 0) {
+      const rows = favoriteVenueIds.map(venue_id => ({
+        user_id: user.id,
+        venue_id,
+      }));
+      await supabase.from('user_favorite_venues').insert(rows);
+    }
+  };
+
+  // CafeMeet Score calculation
   const completionSteps = [
-    { label: 'Fotoğraf (min 2)', done: profile.photo_urls.filter(u => !!u).length >= 2 },
-    { label: 'İsim', done: !!profile.display_name.trim() },
-    { label: 'Bio', done: !!profile.bio.trim() },
-    { label: 'Hobiler', done: profile.hobbies.length > 0 },
+    { label: 'Fotoğraf (min 2)', done: profile.photo_urls.filter(u => !!u).length >= 2, weight: 25 },
+    { label: 'Bio', done: !!profile.bio.trim() && profile.bio.trim().length >= 20, weight: 20 },
+    { label: 'Kahve tercihi', done: !!profile.coffee_preference, weight: 15 },
+    { label: 'Sosyal enerji', done: !!profile.social_energy, weight: 15 },
+    { label: 'Favori mekan', done: favoriteVenueIds.length > 0, weight: 25 },
   ];
-  const completionCount = completionSteps.filter(s => s.done).length;
-  const completionPercent = Math.round((completionCount / completionSteps.length) * 100);
+  const completionPercent = completionSteps.filter(s => s.done).reduce((sum, s) => sum + s.weight, 0);
 
   if (loading) {
     return (
@@ -163,30 +223,34 @@ export default function ProfileEdit() {
 
         <main className="pt-16 px-4 pb-24 space-y-4">
 
-          {/* Completion Banner */}
-          {completionPercent < 100 && (
-            <section className="card-elevated p-4 mt-2">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-foreground">
-                    Profilin %{completionPercent} tamamlandı
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Tamamlanmış profiller daha fazla etkileşim alır
-                  </p>
-                </div>
+          {/* CafeMeet Score Banner */}
+          <section className="card-elevated p-4 mt-2">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-primary" />
               </div>
-              {/* Progress bar */}
-              <div className="w-full h-2 rounded-full bg-secondary overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-primary transition-all duration-500"
-                  style={{ width: `${completionPercent}%` }}
-                />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-foreground">
+                  CafeMeet Skoru: %{completionPercent}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {completionPercent === 100
+                    ? 'Profilin tam! Daha fazla eşleşme alırsın 🎉'
+                    : 'Tamamlanmış profiller daha fazla etkileşim alır'}
+                </p>
               </div>
-              {/* Missing steps */}
+            </div>
+            {/* Progress bar */}
+            <div className="w-full h-2.5 rounded-full bg-secondary overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  completionPercent === 100 ? 'bg-green-500' : 'bg-primary'
+                }`}
+                style={{ width: `${completionPercent}%` }}
+              />
+            </div>
+            {/* Missing steps */}
+            {completionPercent < 100 && (
               <div className="flex flex-wrap gap-2 mt-3">
                 {completionSteps.filter(s => !s.done).map(s => (
                   <span key={s.label} className="text-xs px-2.5 py-1 rounded-full bg-warning/10 text-warning font-medium">
@@ -194,8 +258,8 @@ export default function ProfileEdit() {
                   </span>
                 ))}
               </div>
-            </section>
-          )}
+            )}
+          </section>
 
           {/* Photos Section */}
           <section className="card-elevated p-4">
@@ -231,12 +295,15 @@ export default function ProfileEdit() {
                   id="bio"
                   value={profile.bio}
                   onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
-                  placeholder="Kendinizden biraz bahsedin... ☕"
+                  placeholder="Birlikte kahve içsek muhtemelen… ☕"
                   maxLength={120}
                   rows={3}
                   className="resize-none"
                 />
-                <p className="text-xs text-muted-foreground text-right">{profile.bio.length}/120</p>
+                <div className="flex justify-between">
+                  <p className="text-xs text-muted-foreground">Min 20 karakter</p>
+                  <p className="text-xs text-muted-foreground">{profile.bio.length}/120</p>
+                </div>
               </div>
             </div>
           </section>
@@ -257,7 +324,7 @@ export default function ProfileEdit() {
                   { value: 'friendship', icon: Users, label: 'Arkadaşlık', emoji: '🤝' },
                   { value: 'dating', icon: Heart, label: 'Flört', emoji: '💕' },
                   { value: 'chat', icon: MessageCircle, label: 'Sohbet', emoji: '💬' },
-                ].map(({ value, icon: Icon, label, emoji }) => (
+                ].map(({ value, label, emoji }) => (
                   <ToggleGroupItem
                     key={value}
                     value={value}
@@ -279,6 +346,42 @@ export default function ProfileEdit() {
                 selectedHobbies={profile.hobbies}
                 onHobbiesChange={(hobbies) => setProfile(prev => ({ ...prev, hobbies }))}
               />
+            </div>
+          </section>
+
+          {/* Coffee Preference Section */}
+          <section className="card-elevated p-4">
+            <SectionHeader icon={Coffee} title="Kahve Tercihim" subtitle="Favori kahven hangisi?" />
+            <div className="mt-4">
+              <CoffeePreferenceSelector
+                value={profile.coffee_preference}
+                onChange={(value) => setProfile(prev => ({ ...prev, coffee_preference: value }))}
+              />
+            </div>
+          </section>
+
+          {/* Social Energy Section */}
+          <section className="card-elevated p-4">
+            <SectionHeader icon={Zap} title="Sosyal Enerjim" subtitle="Enerjin benzer kişilerle eşleşmeni sağlar" />
+            <div className="mt-4">
+              <SocialEnergySelector
+                value={profile.social_energy}
+                onChange={(value) => setProfile(prev => ({ ...prev, social_energy: value }))}
+              />
+            </div>
+          </section>
+
+          {/* Favorite Venues Section */}
+          <section className="card-elevated p-4">
+            <SectionHeader icon={MapPin} title="Favori Mekanlarım" subtitle="1–3 mekan seç, ortak mekanlar eşleşmeyi artırır" />
+            <div className="mt-4">
+              {user && (
+                <FavoriteVenuesSelector
+                  userId={user.id}
+                  selectedVenueIds={favoriteVenueIds}
+                  onVenuesChange={setFavoriteVenueIds}
+                />
+              )}
             </div>
           </section>
 
