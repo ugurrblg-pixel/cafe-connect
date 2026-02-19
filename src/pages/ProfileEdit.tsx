@@ -76,10 +76,28 @@ export default function ProfileEdit() {
   const handleSave = async () => {
     if (!user || !profile.id) return;
 
+    // Minimum 2 photos required
+    const photoCount = profile.photo_urls.filter(u => !!u).length;
+    if (photoCount < 2) { toast.error('En az 2 fotoğraf eklemelisin'); return; }
+
     const trimmedName = profile.display_name.trim();
     if (!trimmedName) { toast.error('İsim zorunludur'); return; }
+    if (trimmedName.length < 2) { toast.error('İsim en az 2 karakter olmalı'); return; }
     if (trimmedName.length > 50) { toast.error('İsim en fazla 50 karakter olabilir'); return; }
     if (containsProfanity(trimmedName)) { toast.error(getProfanityError()); return; }
+
+    // Block repetitive characters (e.g. "aaaa", "ababab") and meaningless input
+    const lowerName = trimmedName.toLowerCase();
+    const uniqueChars = new Set(lowerName.replace(/\s/g, '')).size;
+    const hasOnlyRepeating = /^(.)\1+$/.test(lowerName.replace(/\s/g, ''));
+    const hasRepeatingPattern = /^(.{1,3})\1{2,}$/.test(lowerName.replace(/\s/g, ''));
+    const hasOnlySpecialChars = /^[^a-zA-ZçğıöşüÇĞİÖŞÜ0-9]+$/.test(lowerName.replace(/\s/g, ''));
+    const hasExcessiveRepeats = /(.)\1{3,}/.test(lowerName);
+
+    if (hasOnlyRepeating || hasRepeatingPattern || hasOnlySpecialChars || uniqueChars < 2 || hasExcessiveRepeats) {
+      toast.error('Lütfen geçerli bir isim girin');
+      return;
+    }
 
     const trimmedBio = profile.bio.trim();
     if (trimmedBio.length > 120) { toast.error('Bio en fazla 120 karakter olabilir'); return; }
@@ -113,7 +131,7 @@ export default function ProfileEdit() {
 
   // Completion calculation
   const completionSteps = [
-    { label: 'Fotoğraf', done: profile.photo_urls.length > 0 || !!profile.photo_url },
+    { label: 'Fotoğraf (min 2)', done: profile.photo_urls.filter(u => !!u).length >= 2 },
     { label: 'İsim', done: !!profile.display_name.trim() },
     { label: 'Bio', done: !!profile.bio.trim() },
     { label: 'Hobiler', done: profile.hobbies.length > 0 },
@@ -181,7 +199,7 @@ export default function ProfileEdit() {
 
           {/* Photos Section */}
           <section className="card-elevated p-4">
-            <SectionHeader icon={Camera} title="Fotoğraflar" subtitle="İlk fotoğrafın profil resmin olur" />
+            <SectionHeader icon={Camera} title="Fotoğraflar" subtitle="En az 2 fotoğraf eklemelisin" />
             <div className="mt-3">
               <ProfilePhotoManager
                 photos={profile.photo_urls.length > 0 ? profile.photo_urls : (profile.photo_url ? [profile.photo_url] : [])}
