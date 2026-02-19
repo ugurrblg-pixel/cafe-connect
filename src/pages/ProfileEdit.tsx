@@ -128,7 +128,7 @@ export default function ProfileEdit() {
 
     const trimmedBio = profile.bio.trim();
     if (trimmedBio.length > 120) { toast.error('Bio en fazla 120 karakter olabilir'); return; }
-    if (trimmedBio && trimmedBio.length < 20) { toast.error('Bio en az 20 karakter olmalı'); return; }
+    if (trimmedBio && trimmedBio.length < 10) { toast.error('Bio en az 10 karakter olmalı'); return; }
     if (containsProfanity(trimmedBio)) { toast.error(getProfanityError()); return; }
 
     // Validate bio: block meaningless inputs
@@ -192,7 +192,7 @@ export default function ProfileEdit() {
   // CafeMeet Score calculation
   const completionSteps = [
     { label: 'Fotoğraf (min 2)', done: profile.photo_urls.filter(u => !!u).length >= 2, weight: 25 },
-    { label: 'Bio', done: !!profile.bio.trim() && profile.bio.trim().length >= 20, weight: 20 },
+    { label: 'Bio', done: !!profile.bio.trim() && profile.bio.trim().length >= 10, weight: 20 },
     { label: 'Kahve tercihi', done: !!profile.coffee_preference, weight: 15 },
     { label: 'Sosyal enerji', done: !!profile.social_energy, weight: 15 },
     { label: 'Favori mekan', done: favoriteVenueIds.length > 0, weight: 25 },
@@ -301,7 +301,7 @@ export default function ProfileEdit() {
                   className="resize-none"
                 />
                 <div className="flex justify-between">
-                  <p className="text-xs text-muted-foreground">Min 20 karakter</p>
+                  <p className="text-xs text-muted-foreground">Min 10 karakter</p>
                   <p className="text-xs text-muted-foreground">{profile.bio.length}/120</p>
                 </div>
               </div>
