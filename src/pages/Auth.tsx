@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Coffee, Mail, Lock, User, Eye, EyeOff, Phone } from 'lucide-react';
+import { Coffee, Mail, Lock, User, Eye, EyeOff, Phone, CalendarIcon } from 'lucide-react';
 import { containsProfanity, getProfanityError } from '@/lib/profanityFilter';
 import { useI18n } from '@/contexts/I18nContext';
 
@@ -21,6 +21,7 @@ export default function Auth() {
     password: '',
     name: '',
     phone: '',
+    dateOfBirth: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,11 +35,27 @@ export default function Auth() {
         return;
       }
 
-      // Validate phone for signup
+      // Validate phone and DOB for signup
       if (!isLogin) {
         const cleanPhone = formData.phone.replace(/\s/g, '');
         if (!cleanPhone || cleanPhone.length < 10) {
           toast.error('Geçerli bir telefon numarası girin');
+          setLoading(false);
+          return;
+        }
+        if (!formData.dateOfBirth) {
+          toast.error('Doğum tarihinizi girin');
+          setLoading(false);
+          return;
+        }
+        // Validate age (must be at least 18)
+        const dob = new Date(formData.dateOfBirth);
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        const m = today.getMonth() - dob.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+        if (age < 18) {
+          toast.error('18 yaşından büyük olmalısınız');
           setLoading(false);
           return;
         }
@@ -65,12 +82,15 @@ export default function Auth() {
         });
         if (error) throw error;
 
-        // Save phone to profile
+        // Save phone and DOB to profile
         if (signUpData.user) {
           const cleanPhone = formData.phone.replace(/\s/g, '');
           await supabase
             .from('profiles')
-            .update({ phone: cleanPhone })
+            .update({ 
+              phone: cleanPhone,
+              date_of_birth: formData.dateOfBirth || null,
+            })
             .eq('user_id', signUpData.user.id);
         }
 
@@ -177,6 +197,21 @@ export default function Auth() {
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="pl-10 h-12"
                     required={!isLogin}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dob">Doğum Tarihi</Label>
+                <div className="relative">
+                  <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    id="dob"
+                    type="date"
+                    value={formData.dateOfBirth}
+                    onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                    className="pl-10 h-12"
+                    required={!isLogin}
+                    max={new Date(new Date().getFullYear() - 18, new Date().getMonth(), new Date().getDate()).toISOString().split('T')[0]}
                   />
                 </div>
               </div>
