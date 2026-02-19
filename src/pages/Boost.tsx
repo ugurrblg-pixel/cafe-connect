@@ -6,7 +6,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { usePremiumContext } from '@/contexts/PremiumContext';
-import { BOOST_PACKAGES, PREMIUM_BOOST_BONUS_MINUTES, BoostPackage, getStoreName, initializeBilling, isBillingReady, purchaseBoost } from '@/lib/billing/index';
+import { BOOST_PACKAGES, PREMIUM_BOOST_BONUS_MINUTES, BoostPackage, getStoreName, initializeBilling, isBillingReady, purchaseBoost, detectPlatform } from '@/lib/billing/index';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -69,13 +69,15 @@ function BoostPackageCard({
 
 export default function Boost() {
   const navigate = useNavigate();
-  const { isPremium, refreshSubscription } = usePremiumContext();
+  const { isPremium, refreshSubscription, boostStatus } = usePremiumContext();
   const { user } = useAuth();
-  const [isBoostActive] = useState(false);
-  const [remainingMinutes] = useState(0);
   const [selectedPackage, setSelectedPackage] = useState<string>(BOOST_PACKAGES[0].productId);
   const [billingReady, setBillingReady] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
+  const isWeb = detectPlatform() === 'web';
+
+  // Boost active state from context
+  const isBoostActive = boostStatus.remaining_boosts > 0;
 
   useEffect(() => {
     async function init() {
@@ -136,11 +138,11 @@ export default function Boost() {
                 {isBoostActive ? (
                   <>
                     <Zap className="w-6 h-6 text-primary mb-1 fill-primary" />
-                    <span className="text-2xl font-bold text-primary">{remainingMinutes}:00</span>
-                    <span className="text-xs text-muted-foreground">kalan</span>
+                    <span className="text-2xl font-bold text-primary">{boostStatus.remaining_boosts}</span>
+                    <span className="text-xs text-muted-foreground">boost kaldı</span>
                   </>
                 ) : (
-                  <span className="text-3xl font-bold text-muted-foreground/50">00:00</span>
+                  <span className="text-3xl font-bold text-muted-foreground/50">0</span>
                 )}
               </div>
             </div>
@@ -225,27 +227,44 @@ export default function Boost() {
 
         {/* CTA */}
         <div className="space-y-4 pt-2">
-          <Button
-            onClick={handlePurchaseBoost}
-            disabled={!billingReady || purchasing}
-            className={cn(
-              "w-full h-14 rounded-2xl text-lg font-semibold",
-              billingReady
-                ? "bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white"
-                : "bg-muted text-muted-foreground cursor-not-allowed opacity-70"
-            )}
-          >
-            {purchasing ? (
-              <><Loader2 className="w-5 h-5 mr-2 animate-spin" />İşleniyor...</>
-            ) : billingReady ? (
-              <><Zap className="w-5 h-5 mr-2" />Boost Satın Al</>
-            ) : (
-              <><Lock className="w-5 h-5 mr-2" />Boost Yakında</>
-            )}
-          </Button>
-          <p className="text-sm text-muted-foreground text-center">
-            {billingReady ? `Ödemeler ${getStoreName()} üzerinden işlenir.` : 'Boost özelliği çok yakında aktif edilecektir.'}
-          </p>
+          {isWeb ? (
+            <>
+              <Button
+                onClick={() => toast.info('Boost satın almak için CafeMeet mobil uygulamasını kullanın.')}
+                className="w-full h-14 rounded-2xl text-lg font-semibold bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white"
+              >
+                <Zap className="w-5 h-5 mr-2" />
+                Uygulamadan Satın Al
+              </Button>
+              <p className="text-sm text-muted-foreground text-center">
+                Boost satın almak için CafeMeet mobil uygulamasını indirin.
+              </p>
+            </>
+          ) : (
+            <>
+              <Button
+                onClick={handlePurchaseBoost}
+                disabled={!billingReady || purchasing}
+                className={cn(
+                  "w-full h-14 rounded-2xl text-lg font-semibold",
+                  billingReady
+                    ? "bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white"
+                    : "bg-muted text-muted-foreground cursor-not-allowed opacity-70"
+                )}
+              >
+                {purchasing ? (
+                  <><Loader2 className="w-5 h-5 mr-2 animate-spin" />İşleniyor...</>
+                ) : billingReady ? (
+                  <><Zap className="w-5 h-5 mr-2" />Boost Satın Al</>
+                ) : (
+                  <><Lock className="w-5 h-5 mr-2" />Yükleniyor...</>
+                )}
+              </Button>
+              <p className="text-sm text-muted-foreground text-center">
+                {billingReady ? `Ödemeler ${getStoreName()} üzerinden işlenir.` : 'Ödeme sistemi hazırlanıyor...'}
+              </p>
+            </>
+          )}
         </div>
 
         {/* Info */}
