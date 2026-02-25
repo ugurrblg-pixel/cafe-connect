@@ -193,26 +193,27 @@ Deno.serve(async (req) => {
       if (GOOGLE_PLACES_KEY) {
         try {
           const freshOpenStatus = await fetchFreshOpenStatus(lat, lng, GOOGLE_PLACES_KEY);
-          if (Object.keys(freshOpenStatus).length > 0) {
-            // Update validVenues with fresh is_open data
-            for (const v of validVenues) {
-              if (v.google_place_id && freshOpenStatus.hasOwnProperty(v.google_place_id)) {
-                v.is_open = freshOpenStatus[v.google_place_id];
-              }
+          // Update validVenues with fresh is_open data
+          // Venues NOT returned by Google get is_open=null (unknown)
+          for (const v of validVenues) {
+            if (v.google_place_id && freshOpenStatus.hasOwnProperty(v.google_place_id)) {
+              v.is_open = freshOpenStatus[v.google_place_id];
+            } else {
+              v.is_open = null; // Not in Google response = unknown status
             }
-            // Batch update is_open in DB
-            const updates = validVenues
-              .filter((v) => v.google_place_id && freshOpenStatus.hasOwnProperty(v.google_place_id))
-              .map((v) => ({
-                id: v.id,
-                is_open: freshOpenStatus[v.google_place_id!],
-              }));
-            if (updates.length > 0) {
-              for (const u of updates) {
-                await supabase.from('cafes').update({ is_open: u.is_open }).eq('id', u.id);
-              }
-              console.log(`Updated is_open for ${updates.length} cached venues`);
+          }
+          // Batch update is_open in DB
+          const updates = validVenues
+            .filter((v) => v.google_place_id)
+            .map((v) => ({
+              id: v.id,
+              is_open: v.is_open,
+            }));
+          if (updates.length > 0) {
+            for (const u of updates) {
+              await supabase.from('cafes').update({ is_open: u.is_open }).eq('id', u.id);
             }
+            console.log(`Updated is_open for ${updates.length} cached venues`);
           }
         } catch (err) {
           console.error('Error refreshing open status:', err);
