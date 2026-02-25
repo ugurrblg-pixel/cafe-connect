@@ -105,8 +105,8 @@ async function fetchFreshOpenStatus(
       const data: GoogleResponse = await res.json();
       if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') return;
       for (const place of data.results || []) {
-        if (!statusMap.hasOwnProperty(place.place_id)) {
-          statusMap[place.place_id] = place.opening_hours?.open_now ?? null;
+        if (!statusMap.hasOwnProperty(place.place_id) && place.opening_hours?.open_now !== undefined) {
+          statusMap[place.place_id] = place.opening_hours.open_now;
         }
       }
     } catch (_) {}
@@ -193,18 +193,15 @@ Deno.serve(async (req) => {
       if (GOOGLE_PLACES_KEY) {
         try {
           const freshOpenStatus = await fetchFreshOpenStatus(lat, lng, GOOGLE_PLACES_KEY);
-          // Update validVenues with fresh is_open data
-          // Venues NOT returned by Google get is_open=null (unknown)
           for (const v of validVenues) {
             if (v.google_place_id && freshOpenStatus.hasOwnProperty(v.google_place_id)) {
               v.is_open = freshOpenStatus[v.google_place_id];
-            } else {
-              v.is_open = null; // Not in Google response = unknown status
             }
+            // If not in Google response, keep existing is_open value (don't reset to null)
           }
-          // Batch update is_open in DB
+          // Batch update is_open in DB only for venues with fresh data
           const updates = validVenues
-            .filter((v) => v.google_place_id)
+            .filter((v) => v.google_place_id && freshOpenStatus.hasOwnProperty(v.google_place_id))
             .map((v) => ({
               id: v.id,
               is_open: v.is_open,
@@ -266,19 +263,25 @@ Deno.serve(async (req) => {
 
     // --- Step 3: Upsert ONLY filtered venues to DB ---
     if (allPlaces.length > 0) {
-      const rows = allPlaces.map((p) => ({
-        google_place_id: p.place_id,
-        name: p.name,
-        address: '',
-        latitude: p.geometry.location.lat,
-        longitude: p.geometry.location.lng,
-        category: mapCategory(p.types),
-        is_open: p.opening_hours?.open_now ?? null,
-        rating: 4.5,
-        image_url: '',
-        opening_hours: null,
-        last_synced_at: new Date().toISOString(),
-      }));
+      const rows = allPlaces.map((p) => {
+        const row: Record<string, any> = {
+          google_place_id: p.place_id,
+          name: p.name,
+          address: '',
+          latitude: p.geometry.location.lat,
+          longitude: p.geometry.location.lng,
+          category: mapCategory(p.types),
+          rating: 4.5,
+          image_url: '',
+          opening_hours: null,
+          last_synced_at: new Date().toISOString(),
+        };
+        // Only set is_open if Google actually provided the value
+        if (p.opening_hours?.open_now !== undefined) {
+          row.is_open = p.opening_hours.open_now;
+        }
+        return row;
+      });
 
       const { error: upsertErr } = await supabase
         .from('cafes')
