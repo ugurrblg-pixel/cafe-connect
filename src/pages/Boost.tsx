@@ -230,14 +230,14 @@ export default function Boost() {
           {isWeb ? (
             <>
               <Button
-                onClick={() => toast.info('Boost satın almak için CafeMeet mobil uygulamasını kullanın.')}
+                onClick={() => toast.info('Boost satın almak için Riyo mobil uygulamasını kullanın.')}
                 className="w-full h-14 rounded-2xl text-lg font-semibold bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white"
               >
                 <Zap className="w-5 h-5 mr-2" />
                 Uygulamadan Satın Al
               </Button>
               <p className="text-sm text-muted-foreground text-center">
-                Boost satın almak için CafeMeet mobil uygulamasını indirin.
+                Boost satın almak için Riyo mobil uygulamasını indirin.
               </p>
             </>
           ) : (

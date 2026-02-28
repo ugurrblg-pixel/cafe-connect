@@ -5,7 +5,7 @@ self.addEventListener('push', (event) => {
   console.log('Push event received:', event);
   
   let data = {
-    title: 'Cafe Huddle',
+    title: 'Riyo',
     body: 'Yeni bir bildiriminiz var',
     icon: '/favicon.ico',
     badge: '/favicon.ico',

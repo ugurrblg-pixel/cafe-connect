@@ -182,7 +182,7 @@ export default function Profile() {
                 <Crown className={`w-5 h-5 ${isPremium ? 'text-white' : 'text-muted-foreground'}`} />
               </div>
               <div>
-                <p className="font-medium text-foreground">{isPremium ? t.profile.premiumActive : 'CafeMeet Premium'}</p>
+                <p className="font-medium text-foreground">{isPremium ? t.profile.premiumActive : 'Riyo Premium'}</p>
                 <p className="text-sm text-muted-foreground">{isPremium ? t.profile.allFeaturesUnlocked : t.profile.unlimitedChatAndMore}</p>
               </div>
             </div>

@@ -1,5 +1,5 @@
 /**
- * Product definitions for CafeMeet IAP
+ * Product definitions for Riyo IAP
  */
 import type { BillingProduct, BoostPackage } from './types';
 

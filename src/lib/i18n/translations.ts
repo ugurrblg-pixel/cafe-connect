@@ -211,7 +211,7 @@ export const translations = {
       locationUnavailable: 'Unable to determine your location. Please try again.',
       locationTimeout: 'Location request timed out. Please try again.',
       locationGenericError: 'Something went wrong. You can enable location later.',
-      welcomeToCafeMeet: 'Welcome to CaféMeet',
+      welcomeToCafeMeet: 'Welcome to Riyo',
       createAccountToStart: 'Create an account to start meeting people',
       continueWithPhone: 'Continue with Phone',
       continueWithApple: 'Continue with Apple',
@@ -224,7 +224,7 @@ export const translations = {
     // Settings
     settings: {
       helpSupport: 'Help & Support',
-      howItWorks: 'How CafeMeet Works',
+      howItWorks: 'How Riyo Works',
       howItWorksDesc: 'Discover how the app works',
       locationWhy: 'Why Is Location Required?',
       locationWhyDesc: 'Info about location usage',
@@ -236,7 +236,7 @@ export const translations = {
       privacyPolicyDesc: 'How we protect your data',
       termsOfUse: 'Terms of Use',
       termsOfUseDesc: 'Our terms of service',
-      version: 'CafeMeet v1.0 — Your safety matters to us ☕',
+      version: 'Riyo v1.0 — Your safety matters to us ☕',
     },
 
     // Safety & Privacy
@@ -260,24 +260,24 @@ export const translations = {
 
     // How it works
     howItWorks: {
-      title: 'How CafeMeet Works?',
-      intro: 'CafeMeet helps you make natural connections at real cafes. Check in, discover people, match and chat.',
+      title: 'How Riyo Works?',
+      intro: 'Riyo helps you make natural connections at real cafes. Check in, discover people, match and chat.',
       step1Title: 'Discover Nearby Cafes',
-      step1Desc: 'CafeMeet shows cafes near your location. Check in to a cafe to start meeting people there.',
+      step1Desc: 'Riyo shows cafes near your location. Check in to a cafe to start meeting people there.',
       step2Title: 'Discover People',
       step2Desc: 'See profiles of people at the same cafe. Learn about their interests, hobbies, and why they\'re here.',
       step3Title: 'Match & Connect',
       step3Desc: 'Wave at people you like. When the interest is mutual, match and start chatting.',
       step4Title: 'Safe Chat',
-      step4Desc: 'Chat securely with your matches. CafeMeet aims to create natural, safe, and respectful connections in real life.',
+      step4Desc: 'Chat securely with your matches. Riyo aims to create natural, safe, and respectful connections in real life.',
     },
 
     // Location usage
     locationInfo: {
       title: 'Why Is Location Required?',
-      intro: 'How CafeMeet uses your location and protects your privacy.',
+      intro: 'How Riyo uses your location and protects your privacy.',
       whatFor: 'What Is Location Used For?',
-      whatForDesc: 'CafeMeet uses your location only to show nearby cafes and people there.',
+      whatForDesc: 'Riyo uses your location only to show nearby cafes and people there.',
       noBackground: 'No Background Tracking',
       noBackgroundDesc: 'Your location is never tracked in the background. Location data is only processed when you actively use the app.',
       turnOffAnytime: 'Turn Off Anytime',
@@ -289,8 +289,8 @@ export const translations = {
     // Premium & Payments
     premiumInfo: {
       title: 'Premium & Payments',
-      intro: 'Information about CafeMeet Premium subscription and payment processes.',
-      premiumTitle: 'CafeMeet Premium',
+      intro: 'Information about Riyo Premium subscription and payment processes.',
+      premiumTitle: 'Riyo Premium',
       premiumDesc: 'Access exclusive features like unlimited chat, see profile viewers, boost, and enhanced visibility with Premium.',
       securePayment: 'Secure Payment',
       securePaymentDesc: 'All payments are securely processed through your app store. No credit card information is stored in the app.',
@@ -308,7 +308,7 @@ export const translations = {
       responseTime: 'Response Time',
       responseTimeDesc: 'Emails are usually answered within 24–48 hours.',
       feedback: 'Feedback',
-      feedbackDesc: 'We welcome your opinions and suggestions to help improve CafeMeet.',
+      feedbackDesc: 'We welcome your opinions and suggestions to help improve Riyo.',
     },
 
     // Notification Settings
@@ -363,7 +363,7 @@ export const translations = {
       noPaymentYet: 'In-app payments are not currently available.',
       // Web store redirect
       webStoreTitle: 'Available on mobile',
-      webStoreDesc: 'Premium subscriptions are available through the mobile app. Download CafeMeet to subscribe.',
+      webStoreDesc: 'Premium subscriptions are available through the mobile app. Download Riyo to subscribe.',
       downloadApp: 'Download the App',
       boostTitle: 'Boost',
       boostDesc: 'Appear at the top in cafes',
@@ -424,7 +424,7 @@ export const translations = {
     privacyPolicyPage: {
       title: 'Privacy Policy',
       dataCollection: 'Data Collection',
-      dataCollectionDesc: 'CafeMeet collects the minimum level of personal data required to provide its services. This includes profile information, location data (only while the app is in use), and communication preferences.',
+      dataCollectionDesc: 'Riyo collects the minimum level of personal data required to provide its services. This includes profile information, location data (only while the app is in use), and communication preferences.',
       dataUsage: 'Data Usage',
       dataUsageDesc: 'Collected data is only used to show nearby cafes, match users, and improve the app experience. Your data is never sold to third parties under any circumstances.',
       dataSecurity: 'Data Security',
@@ -432,7 +432,7 @@ export const translations = {
       locationData: 'Location Data',
       locationDataDesc: 'Your location information is only processed when the app is in the foreground and actively being used. There is no background location tracking. Your exact location is never shared with other users.',
       yourRights: 'Your Rights',
-      yourRightsDesc: 'You can request access to your data, request corrections, or delete your account to have all your data removed. For requests, contact support@cafemeet.co.',
+      yourRightsDesc: 'You can request access to your data, request corrections, or delete your account to have all your data removed. For requests, contact support@riyoapp.com.',
       lastUpdated: 'Last updated: February 2026',
     },
 
@@ -440,7 +440,7 @@ export const translations = {
     termsOfUsePage: {
       title: 'Terms of Use',
       serviceDefinition: 'Service Definition',
-      serviceDefinitionDesc: 'CafeMeet is a social application that allows users to connect with other people at nearby cafes. By using our services, you agree to these terms.',
+      serviceDefinitionDesc: 'Riyo is a social application that allows users to connect with other people at nearby cafes. By using our services, you agree to these terms.',
       userResponsibilities: 'User Responsibilities',
       userResponsibilitiesDesc: 'Users are responsible for providing accurate information, behaving respectfully, and following community guidelines. Creating fake profiles, harassment, spam, or abuse is strictly prohibited.',
       accountManagement: 'Account Management',
@@ -448,7 +448,7 @@ export const translations = {
       premiumSubscription: 'Premium Subscription',
       premiumSubscriptionDesc: 'Premium features are purchased through your app store. Subscriptions auto-renew and are managed through your app store. Refund policy is subject to app store terms.',
       violations: 'Violations & Sanctions',
-      violationsDesc: 'In case of terms of use violations, CafeMeet reserves the right to issue warnings, temporarily suspend, or permanently remove accounts.',
+      violationsDesc: 'In case of terms of use violations, Riyo reserves the right to issue warnings, temporarily suspend, or permanently remove accounts.',
       lastUpdated: 'Last updated: February 2026',
     },
 
@@ -725,7 +725,7 @@ export const translations = {
       locationUnavailable: 'Konumunuz belirlenemedi. Lütfen tekrar deneyin.',
       locationTimeout: 'Konum isteği zaman aşımına uğradı. Lütfen tekrar deneyin.',
       locationGenericError: 'Bir sorun oluştu. Konumu daha sonra etkinleştirebilirsiniz.',
-      welcomeToCafeMeet: 'CaféMeet\'e Hoş Geldin',
+      welcomeToCafeMeet: 'Riyo\'ya Hoş Geldin',
       createAccountToStart: 'Tanışmaya başlamak için bir hesap oluştur',
       continueWithPhone: 'Telefon ile devam et',
       continueWithApple: 'Apple ile devam et',
@@ -738,7 +738,7 @@ export const translations = {
     // Settings
     settings: {
       helpSupport: 'Yardım & Destek',
-      howItWorks: 'CafeMeet Nasıl Çalışır?',
+      howItWorks: 'Riyo Nasıl Çalışır?',
       howItWorksDesc: 'Uygulamanın temel özelliklerini keşfedin',
       locationWhy: 'Konum Neden Gerekli?',
       locationWhyDesc: 'Konum kullanımı hakkında bilgi',
@@ -750,7 +750,7 @@ export const translations = {
       privacyPolicyDesc: 'Verilerinizi nasıl koruyoruz',
       termsOfUse: 'Kullanım Koşulları',
       termsOfUseDesc: 'Hizmet şartlarımız',
-      version: 'CafeMeet v1.0 — Güvenliğiniz bizim için önemli ☕',
+      version: 'Riyo v1.0 — Güvenliğiniz bizim için önemli ☕',
     },
 
     // Safety & Privacy
@@ -774,24 +774,24 @@ export const translations = {
 
     // How it works
     howItWorks: {
-      title: 'CafeMeet Nasıl Çalışır?',
-      intro: 'CafeMeet, gerçek kafelerde doğal bağlantılar kurmanı sağlar. Check-in yap, insanları keşfet, eşleş ve sohbet et.',
+      title: 'Riyo Nasıl Çalışır?',
+      intro: 'Riyo, gerçek kafelerde doğal bağlantılar kurmanı sağlar. Check-in yap, insanları keşfet, eşleş ve sohbet et.',
       step1Title: 'Yakındaki Kafeleri Keşfet',
-      step1Desc: 'CafeMeet, bulunduğun konuma yakın kafeleri gösterir. Gittiğin kafeye check-in yaparak orada bulunan insanlarla tanışmaya başla.',
+      step1Desc: 'Riyo, bulunduğun konuma yakın kafeleri gösterir. Gittiğin kafeye check-in yaparak orada bulunan insanlarla tanışmaya başla.',
       step2Title: 'İnsanları Keşfet',
       step2Desc: 'Aynı kafede bulunan kişilerin profillerini gör. İlgi alanlarını, hobilerini ve burada olma amaçlarını öğren.',
       step3Title: 'Eşleş ve Bağlan',
       step3Desc: 'Hoşlandığın kişilere wave gönder. Karşılıklı ilgi olduğunda eşleşin ve sohbet etmeye başlayın.',
       step4Title: 'Güvenli Sohbet',
-      step4Desc: 'Eşleştiğin kişilerle güvenli ortamda mesajlaş. CafeMeet\'in amacı gerçek hayatta doğal, güvenli ve saygılı bağlantılar kurmaktır.',
+      step4Desc: 'Eşleştiğin kişilerle güvenli ortamda mesajlaş. Riyo\'nun amacı gerçek hayatta doğal, güvenli ve saygılı bağlantılar kurmaktır.',
     },
 
     // Location usage
     locationInfo: {
       title: 'Konum Neden Gerekli?',
-      intro: 'CafeMeet konum bilgini nasıl kullanır ve gizliliğini nasıl korur?',
+      intro: 'Riyo konum bilgini nasıl kullanır ve gizliliğini nasıl korur?',
       whatFor: 'Konum Ne İçin Kullanılır?',
-      whatForDesc: 'CafeMeet, konumunu yalnızca yakındaki kafeleri ve orada bulunan kişileri göstermek için kullanır.',
+      whatForDesc: 'Riyo, konumunu yalnızca yakındaki kafeleri ve orada bulunan kişileri göstermek için kullanır.',
       noBackground: 'Arka Planda Takip Yok',
       noBackgroundDesc: 'Konum bilgin arka planda asla takip edilmez. Yalnızca uygulamayı aktif olarak kullandığında konum verisi işlenir.',
       turnOffAnytime: 'İstediğin Zaman Kapat',
@@ -803,8 +803,8 @@ export const translations = {
     // Premium & Payments
     premiumInfo: {
       title: 'Premium & Ödemeler',
-      intro: 'CafeMeet Premium abonelik ve ödeme süreçleri hakkında bilgi.',
-      premiumTitle: 'CafeMeet Premium',
+      intro: 'Riyo Premium abonelik ve ödeme süreçleri hakkında bilgi.',
+      premiumTitle: 'Riyo Premium',
       premiumDesc: 'Premium ile sınırsız sohbet, profil görüntüleyenleri görme, boost ve gelişmiş görünürlük gibi özel özelliklere eriş.',
       securePayment: 'Güvenli Ödeme',
       securePaymentDesc: 'Tüm ödemeler uygulama mağazası üzerinden güvenli bir şekilde işlenir. Uygulama içinde kredi kartı bilgisi saklanmaz.',
@@ -822,7 +822,7 @@ export const translations = {
       responseTime: 'Yanıt Süresi',
       responseTimeDesc: 'E-postalara genellikle 24–48 saat içinde yanıt verilir.',
       feedback: 'Geri Bildirim',
-      feedbackDesc: 'CafeMeet\'i geliştirmemize yardımcı olmak için görüş ve önerilerinizi bekliyoruz.',
+      feedbackDesc: 'Riyo\'yu geliştirmemize yardımcı olmak için görüş ve önerilerinizi bekliyoruz.',
     },
 
     // Notification Settings
@@ -876,7 +876,7 @@ export const translations = {
       premiumComingSoon: 'Premium özellikler yakında aktif edilecektir.',
       noPaymentYet: 'Şu anda uygulama içinde ödeme alınmamaktadır.',
       webStoreTitle: 'Mobilde kullanılabilir',
-      webStoreDesc: 'Premium abonelikler mobil uygulama üzerinden sunulmaktadır. Abone olmak için CafeMeet\'i indirin.',
+      webStoreDesc: 'Premium abonelikler mobil uygulama üzerinden sunulmaktadır. Abone olmak için Riyo\'yu indirin.',
       downloadApp: 'Uygulamayı İndir',
       boostTitle: 'Boost',
       boostDesc: 'Kafelerde en üstte görün',
@@ -937,7 +937,7 @@ export const translations = {
     privacyPolicyPage: {
       title: 'Gizlilik Politikası',
       dataCollection: 'Veri Toplama',
-      dataCollectionDesc: 'CafeMeet, hizmetlerini sunmak için gerekli olan minimum düzeyde kişisel veri toplar. Bu veriler arasında profil bilgileri, konum verisi (yalnızca uygulama kullanılırken) ve iletişim tercihleri yer alır.',
+      dataCollectionDesc: 'Riyo, hizmetlerini sunmak için gerekli olan minimum düzeyde kişisel veri toplar. Bu veriler arasında profil bilgileri, konum verisi (yalnızca uygulama kullanılırken) ve iletişim tercihleri yer alır.',
       dataUsage: 'Veri Kullanımı',
       dataUsageDesc: 'Toplanan veriler yalnızca yakındaki kafeleri göstermek, kullanıcıları eşleştirmek ve uygulama deneyimini iyileştirmek için kullanılır. Verileriniz hiçbir koşulda üçüncü taraflara satılmaz.',
       dataSecurity: 'Veri Güvenliği',
@@ -945,7 +945,7 @@ export const translations = {
       locationData: 'Konum Verisi',
       locationDataDesc: 'Konum bilginiz yalnızca uygulama ön plandayken ve aktif olarak kullanıldığında işlenir. Arka planda konum takibi yapılmaz. Tam konumunuz diğer kullanıcılarla paylaşılmaz.',
       yourRights: 'Haklarınız',
-      yourRightsDesc: 'Verilerinize erişim talep edebilir, düzeltme isteyebilir veya hesabınızı silerek tüm verilerinizin kaldırılmasını sağlayabilirsiniz. Talepleriniz için support@cafemeet.co adresine ulaşabilirsiniz.',
+      yourRightsDesc: 'Verilerinize erişim talep edebilir, düzeltme isteyebilir veya hesabınızı silerek tüm verilerinizin kaldırılmasını sağlayabilirsiniz. Talepleriniz için support@riyoapp.com adresine ulaşabilirsiniz.',
       lastUpdated: 'Son güncelleme: Şubat 2026',
     },
 
@@ -953,7 +953,7 @@ export const translations = {
     termsOfUsePage: {
       title: 'Kullanım Koşulları',
       serviceDefinition: 'Hizmet Tanımı',
-      serviceDefinitionDesc: 'CafeMeet, kullanıcıların yakındaki kafelerde bulunan diğer kişilerle bağlantı kurmasını sağlayan bir sosyal uygulamadır. Hizmetlerimizi kullanarak bu koşulları kabul etmiş sayılırsınız.',
+      serviceDefinitionDesc: 'Riyo, kullanıcıların yakındaki kafelerde bulunan diğer kişilerle bağlantı kurmasını sağlayan bir sosyal uygulamadır. Hizmetlerimizi kullanarak bu koşulları kabul etmiş sayılırsınız.',
       userResponsibilities: 'Kullanıcı Sorumlulukları',
       userResponsibilitiesDesc: 'Kullanıcılar doğru bilgi sağlamakla, saygılı davranmakla ve topluluk kurallarına uymakla yükümlüdür. Sahte profil oluşturmak, taciz, spam veya kötüye kullanım kesinlikle yasaktır.',
       accountManagement: 'Hesap Yönetimi',
@@ -961,7 +961,7 @@ export const translations = {
       premiumSubscription: 'Premium Abonelik',
       premiumSubscriptionDesc: 'Premium özellikler uygulama mağazası üzerinden satın alınır. Abonelikler otomatik olarak yenilenir ve mağaza üzerinden yönetilir. İade politikası mağaza koşullarına tabidir.',
       violations: 'İhlal ve Yaptırımlar',
-      violationsDesc: 'Kullanım koşullarının ihlali durumunda CafeMeet, uyarı verme, hesabı geçici olarak askıya alma veya kalıcı olarak kaldırma hakkını saklı tutar.',
+      violationsDesc: 'Kullanım koşullarının ihlali durumunda Riyo, uyarı verme, hesabı geçici olarak askıya alma veya kalıcı olarak kaldırma hakkını saklı tutar.',
       lastUpdated: 'Son güncelleme: Şubat 2026',
     },
 
