@@ -22,6 +22,7 @@ const NAME_BLACKLIST = [
   'restaurant', 'grill', 'steak', 'burger', 'pizza',
   'çiğ köfte', 'komagene', 'little caesars', 'domino', 'ev yemekleri',
   'kıraathane', 'kiraathane',
+  'playstation', 'ps cafe', 'ps salon',
 ];
 
 interface GooglePlace {
