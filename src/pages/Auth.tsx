@@ -131,9 +131,7 @@ export default function Auth() {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
       <div className="flex items-center gap-3 mb-8">
-        <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center">
-          <Coffee className="w-8 h-8 text-primary-foreground" />
-        </div>
+        <img src="/riyo-logo-dark.png" alt="Riyo" className="w-14 h-14 rounded-2xl" />
         <div>
           <h1 className="text-2xl font-bold text-foreground">Riyo</h1>
           <p className="text-sm text-muted-foreground">Connect over coffee</p>
