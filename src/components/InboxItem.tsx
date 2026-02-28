@@ -22,7 +22,6 @@ interface InboxItemProps {
   onLongPress?: () => void;
 }
 
-// Smart timestamp formatting
 function formatSmartTime(date: Date | undefined, t: any): string {
   if (!date) return '';
   
@@ -71,50 +70,49 @@ export const InboxItem = memo(function InboxItem({
       tabIndex={0}
       aria-disabled={isLoading}
       className={cn(
-        'w-full flex items-center gap-3.5 px-4 py-3.5 select-none cursor-pointer',
+        'w-full flex items-center gap-3.5 px-3 py-3.5 select-none cursor-pointer',
         'transition-all duration-200 ease-out',
-        'rounded-2xl mx-2 my-1',
-        // Card-like appearance with shadow
-        'bg-card/60 hover:bg-card shadow-sm hover:shadow-md',
+        'rounded-2xl',
+        // Subtle hover state
+        'hover:bg-secondary/50',
         // Unread highlight
-        hasUnread && 'bg-primary/5 shadow-md',
+        hasUnread && 'bg-primary/[0.04]',
         // Premium user highlight
-        isPremiumUser && hasUnread && 'bg-gradient-to-r from-amber-500/8 to-primary/5',
+        isPremiumUser && hasUnread && 'bg-gradient-to-r from-amber-500/[0.06] to-primary/[0.04]',
         isLoading && 'pointer-events-none opacity-60',
-        // Smooth press feedback
-        'active:scale-[0.98] active:shadow-sm'
+        'active:scale-[0.98] active:bg-secondary/60'
       )}
     >
-      {/* Avatar with online indicator and premium ring */}
+      {/* Avatar with online indicator */}
       <div className="relative flex-shrink-0">
         <div className={cn(
           "rounded-full transition-transform duration-200",
-          isPremiumUser && "ring-2 ring-amber-500/50 ring-offset-2 ring-offset-background"
+          isPremiumUser && "ring-2 ring-amber-500/40 ring-offset-2 ring-offset-background"
         )}>
           {userPhotoUrl ? (
             <img
               src={userPhotoUrl}
               alt={userName}
-              className="w-14 h-14 rounded-full object-cover shadow-sm"
+              className="w-[52px] h-[52px] rounded-full object-cover"
               loading="lazy"
             />
           ) : (
             <InitialsAvatar 
               name={userName} 
               size="md" 
-              className="w-14 h-14 shadow-sm"
+              className="w-[52px] h-[52px]"
             />
           )}
         </div>
-        {/* Online indicator - pulsing green dot */}
+        {/* Online indicator */}
         {isOnline && (
-          <div className="absolute bottom-0.5 right-0.5 w-4 h-4 bg-emerald-500 rounded-full border-[2.5px] border-background shadow-sm">
-            <div className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-50" />
+          <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 rounded-full border-[2px] border-background">
+            <div className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-40" />
           </div>
         )}
         {/* Premium crown badge */}
         {isPremiumUser && !isOnline && (
-          <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center border-2 border-background shadow-sm">
+          <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center border-2 border-background">
             <Crown className="w-3 h-3 text-white" />
           </div>
         )}
@@ -123,11 +121,11 @@ export const InboxItem = memo(function InboxItem({
       {/* Content */}
       <div className="flex-1 min-w-0 text-left">
         {/* Top row: Name + Time */}
-        <div className="flex items-center justify-between gap-2 mb-1">
+        <div className="flex items-center justify-between gap-2 mb-0.5">
           <div className="flex items-center gap-1.5 min-w-0">
             <span className={cn(
               'text-[15px] truncate',
-              hasUnread ? 'font-bold text-foreground' : 'font-semibold text-foreground/90'
+              hasUnread ? 'font-bold text-foreground' : 'font-medium text-foreground/90'
             )}>
               {userName}
             </span>
@@ -136,47 +134,46 @@ export const InboxItem = memo(function InboxItem({
             )}
           </div>
           <span className={cn(
-            "text-xs flex-shrink-0 font-medium",
-            hasUnread ? "text-primary" : "text-muted-foreground"
+            "text-[11px] flex-shrink-0 tabular-nums",
+            hasUnread ? "text-primary font-semibold" : "text-muted-foreground/70"
           )}>
             {formatSmartTime(lastMessageTime, t)}
           </span>
         </div>
 
-        {/* Middle row: Last message or typing */}
+        {/* Message preview row */}
         <div className="flex items-center gap-2">
-          {/* Priority lightning for premium unread messages */}
           {isPremiumUser && hasUnread && !isTyping && (
-            <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500 flex-shrink-0" />
+            <Zap className="w-3 h-3 text-amber-500 fill-amber-500 flex-shrink-0" />
           )}
           {isTyping ? (
-            <span className="text-sm text-primary font-medium flex items-center gap-1.5">
+            <span className="text-[13px] text-primary font-medium flex items-center gap-1.5">
               yazıyor
               <span className="flex gap-0.5">
-                <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <span className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </span>
             </span>
           ) : lastMessage ? (
             <span className={cn(
-              'text-sm truncate leading-relaxed',
-              hasUnread ? 'text-foreground font-medium' : 'text-muted-foreground'
+              'text-[13px] truncate leading-relaxed',
+              hasUnread ? 'text-foreground/80 font-medium' : 'text-muted-foreground/70'
             )}>
               {lastMessage}
             </span>
           ) : (
-            <span className="text-sm text-muted-foreground/60 italic">
-              {cafeName ? `${cafeName} kafesinde eşleştiniz` : 'Yeni eşleşme'}
+            <span className="text-[13px] text-muted-foreground/50 italic">
+              {cafeName ? `${cafeName} mekanında eşleştiniz` : 'Yeni eşleşme ✨'}
             </span>
           )}
         </div>
 
-        {/* Bottom row: Cafe badge - more subtle */}
+        {/* Cafe badge */}
         {cafeName && lastMessage && (
-          <div className="mt-1.5">
-            <span className="text-[10px] text-muted-foreground/60 bg-secondary/60 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-              <span className="w-1 h-1 bg-primary/40 rounded-full" />
+          <div className="mt-1">
+            <span className="text-[10px] text-muted-foreground/50 bg-secondary/50 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1">
+              <span className="w-1 h-1 bg-primary/30 rounded-full" />
               {cafeName}
             </span>
           </div>
@@ -189,9 +186,9 @@ export const InboxItem = memo(function InboxItem({
           <Loader2 className="w-5 h-5 animate-spin text-primary" />
         ) : hasUnread ? (
           <span className={cn(
-            "min-w-6 h-6 px-2 text-xs font-bold rounded-full flex items-center justify-center shadow-sm",
+            "min-w-[22px] h-[22px] px-1.5 text-[11px] font-bold rounded-full flex items-center justify-center",
             isPremiumUser 
-              ? "bg-gradient-to-br from-amber-400 to-amber-600 text-white" 
+              ? "bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-sm shadow-amber-500/20" 
               : "bg-primary text-primary-foreground"
           )}>
             {unreadCount > 99 ? '99+' : unreadCount}
