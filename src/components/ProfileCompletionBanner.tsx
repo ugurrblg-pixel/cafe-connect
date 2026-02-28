@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { useProfileCompletion } from '@/hooks/useProfileCompletion';
 import { cn } from '@/lib/utils';
 
-const BANNER_DISMISSED_KEY = 'cafemeet_profile_banner_dismissed';
+const BANNER_DISMISSED_KEY = 'riyo_profile_banner_dismissed';
 const DISMISS_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export function ProfileCompletionBanner() {

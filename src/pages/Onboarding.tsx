@@ -7,7 +7,7 @@ import { useI18n } from '@/contexts/I18nContext';
 
 type OnboardingStep = 'splash' | 'slides' | 'location' | 'auth';
 
-const ONBOARDING_COMPLETE_KEY = 'cafemeet_onboarding_complete';
+const ONBOARDING_COMPLETE_KEY = 'riyo_onboarding_complete';
 
 export default function Onboarding() {
   const navigate = useNavigate();
@@ -129,7 +129,7 @@ export default function Onboarding() {
           <div className="w-24 h-24 bg-gradient-to-br from-primary to-primary/80 rounded-3xl flex items-center justify-center shadow-2xl shadow-primary/30 mb-6">
             <Coffee className="w-12 h-12 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">CaféMeet</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Riyo</h1>
           <p className="text-muted-foreground text-center">{t.onboarding.meetPeople}</p>
         </div>
         <div className="absolute bottom-20 flex gap-1">

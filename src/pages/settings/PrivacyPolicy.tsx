@@ -9,7 +9,7 @@ export default function PrivacyPolicy() {
         <main className="pt-16 px-4 max-w-lg mx-auto">
           {/* Title & Date */}
           <div className="py-6">
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">CAFE MEET GİZLİLİK POLİTİKASI</h1>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">RİYO GİZLİLİK POLİTİKASI</h1>
             <p className="text-sm text-muted-foreground mt-2">Son Güncelleme Tarihi: 19 Şubat 2026</p>
           </div>
 
@@ -18,7 +18,7 @@ export default function PrivacyPolicy() {
             <h3 className="font-semibold text-foreground mb-1">Veri Sorumlusu</h3>
             <p className="text-sm text-foreground">UĞUR BİLGİN</p>
             <p className="text-sm text-foreground">
-              İletişim: <a href="mailto:support@cafemeet.co" className="text-primary underline">support@cafemeet.co</a>
+              İletişim: <a href="mailto:support@riyoapp.com" className="text-primary underline">support@riyoapp.com</a>
             </p>
           </div>
 
@@ -50,7 +50,7 @@ export default function PrivacyPolicy() {
             {/* 3. Veri Güvenliği */}
             <section>
               <h2 className="text-lg font-semibold text-foreground mb-3">3. Veri Güvenliği</h2>
-              <p className="mb-2">CafeMeet:</p>
+              <p className="mb-2">Riyo:</p>
               <ol className="list-decimal list-inside space-y-1 ml-2">
                 <li>Şifreleme teknolojileri kullanır</li>
                 <li>Yetkisiz erişimi engelleyen teknik önlemler alır</li>
@@ -68,16 +68,16 @@ export default function PrivacyPolicy() {
                 <li>İşlemeye itiraz</li>
               </ol>
               <p className="mt-3">
-                haklarınızı <a href="mailto:support@cafemeet.co" className="text-primary underline">support@cafemeet.co</a> adresine iletebilirsiniz.
+                haklarınızı <a href="mailto:support@riyoapp.com" className="text-primary underline">support@riyoapp.com</a> adresine iletebilirsiniz.
               </p>
             </section>
           </div>
 
           {/* Footer */}
           <footer className="mt-12 mb-8 text-center space-y-2">
-            <p className="text-xs text-muted-foreground">© 2026 CafeMeet – Tüm Hakları Saklıdır</p>
-            <a href="mailto:support@cafemeet.co" className="text-xs text-primary underline">
-              support@cafemeet.co
+            <p className="text-xs text-muted-foreground">© 2026 Riyo – Tüm Hakları Saklıdır</p>
+            <a href="mailto:support@riyoapp.com" className="text-xs text-primary underline">
+              support@riyoapp.com
             </a>
           </footer>
         </main>

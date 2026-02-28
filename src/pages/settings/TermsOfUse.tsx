@@ -9,7 +9,7 @@ export default function TermsOfUse() {
         <main className="pt-16 px-4 max-w-lg mx-auto">
           {/* Title & Date */}
           <div className="py-6">
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">CAFE MEET KULLANIM KOŞULLARI</h1>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">RİYO KULLANIM KOŞULLARI</h1>
             <p className="text-sm text-muted-foreground mt-2">Son Güncelleme Tarihi: 19 Şubat 2026</p>
           </div>
 
@@ -18,10 +18,10 @@ export default function TermsOfUse() {
             <section>
               <h2 className="text-lg font-semibold text-foreground mb-3">1. Taraflar</h2>
               <p className="mb-2">
-                İşbu Kullanım Koşulları ("Sözleşme"), Türkiye Cumhuriyeti kanunlarına göre kurulmuş şahıs işletmesi olan <strong>UĞUR BİLGİN</strong> ("Şirket") ile CafeMeet mobil uygulamasını kullanan gerçek kişi ("Kullanıcı") arasında akdedilmiştir.
+                İşbu Kullanım Koşulları ("Sözleşme"), Türkiye Cumhuriyeti kanunlarına göre kurulmuş şahıs işletmesi olan <strong>UĞUR BİLGİN</strong> ("Şirket") ile Riyo mobil uygulamasını kullanan gerçek kişi ("Kullanıcı") arasında akdedilmiştir.
               </p>
               <p className="mb-2">
-                İletişim: <a href="mailto:support@cafemeet.co" className="text-primary underline">support@cafemeet.co</a>
+                İletişim: <a href="mailto:support@riyoapp.com" className="text-primary underline">support@riyoapp.com</a>
               </p>
               <p>
                 Kullanıcı, uygulamaya kayıt olarak bu sözleşmeyi elektronik ortamda kabul etmiş sayılır.
@@ -32,9 +32,9 @@ export default function TermsOfUse() {
             <section>
               <h2 className="text-lg font-semibold text-foreground mb-3">2. Hizmetin Niteliği</h2>
               <p className="mb-2">
-                CafeMeet, kullanıcıların sosyal mekanlarda (kafe, bar, etkinlik alanı vb.) tanışmasını sağlayan konum bazlı dijital eşleşme platformudur.
+                Riyo, kullanıcıların sosyal mekanlarda (kafe, bar, etkinlik alanı vb.) tanışmasını sağlayan konum bazlı dijital eşleşme platformudur.
               </p>
-              <p className="mb-2">CafeMeet:</p>
+              <p className="mb-2">Riyo:</p>
               <ol className="list-decimal list-inside space-y-1 ml-2">
                 <li>Evlilik ajansı değildir</li>
                 <li>Resmi aracılık hizmeti sunmaz</li>
@@ -47,7 +47,7 @@ export default function TermsOfUse() {
             {/* 3. Yaş Sınırı */}
             <section>
               <h2 className="text-lg font-semibold text-foreground mb-3">3. Yaş Sınırı</h2>
-              <p className="mb-2">CafeMeet yalnızca 18 yaş ve üzeri bireyler tarafından kullanılabilir.</p>
+              <p className="mb-2">Riyo yalnızca 18 yaş ve üzeri bireyler tarafından kullanılabilir.</p>
               <p className="mb-1">Kullanıcı:</p>
               <ol className="list-decimal list-inside space-y-1 ml-2">
                 <li>18 yaşından büyük olduğunu</li>
@@ -77,7 +77,7 @@ export default function TermsOfUse() {
             <section>
               <h2 className="text-lg font-semibold text-foreground mb-3">5. Fiziksel Buluşmalar ve Sorumluluk</h2>
               <p className="mb-2">
-                CafeMeet üzerinden tanışan kullanıcıların gerçekleştirdiği fiziksel buluşmalar tamamen kullanıcıların sorumluluğundadır.
+                Riyo üzerinden tanışan kullanıcıların gerçekleştirdiği fiziksel buluşmalar tamamen kullanıcıların sorumluluğundadır.
               </p>
               <p className="mb-1">Şirket:</p>
               <ol className="list-decimal list-inside space-y-1 ml-2">
@@ -90,7 +90,7 @@ export default function TermsOfUse() {
             {/* 6. Konum Verisi */}
             <section>
               <h2 className="text-lg font-semibold text-foreground mb-3">6. Konum Verisi</h2>
-              <p className="mb-2">CafeMeet, konum verisini:</p>
+              <p className="mb-2">Riyo, konum verisini:</p>
               <ol className="list-decimal list-inside space-y-1 ml-2">
                 <li>Yakındaki mekanları göstermek</li>
                 <li>Eşleşme optimizasyonu</li>
@@ -134,9 +134,9 @@ export default function TermsOfUse() {
 
           {/* Footer */}
           <footer className="mt-12 mb-8 text-center space-y-2">
-            <p className="text-xs text-muted-foreground">© 2026 CafeMeet – Tüm Hakları Saklıdır</p>
-            <a href="mailto:support@cafemeet.co" className="text-xs text-primary underline">
-              support@cafemeet.co
+            <p className="text-xs text-muted-foreground">© 2026 Riyo – Tüm Hakları Saklıdır</p>
+            <a href="mailto:support@riyoapp.com" className="text-xs text-primary underline">
+              support@riyoapp.com
             </a>
           </footer>
         </main>

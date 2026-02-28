@@ -189,7 +189,7 @@ export default function ProfileEdit() {
     }
   };
 
-  // CafeMeet Score calculation
+  // Riyo Score calculation
   const completionSteps = [
     { label: 'Fotoğraf (min 2)', done: profile.photo_urls.filter(u => !!u).length >= 2, weight: 25 },
     { label: 'Bio', done: !!profile.bio.trim() && profile.bio.trim().length >= 10, weight: 20 },
@@ -223,7 +223,7 @@ export default function ProfileEdit() {
 
         <main className="pt-16 px-4 pb-24 space-y-4">
 
-          {/* CafeMeet Score Banner */}
+          {/* Riyo Score Banner */}
           <section className="card-elevated p-4 mt-2">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
@@ -231,7 +231,7 @@ export default function ProfileEdit() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold text-foreground">
-                  CafeMeet Skoru: %{completionPercent}
+                  Riyo Skoru: %{completionPercent}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {completionPercent === 100

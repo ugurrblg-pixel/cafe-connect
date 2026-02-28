@@ -135,7 +135,7 @@ export default function Auth() {
           <Coffee className="w-8 h-8 text-primary-foreground" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">CaféMeet</h1>
+          <h1 className="text-2xl font-bold text-foreground">Riyo</h1>
           <p className="text-sm text-muted-foreground">Connect over coffee</p>
         </div>
       </div>
