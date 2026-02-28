@@ -10,7 +10,7 @@ const CACHE_FRESHNESS_MS = 60 * 24 * 60 * 60 * 1000;
 const DB_MIN_VENUES = 15;
 const SEARCH_RADIUS = 1200;
 
-const VENUE_TYPES = ['cafe', 'bar', 'night_club'] as const;
+const VENUE_TYPES = ['cafe', 'bar', 'night_club', 'gym'] as const;
 
 // Types that trigger immediate exclusion
 const EXCLUDED_TYPES = ['restaurant', 'meal_takeaway', 'meal_delivery', 'food'];
@@ -54,6 +54,7 @@ function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
 function mapCategory(types: string[]): string {
   if (types.includes('night_club')) return 'night_club';
   if (types.includes('bar')) return 'bar';
+  if (types.includes('gym')) return 'gym';
   return 'cafe';
 }
 
@@ -182,7 +183,7 @@ Deno.serve(async (req) => {
     const validVenues = nearbyVenues.filter((v) => {
       const name = v.name || '';
       if (isExcludedByName(name)) return false;
-      if (!['cafe', 'bar', 'night_club'].includes(v.category)) return false;
+      if (!['cafe', 'bar', 'night_club', 'gym'].includes(v.category)) return false;
       return true;
     });
 
@@ -305,7 +306,7 @@ Deno.serve(async (req) => {
       (v) => v.latitude && v.longitude && haversineDistance(lat, lng, v.latitude, v.longitude) <= SEARCH_RADIUS
     ).filter((v) => {
       if (isExcludedByName(v.name || '')) return false;
-      if (!['cafe', 'bar', 'night_club'].includes(v.category)) return false;
+      if (!['cafe', 'bar', 'night_club', 'gym'].includes(v.category)) return false;
       return true;
     });
 
