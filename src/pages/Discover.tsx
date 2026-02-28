@@ -55,7 +55,8 @@ export default function Discover() {
   // Filter cafes based on is_open status from API
   const filteredCafes = useMemo(() => {
     if (!showOpenOnly) return cafes;
-    return cafes.filter((cafe) => cafe.isOpen);
+    // Show open AND unknown (null) cafes - only hide explicitly closed ones
+    return cafes.filter((cafe) => cafe.isOpen !== false);
   }, [cafes, showOpenOnly]);
 
   const closedCount = useMemo(() => {
