@@ -126,10 +126,7 @@ export default function Onboarding() {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/[0.03] rounded-full blur-3xl" />
         </div>
         <div className="relative z-10 flex flex-col items-center animate-fade-in">
-          <div className="w-24 h-24 bg-gradient-to-br from-primary to-primary/80 rounded-3xl flex items-center justify-center shadow-2xl shadow-primary/30 mb-6">
-            <Coffee className="w-12 h-12 text-primary-foreground" />
-          </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Riyo</h1>
+          <img src="/riyo-logo-dark.png" alt="Riyo" className="w-28 h-28 rounded-3xl shadow-2xl shadow-primary/30 mb-6" />
           <p className="text-muted-foreground text-center">{t.onboarding.meetPeople}</p>
         </div>
         <div className="absolute bottom-20 flex gap-1">
