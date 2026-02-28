@@ -21,6 +21,7 @@ const NAME_BLACKLIST = [
   'pide', 'börek', 'borek', 'lokanta', 'tantuni', 'çorba', 'corba',
   'restaurant', 'grill', 'steak', 'burger', 'pizza',
   'çiğ köfte', 'komagene', 'little caesars', 'domino', 'ev yemekleri',
+  'kıraathane', 'kiraathane',
 ];
 
 interface GooglePlace {
