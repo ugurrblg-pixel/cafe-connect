@@ -70,49 +70,47 @@ export const InboxItem = memo(function InboxItem({
       tabIndex={0}
       aria-disabled={isLoading}
       className={cn(
-        'w-full flex items-center gap-3.5 px-3 py-3.5 select-none cursor-pointer',
+        'w-full flex items-center gap-3.5 px-3 py-4 select-none cursor-pointer',
         'transition-all duration-200 ease-out',
         'rounded-2xl',
-        // Subtle hover state
-        'hover:bg-secondary/50',
-        // Unread highlight
-        hasUnread && 'bg-primary/[0.04]',
-        // Premium user highlight
-        isPremiumUser && hasUnread && 'bg-gradient-to-r from-amber-500/[0.06] to-primary/[0.04]',
+        'hover:bg-card/80',
+        // Unread: card-like with shadow
+        hasUnread && 'bg-card shadow-md border border-primary/10',
+        // Premium unread: warm glow
+        isPremiumUser && hasUnread && 'bg-gradient-to-r from-amber-50 to-card border-amber-500/15 dark:from-amber-500/10 dark:to-card',
         isLoading && 'pointer-events-none opacity-60',
-        'active:scale-[0.98] active:bg-secondary/60'
+        'active:scale-[0.98]'
       )}
     >
-      {/* Avatar with online indicator */}
+      {/* Avatar */}
       <div className="relative flex-shrink-0">
         <div className={cn(
-          "rounded-full transition-transform duration-200",
-          isPremiumUser && "ring-2 ring-amber-500/40 ring-offset-2 ring-offset-background"
+          "rounded-full",
+          isPremiumUser && "ring-2 ring-amber-500/50 ring-offset-2 ring-offset-background"
         )}>
           {userPhotoUrl ? (
             <img
               src={userPhotoUrl}
               alt={userName}
-              className="w-[52px] h-[52px] rounded-full object-cover"
+              className="w-14 h-14 rounded-full object-cover shadow-md"
               loading="lazy"
             />
           ) : (
             <InitialsAvatar 
               name={userName} 
               size="md" 
-              className="w-[52px] h-[52px]"
+              className="w-14 h-14 shadow-md text-base font-bold"
             />
           )}
         </div>
-        {/* Online indicator */}
+        {/* Online indicator - vivid green */}
         {isOnline && (
-          <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 rounded-full border-[2px] border-background">
-            <div className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-40" />
+          <div className="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 rounded-full border-[2.5px] border-background shadow-sm">
+            <div className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-50" />
           </div>
         )}
-        {/* Premium crown badge */}
         {isPremiumUser && !isOnline && (
-          <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center border-2 border-background">
+          <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center border-2 border-background shadow-sm">
             <Crown className="w-3 h-3 text-white" />
           </div>
         )}
@@ -120,12 +118,12 @@ export const InboxItem = memo(function InboxItem({
 
       {/* Content */}
       <div className="flex-1 min-w-0 text-left">
-        {/* Top row: Name + Time */}
+        {/* Name + Time */}
         <div className="flex items-center justify-between gap-2 mb-0.5">
           <div className="flex items-center gap-1.5 min-w-0">
             <span className={cn(
               'text-[15px] truncate',
-              hasUnread ? 'font-bold text-foreground' : 'font-medium text-foreground/90'
+              hasUnread ? 'font-bold text-foreground' : 'font-semibold text-foreground'
             )}>
               {userName}
             </span>
@@ -134,62 +132,62 @@ export const InboxItem = memo(function InboxItem({
             )}
           </div>
           <span className={cn(
-            "text-[11px] flex-shrink-0 tabular-nums",
-            hasUnread ? "text-primary font-semibold" : "text-muted-foreground/70"
+            "text-xs flex-shrink-0 tabular-nums font-medium",
+            hasUnread ? "text-primary" : "text-muted-foreground"
           )}>
             {formatSmartTime(lastMessageTime, t)}
           </span>
         </div>
 
-        {/* Message preview row */}
-        <div className="flex items-center gap-2">
+        {/* Message preview */}
+        <div className="flex items-center gap-1.5">
           {isPremiumUser && hasUnread && !isTyping && (
-            <Zap className="w-3 h-3 text-amber-500 fill-amber-500 flex-shrink-0" />
+            <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500 flex-shrink-0" />
           )}
           {isTyping ? (
-            <span className="text-[13px] text-primary font-medium flex items-center gap-1.5">
+            <span className="text-sm text-primary font-medium flex items-center gap-1.5">
               yazıyor
               <span className="flex gap-0.5">
-                <span className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </span>
             </span>
           ) : lastMessage ? (
             <span className={cn(
-              'text-[13px] truncate leading-relaxed',
-              hasUnread ? 'text-foreground/80 font-medium' : 'text-muted-foreground/70'
+              'text-sm truncate leading-relaxed',
+              hasUnread ? 'text-foreground font-medium' : 'text-muted-foreground'
             )}>
               {lastMessage}
             </span>
           ) : (
-            <span className="text-[13px] text-muted-foreground/50 italic">
-              {cafeName ? `${cafeName} mekanında eşleştiniz` : 'Yeni eşleşme ✨'}
+            <span className="text-sm text-primary/60 italic">
+              {cafeName ? `${cafeName} mekanında eşleştiniz ✨` : 'Yeni eşleşme ✨'}
             </span>
           )}
         </div>
 
-        {/* Cafe badge */}
+        {/* Cafe badge - more visible */}
         {cafeName && lastMessage && (
-          <div className="mt-1">
-            <span className="text-[10px] text-muted-foreground/50 bg-secondary/50 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1">
-              <span className="w-1 h-1 bg-primary/30 rounded-full" />
+          <div className="mt-1.5">
+            <span className="text-[11px] text-muted-foreground bg-secondary px-2 py-0.5 rounded-full inline-flex items-center gap-1 font-medium">
+              <span className="w-1.5 h-1.5 bg-primary/50 rounded-full" />
               {cafeName}
             </span>
           </div>
         )}
       </div>
 
-      {/* Right side: Unread badge or loading */}
-      <div className="flex-shrink-0 w-7 flex items-center justify-center">
+      {/* Unread badge */}
+      <div className="flex-shrink-0 w-8 flex items-center justify-center">
         {isLoading ? (
           <Loader2 className="w-5 h-5 animate-spin text-primary" />
         ) : hasUnread ? (
           <span className={cn(
-            "min-w-[22px] h-[22px] px-1.5 text-[11px] font-bold rounded-full flex items-center justify-center",
+            "min-w-6 h-6 px-2 text-xs font-bold rounded-full flex items-center justify-center shadow-sm",
             isPremiumUser 
-              ? "bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-sm shadow-amber-500/20" 
-              : "bg-primary text-primary-foreground"
+              ? "bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-amber-500/25" 
+              : "bg-primary text-primary-foreground shadow-primary/20"
           )}>
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>

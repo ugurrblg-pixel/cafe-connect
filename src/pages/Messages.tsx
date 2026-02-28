@@ -72,16 +72,16 @@ export default function Messages() {
         {/* Premium Header */}
         <header className="fixed top-0 left-0 right-0 z-50 safe-top">
           <div className="relative overflow-hidden">
-            {/* Gradient background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-card via-card to-secondary/40" />
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/[0.03] to-amber-500/[0.03]" />
+            {/* Rich gradient background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-card via-card to-primary/5" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/8 to-transparent rounded-full blur-2xl -translate-y-1/2 translate-x-1/4" />
             
             <div className="relative px-5 pt-3 pb-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h1 className="font-bold text-xl text-foreground tracking-tight">Mesajlar</h1>
                   {!loading && visibleConversations.length > 0 && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5 font-medium">
                       {visibleConversations.length} sohbet
                     </p>
                   )}
