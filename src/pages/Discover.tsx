@@ -20,7 +20,6 @@ export default function Discover() {
   const { position, loading: locationLoading, error: locationError, getPosition, isSupported, isStale } = useLocation();
   const [showOpenOnly, setShowOpenOnly] = useState(true);
 
-  // Fetch nearby cafes when position is available
   useEffect(() => {
     if (position) {
       fetchNearbyCafes(position);
@@ -29,7 +28,7 @@ export default function Discover() {
 
   const handleRequestLocation = async () => {
     try {
-      const result = await getPosition(true); // Force refresh
+      const result = await getPosition(true);
       if (result) {
         fetchNearbyCafes(result.coords);
       }
@@ -40,7 +39,6 @@ export default function Discover() {
 
   const handleRefresh = async () => {
     if (position) {
-      // If location is stale, refresh it first
       if (isStale) {
         const result = await getPosition(true);
         if (result) {
@@ -52,10 +50,8 @@ export default function Discover() {
     }
   };
 
-  // Filter cafes based on is_open status from API
   const filteredCafes = useMemo(() => {
     if (!showOpenOnly) return cafes;
-    // Show open AND unknown (null) cafes - only hide explicitly closed ones
     return cafes.filter((cafe) => cafe.isOpen !== false);
   }, [cafes, showOpenOnly]);
 
@@ -72,22 +68,23 @@ export default function Discover() {
         <Header title={t.discover.title} />
 
         <main className="pt-16 px-4">
-          {/* Profile Completion Banner */}
           <ProfileCompletionBanner />
 
           {/* Location Banner */}
-          <div className="mb-6 p-4 rounded-2xl bg-terracotta-light flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+          <div className="mb-6 p-4 rounded-[20px] bg-card flex items-center gap-3"
+            style={{ boxShadow: '0 2px 16px -2px hsl(18 30% 50% / 0.06)' }}
+          >
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
               {locationLoading ? (
-                <Loader2 className="w-5 h-5 text-primary-foreground animate-spin" />
+                <Loader2 className="w-5 h-5 text-primary animate-spin" />
               ) : (
-                <MapPin className="w-5 h-5 text-primary-foreground" />
+                <MapPin className="w-5 h-5 text-primary" />
               )}
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">{t.discover.yourLocation}</p>
+              <p className="text-xs text-muted-foreground">{t.discover.yourLocation}</p>
               {position ? (
-                <p className="font-semibold text-foreground">
+                <p className="font-semibold text-foreground text-sm">
                   {t.discover.nearbyCafes}
                   {(source === 'google_places' || source === 'openstreetmap') && (
                     <span className="text-xs text-muted-foreground ml-2">
@@ -109,7 +106,7 @@ export default function Discover() {
                 size="icon"
                 variant="ghost"
                 onClick={handleRefresh}
-                className="shrink-0"
+                className="shrink-0 rounded-full"
               >
                 <RefreshCw className="w-4 h-4" />
               </Button>
@@ -119,6 +116,7 @@ export default function Discover() {
                 size="sm"
                 variant="outline"
                 onClick={handleRequestLocation}
+                className="rounded-full"
               >
                 {t.discover.getLocation}
               </Button>
@@ -127,7 +125,7 @@ export default function Discover() {
 
           {/* Error State */}
           {error && (
-            <div className="mb-4 p-4 rounded-xl bg-destructive/10 border border-destructive/20">
+            <div className="mb-4 p-4 rounded-[20px] bg-destructive/5">
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-destructive" />
                 <p className="text-sm text-destructive">{error}</p>
@@ -137,7 +135,7 @@ export default function Discover() {
                   size="sm"
                   variant="outline"
                   onClick={handleRefresh}
-                  className="mt-2"
+                  className="mt-2 rounded-full"
                 >
                   {t.discover.retry}
                 </Button>
@@ -148,13 +146,13 @@ export default function Discover() {
           {loading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-32 w-full rounded-2xl" />
+                <Skeleton key={i} className="h-48 w-full rounded-[20px]" />
               ))}
             </div>
           ) : (
             <>
               {/* Filter Controls */}
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2">
                   <Checkbox 
                     id="open-only" 
@@ -176,7 +174,7 @@ export default function Discover() {
               <section className="mb-8">
                 <div className="flex items-center gap-2 mb-4">
                   <Coffee className="w-5 h-5 text-primary" />
-                  <h2 className="font-semibold text-lg text-foreground">{t.discover.activeCafes}</h2>
+                  <h2 className="font-bold text-lg text-foreground">{t.discover.activeCafes}</h2>
                 </div>
                 <div className="grid gap-4">
                   {activeCafes.map((cafe, index) => (
@@ -184,8 +182,7 @@ export default function Discover() {
                       key={cafe.id}
                       cafe={cafe}
                       onClick={() => navigate(`/cafe/${cafe.id}`)}
-                      className="animation-delay-100"
-                      style={{ animationDelay: `${index * 100}ms` } as React.CSSProperties}
+                      style={{ animationDelay: `${index * 80}ms` } as React.CSSProperties}
                     />
                   ))}
                   {activeCafes.length === 0 && (
@@ -201,14 +198,14 @@ export default function Discover() {
               {/* All Cafes */}
               {otherCafes.length > 0 && (
                 <section>
-                  <h2 className="font-semibold text-lg text-foreground mb-4">{t.discover.allCafes}</h2>
+                  <h2 className="font-bold text-lg text-foreground mb-4">{t.discover.allCafes}</h2>
                   <div className="grid gap-4">
                     {otherCafes.map((cafe, index) => (
                       <CafeCard
                         key={cafe.id}
                         cafe={cafe}
                         onClick={() => navigate(`/cafe/${cafe.id}`)}
-                        style={{ animationDelay: `${index * 100}ms` } as React.CSSProperties}
+                        style={{ animationDelay: `${index * 80}ms` } as React.CSSProperties}
                       />
                     ))}
                   </div>
@@ -219,7 +216,7 @@ export default function Discover() {
               {filteredCafes.length === 0 && position && !loading && !error && (
                 <div className="text-center py-12">
                   <Coffee className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="font-semibold text-lg mb-2">
+                  <h3 className="font-bold text-lg mb-2">
                     {showOpenOnly ? t.discover.noOpenCafes : t.discover.noCafesNearby}
                   </h3>
                   <p className="text-muted-foreground text-sm mb-4">
@@ -232,6 +229,7 @@ export default function Discover() {
                       variant="outline" 
                       size="sm"
                       onClick={() => setShowOpenOnly(false)}
+                      className="rounded-full"
                     >
                       {formatString(t.discover.showAll, { count: closedCount })}
                     </Button>

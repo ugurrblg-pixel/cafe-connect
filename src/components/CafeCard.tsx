@@ -20,64 +20,56 @@ export const CafeCard = memo(function CafeCard({ cafe, onClick, className, style
     <button
       onClick={onClick}
       className={cn(
-        'card-elevated overflow-hidden text-left w-full transition-transform active:scale-[0.98] animate-slide-up',
+        'bg-card overflow-hidden text-left w-full transition-all duration-200 active:scale-[0.98] animate-slide-up rounded-[20px] border-0',
         className
       )}
-      style={style}
+      style={{
+        boxShadow: '0 2px 16px -2px hsl(18 30% 50% / 0.08)',
+        ...style,
+      }}
     >
       {/* Image */}
-      <div className="relative h-32">
+      <div className="relative">
         <CafeImage
           cafeId={cafe.id}
           imageUrl={cafe.imageUrl}
           alt={cafe.name}
-          className="h-32"
+          className="h-40"
           aspectRatio="hero"
         />
+
         {/* Active users badge */}
         {cafe.activeUsers > 0 && (
-          <div className="absolute top-3 right-3 bg-primary text-primary-foreground px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-            <Users className="w-3 h-3" />
+          <div className="absolute top-3 right-3 bg-card/90 backdrop-blur-sm text-foreground px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5 text-primary" />
             {formatActiveUserCount(cafe.activeUsers)} {t.common.here}
           </div>
         )}
-        {/* Open/Closed/Unknown badge */}
-        <div
-          className={cn(
-            'absolute bottom-3 left-3 px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1.5',
-            cafe.isOpen === true
-              ? 'bg-accent/90 text-accent-foreground'
-              : cafe.isOpen === false
-                ? 'bg-destructive/90 text-destructive-foreground'
-                : 'bg-muted/90 text-muted-foreground'
-          )}
-        >
-          <span className={cn(
-            'w-2 h-2 rounded-full',
-            cafe.isOpen === true ? 'bg-accent-foreground/60'
-              : cafe.isOpen === false ? 'bg-destructive-foreground/60'
-                : 'bg-muted-foreground/60'
-          )} />
-          {cafe.isOpen === true
-            ? (t.cafeStatus?.open || 'Açık')
-            : cafe.isOpen === false
-              ? (t.cafeStatus?.closed || 'Kapalı')
-              : 'Bilinmiyor'}
-        </div>
       </div>
 
       {/* Content */}
       <div className="p-4">
-        <h3 className="font-semibold text-foreground mb-2">{cafe.name}</h3>
-
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          {cafe.distance && (
-            <div className="flex items-center gap-1">
-              <MapPin className="w-4 h-4" />
-              <span>{cafe.distance}</span>
-            </div>
+        <div className="flex items-center justify-between mb-1.5">
+          <h3 className="font-bold text-foreground text-base">{cafe.name}</h3>
+          {/* Open/Closed badge */}
+          {cafe.isOpen === true && (
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-accent/15 text-accent">
+              {t.cafeStatus?.open || 'Açık'}
+            </span>
+          )}
+          {cafe.isOpen === false && (
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-destructive/10 text-destructive">
+              {t.cafeStatus?.closed || 'Kapalı'}
+            </span>
           )}
         </div>
+
+        {cafe.distance && (
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <MapPin className="w-3.5 h-3.5" />
+            <span className="text-sm">{cafe.distance}</span>
+          </div>
+        )}
       </div>
     </button>
   );
