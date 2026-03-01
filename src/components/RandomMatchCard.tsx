@@ -46,14 +46,15 @@ export function RandomMatchCard() {
       >
         <div className="flex items-center gap-4">
           <img
-            src={matchedUser.photo_url || '/placeholder.svg'}
-            alt={matchedUser.display_name}
-            className="w-16 h-16 rounded-full object-cover border-2 border-primary/20"
-          />
-          <div className="flex-1 min-w-0">
-            <p className="font-bold text-foreground text-[15px]">{matchedUser.display_name}</p>
-            <p className="text-xs text-muted-foreground line-clamp-1">{matchedUser.bio}</p>
-          </div>
+                src={matchedUser.photo_url || '/placeholder.svg'}
+                alt={matchedUser.display_name}
+                className="w-16 h-16 rounded-full object-cover border-2 border-primary/20 cursor-pointer"
+                onClick={() => navigate(`/profile/${matchedUser.user_id}`)}
+              />
+              <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/profile/${matchedUser.user_id}`)}>
+                <p className="font-bold text-foreground text-[15px]">{matchedUser.display_name}</p>
+                <p className="text-xs text-muted-foreground line-clamp-1">{matchedUser.bio}</p>
+              </div>
         </div>
         <Button
           onClick={() => navigate(`/chat/${conversationId}`)}
@@ -100,7 +101,7 @@ export function RandomMatchCard() {
           revealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
         )}>
           <div className="flex items-center gap-4 mb-4">
-            <div className="relative">
+            <div className="relative cursor-pointer" onClick={() => navigate(`/profile/${matchedUser.user_id}`)}>
               <img
                 src={matchedUser.photo_url || '/placeholder.svg'}
                 alt={matchedUser.display_name}
@@ -108,7 +109,7 @@ export function RandomMatchCard() {
               />
               <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-accent border-2 border-card" />
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/profile/${matchedUser.user_id}`)}>
               <p className="font-bold text-foreground text-lg">{matchedUser.display_name}</p>
               {matchedUser.age && (
                 <p className="text-sm text-muted-foreground">{matchedUser.age} yaşında</p>
