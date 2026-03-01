@@ -31,14 +31,15 @@ export function BottomNav() {
 
   const handleNavClick = async (path: string, countKey: 'waves' | 'messages' | null) => {
     navigate(path);
-    // Reset count when navigating to that section
     if (countKey) {
       await resetUnreadCount(countKey);
     }
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 glass-effect border-t border-border safe-bottom z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border/40 safe-bottom z-50"
+      style={{ boxShadow: '0 -1px 12px 0 hsl(18 30% 50% / 0.04)' }}
+    >
       <div className="flex items-center justify-around px-2 py-1">
         {navItems.map(({ path, icon: Icon, labelKey, countKey }) => {
           const isActive = location.pathname === path;
@@ -55,14 +56,14 @@ export function BottomNav() {
               )}
             >
               <div className="relative">
-                <Icon className="w-6 h-6" />
+                <Icon className="w-6 h-6" strokeWidth={isActive ? 2.2 : 1.5} />
                 {count > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1">
                     {count > 99 ? '99+' : count}
                   </span>
                 )}
               </div>
-              <span className="text-xs font-medium">{label}</span>
+              <span className="text-[11px] font-medium">{label}</span>
             </button>
           );
         })}

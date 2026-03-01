@@ -6,25 +6,25 @@
 
 @layer base {
   :root {
-    --background: 30 25% 97%;
-    --foreground: 25 30% 15%;
+    --background: 18 100% 97%;
+    --foreground: 220 20% 18%;
 
     --card: 0 0% 100%;
-    --card-foreground: 25 30% 15%;
+    --card-foreground: 220 20% 18%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 25 30% 15%;
+    --popover-foreground: 220 20% 18%;
 
-    --primary: 14 68% 54%;
+    --primary: 358 100% 67%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 30 20% 94%;
-    --secondary-foreground: 25 30% 25%;
+    --secondary: 18 50% 95%;
+    --secondary-foreground: 220 20% 25%;
 
-    --muted: 30 15% 92%;
-    --muted-foreground: 25 15% 45%;
+    --muted: 18 30% 93%;
+    --muted-foreground: 220 10% 50%;
 
-    --accent: 145 35% 45%;
+    --accent: 173 75% 47%;
     --accent-foreground: 0 0% 100%;
 
     --warning: 25 95% 53%;
@@ -33,37 +33,37 @@
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 30 15% 88%;
-    --input: 30 15% 88%;
-    --ring: 14 68% 54%;
+    --border: 18 20% 92%;
+    --input: 18 20% 90%;
+    --ring: 358 100% 67%;
 
-    --radius: 1rem;
+    --radius: 1.25rem;
 
     /* Custom tokens */
     --coffee-dark: 25 35% 22%;
     --coffee-medium: 25 25% 35%;
-    --coffee-light: 30 30% 85%;
-    --terracotta: 14 68% 54%;
-    --terracotta-light: 14 68% 94%;
-    --sage: 145 35% 45%;
-    --sage-light: 145 35% 92%;
-    --coral: 16 85% 65%;
-    --cream: 40 40% 96%;
-    --espresso: 25 40% 12%;
+    --coffee-light: 18 40% 92%;
+    --terracotta: 358 100% 67%;
+    --terracotta-light: 18 100% 96%;
+    --sage: 173 75% 47%;
+    --sage-light: 173 50% 94%;
+    --coral: 358 100% 67%;
+    --cream: 18 100% 97%;
+    --espresso: 220 30% 12%;
 
     /* Purpose badge colors */
     --badge-chat: 200 80% 50%;
     --badge-chat-bg: 200 80% 94%;
-    --badge-friendship: 145 60% 42%;
-    --badge-friendship-bg: 145 60% 92%;
+    --badge-friendship: 173 75% 42%;
+    --badge-friendship-bg: 173 50% 94%;
     --badge-dating: 340 75% 55%;
     --badge-dating-bg: 340 75% 94%;
 
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(25 30% 15% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(25 30% 15% / 0.08), 0 2px 4px -2px hsl(25 30% 15% / 0.05);
-    --shadow-lg: 0 10px 15px -3px hsl(25 30% 15% / 0.08), 0 4px 6px -4px hsl(25 30% 15% / 0.05);
-    --shadow-card: 0 4px 20px -2px hsl(25 30% 15% / 0.1);
+    --shadow-sm: 0 1px 3px 0 hsl(18 30% 50% / 0.04);
+    --shadow-md: 0 4px 12px -2px hsl(18 30% 50% / 0.06), 0 2px 4px -2px hsl(18 30% 50% / 0.03);
+    --shadow-lg: 0 12px 24px -4px hsl(18 30% 50% / 0.08), 0 4px 8px -4px hsl(18 30% 50% / 0.04);
+    --shadow-card: 0 2px 16px -2px hsl(18 30% 50% / 0.08);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -140,7 +140,7 @@
 
 @layer components {
   .card-elevated {
-    @apply bg-card rounded-2xl;
+    @apply bg-card rounded-[20px] border-0;
     box-shadow: var(--shadow-card);
   }
 
@@ -175,7 +175,7 @@
   }
 
   .glass-effect {
-    @apply backdrop-blur-md bg-background/80;
+    @apply backdrop-blur-xl bg-background/70;
   }
 
   .interaction-btn {
@@ -184,11 +184,11 @@
   }
 
   .nav-item {
-    @apply flex flex-col items-center gap-1 py-2 px-4 rounded-xl transition-colors;
+    @apply flex flex-col items-center gap-0.5 py-2 px-4 transition-colors;
   }
 
   .nav-item-active {
-    @apply text-primary bg-primary/10;
+    @apply text-primary;
   }
 
   .nav-item-inactive {

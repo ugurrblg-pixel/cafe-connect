@@ -25,7 +25,7 @@ export function Header({
     <header
       className={cn(
         'fixed top-0 left-0 right-0 z-50 safe-top',
-        transparent ? 'bg-transparent' : 'glass-effect border-b border-border',
+        transparent ? 'bg-transparent' : 'backdrop-blur-xl bg-background/70 border-b border-border/50',
         className
       )}
     >
