@@ -34,6 +34,7 @@ export function useActiveCheckIn() {
           cafes (name)
         `)
         .eq('user_id', user.id)
+        .gt('expiry_time', new Date().toISOString())
         .maybeSingle();
 
       if (error || !checkIn) {
