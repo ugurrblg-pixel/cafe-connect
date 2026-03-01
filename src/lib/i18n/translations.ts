@@ -17,7 +17,7 @@ export const translations = {
     discover: {
       title: 'Discover',
       yourLocation: 'Your location',
-      nearbyCafes: 'Nearby cafes',
+      nearbyCafes: 'Nearby venues',
       gettingLocation: 'Getting location...',
       getLocation: 'Get Location',
       openOnly: 'Show open only',
@@ -531,7 +531,7 @@ export const translations = {
     discover: {
       title: 'Keşfet',
       yourLocation: 'Konumun',
-      nearbyCafes: 'Yakındaki kafeler',
+      nearbyCafes: 'Yakındaki mekanlar',
       gettingLocation: 'Konum alınıyor...',
       getLocation: 'Konum Al',
       openOnly: 'Sadece açık olanlar',
