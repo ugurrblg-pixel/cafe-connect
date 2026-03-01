@@ -37,8 +37,8 @@ export function BottomNav() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border/40 safe-bottom z-50"
-      style={{ boxShadow: '0 -1px 12px 0 hsl(18 30% 50% / 0.04)' }}
+    <nav
+      className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-xl border-t border-border/40 safe-bottom z-50"
     >
       <div className="flex items-center justify-around px-2 py-1">
         {navItems.map(({ path, icon: Icon, labelKey, countKey }) => {
@@ -56,14 +56,14 @@ export function BottomNav() {
               )}
             >
               <div className="relative">
-                <Icon className="w-6 h-6" strokeWidth={isActive ? 2.2 : 1.5} />
+                <Icon className="w-[22px] h-[22px]" strokeWidth={isActive ? 2.2 : 1.5} />
                 {count > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                  <span className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1">
                     {count > 99 ? '99+' : count}
                   </span>
                 )}
               </div>
-              <span className="text-[11px] font-medium">{label}</span>
+              <span className="text-[11px] font-medium mt-0.5">{label}</span>
             </button>
           );
         })}
