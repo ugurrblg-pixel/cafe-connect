@@ -14,7 +14,7 @@ import { ProfilePhotoManager } from '@/components/ProfilePhotoManager';
 import { FavoriteVenuesSelector } from '@/components/profile/FavoriteVenuesSelector';
 import { CoffeePreferenceSelector } from '@/components/profile/CoffeePreferenceSelector';
 import { SocialEnergySelector } from '@/components/profile/SocialEnergySelector';
-import { Loader2, MessageCircle, Users, Heart, Camera, Pencil, Compass, Sparkles, MapPin, Coffee, Zap } from 'lucide-react';
+import { Loader2, MessageCircle, Users, Heart, Camera, Pencil, Compass, Sparkles, MapPin, Coffee, Zap, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Purpose } from '@/types';
@@ -31,6 +31,7 @@ interface ProfileData {
   hobbies: string[];
   coffee_preference: string | null;
   social_energy: string | null;
+  gender: string | null;
 }
 
 export default function ProfileEdit() {
@@ -50,6 +51,7 @@ export default function ProfileEdit() {
     hobbies: [],
     coffee_preference: null,
     social_energy: null,
+    gender: null,
   });
 
   useEffect(() => {
@@ -60,7 +62,7 @@ export default function ProfileEdit() {
       const [profileRes, favRes] = await Promise.all([
         supabase
           .from('profiles')
-          .select('id, display_name, bio, photo_url, photo_urls, is_visible, purpose, hobbies, coffee_preference, social_energy')
+          .select('id, display_name, bio, photo_url, photo_urls, is_visible, purpose, hobbies, coffee_preference, social_energy, gender')
           .eq('user_id', user.id)
           .maybeSingle(),
         supabase
@@ -85,6 +87,7 @@ export default function ProfileEdit() {
           hobbies: (data.hobbies as string[]) || [],
           coffee_preference: (data as any).coffee_preference || null,
           social_energy: (data as any).social_energy || null,
+          gender: (data as any).gender || null,
         });
       }
 
@@ -159,6 +162,7 @@ export default function ProfileEdit() {
           hobbies: profile.hobbies,
           coffee_preference: profile.coffee_preference,
           social_energy: profile.social_energy,
+          gender: profile.gender,
         } as any)
         .eq('id', profile.id),
       saveFavoriteVenues(),
@@ -305,6 +309,36 @@ export default function ProfileEdit() {
                   <p className="text-xs text-muted-foreground">{profile.bio.length}/120</p>
                 </div>
               </div>
+            </div>
+          </section>
+
+          {/* Gender Section */}
+          <section className="card-elevated p-4">
+            <SectionHeader icon={User} title="Cinsiyet" subtitle="Rastgele eşleştirme için gerekli" />
+            <div className="mt-4">
+              <ToggleGroup
+                type="single"
+                value={profile.gender || ''}
+                onValueChange={(value) => {
+                  if (value) setProfile(prev => ({ ...prev, gender: value }));
+                }}
+                className="grid grid-cols-3 gap-2"
+              >
+                {[
+                  { value: 'male', label: 'Erkek', emoji: '👨' },
+                  { value: 'female', label: 'Kadın', emoji: '👩' },
+                  { value: 'other', label: 'Diğer', emoji: '🌈' },
+                ].map(({ value, label, emoji }) => (
+                  <ToggleGroupItem
+                    key={value}
+                    value={value}
+                    className="flex flex-col items-center gap-1.5 py-4 px-2 h-auto rounded-xl border border-border data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary transition-all"
+                  >
+                    <span className="text-lg">{emoji}</span>
+                    <span className="text-xs font-semibold">{label}</span>
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
             </div>
           </section>
 
