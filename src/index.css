@@ -2,68 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    --background: 18 100% 97%;
-    --foreground: 220 20% 18%;
+    /* Core palette — neutral grey + coral + teal */
+    --background: 214 15% 97%;
+    --foreground: 221 39% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 18%;
+    --card-foreground: 221 39% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 18%;
+    --popover-foreground: 221 39% 11%;
 
-    --primary: 358 100% 67%;
+    --primary: 359 100% 63%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 18 50% 95%;
-    --secondary-foreground: 220 20% 25%;
+    --secondary: 214 15% 94%;
+    --secondary-foreground: 221 20% 28%;
 
-    --muted: 18 30% 93%;
-    --muted-foreground: 220 10% 50%;
+    --muted: 214 12% 92%;
+    --muted-foreground: 218 11% 45%;
 
-    --accent: 173 75% 47%;
+    --accent: 191 91% 53%;
     --accent-foreground: 0 0% 100%;
 
-    --warning: 25 95% 53%;
+    --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 18 20% 92%;
-    --input: 18 20% 90%;
-    --ring: 358 100% 67%;
+    --border: 214 15% 91%;
+    --input: 214 15% 89%;
+    --ring: 359 100% 63%;
 
     --radius: 1.25rem;
 
-    /* Custom tokens */
-    --coffee-dark: 25 35% 22%;
-    --coffee-medium: 25 25% 35%;
-    --coffee-light: 18 40% 92%;
-    --terracotta: 358 100% 67%;
-    --terracotta-light: 18 100% 96%;
-    --sage: 173 75% 47%;
-    --sage-light: 173 50% 94%;
-    --coral: 358 100% 67%;
-    --cream: 18 100% 97%;
-    --espresso: 220 30% 12%;
+    /* Semantic tokens */
+    --online: 191 91% 53%;
+    --online-light: 191 80% 94%;
+    --coral: 359 100% 63%;
+    --coral-light: 359 100% 96%;
 
     /* Purpose badge colors */
-    --badge-chat: 200 80% 50%;
-    --badge-chat-bg: 200 80% 94%;
-    --badge-friendship: 173 75% 42%;
-    --badge-friendship-bg: 173 50% 94%;
-    --badge-dating: 340 75% 55%;
-    --badge-dating-bg: 340 75% 94%;
+    --badge-chat: 210 65% 50%;
+    --badge-chat-bg: 210 60% 94%;
+    --badge-friendship: 160 50% 42%;
+    --badge-friendship-bg: 160 40% 94%;
+    --badge-dating: 359 80% 58%;
+    --badge-dating-bg: 359 80% 95%;
 
-    /* Shadows */
-    --shadow-sm: 0 1px 3px 0 hsl(18 30% 50% / 0.04);
-    --shadow-md: 0 4px 12px -2px hsl(18 30% 50% / 0.06), 0 2px 4px -2px hsl(18 30% 50% / 0.03);
-    --shadow-lg: 0 12px 24px -4px hsl(18 30% 50% / 0.08), 0 4px 8px -4px hsl(18 30% 50% / 0.04);
-    --shadow-card: 0 2px 16px -2px hsl(18 30% 50% / 0.08);
+    /* Shadows — neutral cool */
+    --shadow-sm: 0 1px 3px 0 hsl(214 20% 50% / 0.05);
+    --shadow-md: 0 4px 12px -2px hsl(214 20% 50% / 0.08), 0 2px 4px -2px hsl(214 20% 50% / 0.04);
+    --shadow-lg: 0 12px 32px -4px hsl(214 20% 50% / 0.1), 0 4px 8px -4px hsl(214 20% 50% / 0.05);
+    --shadow-card: 0 1px 12px -2px hsl(214 20% 50% / 0.08);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -76,40 +71,39 @@
   }
 
   .dark {
-    --background: 25 25% 8%;
-    --foreground: 30 20% 95%;
+    --background: 220 20% 7%;
+    --foreground: 210 15% 95%;
 
-    --card: 25 20% 12%;
-    --card-foreground: 30 20% 95%;
+    --card: 220 18% 11%;
+    --card-foreground: 210 15% 95%;
 
-    --popover: 25 20% 12%;
-    --popover-foreground: 30 20% 95%;
+    --popover: 220 18% 11%;
+    --popover-foreground: 210 15% 95%;
 
-    --primary: 14 68% 58%;
+    --primary: 359 90% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 25 15% 18%;
-    --secondary-foreground: 30 20% 90%;
+    --secondary: 220 15% 16%;
+    --secondary-foreground: 210 15% 88%;
 
-    --muted: 25 15% 20%;
-    --muted-foreground: 30 10% 60%;
+    --muted: 220 14% 18%;
+    --muted-foreground: 218 10% 55%;
 
-    --accent: 145 35% 50%;
+    --accent: 191 80% 48%;
     --accent-foreground: 0 0% 100%;
 
-    --warning: 25 95% 58%;
+    --warning: 38 92% 55%;
     --warning-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 25 15% 22%;
-    --input: 25 15% 22%;
-    --ring: 14 68% 58%;
+    --border: 220 14% 18%;
+    --input: 220 14% 20%;
+    --ring: 359 90% 60%;
 
-    --coffee-dark: 30 20% 80%;
-    --coffee-medium: 30 15% 65%;
-    --coffee-light: 25 15% 25%;
+    --online: 191 80% 48%;
+    --online-light: 191 60% 18%;
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -129,10 +123,11 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Mobile viewport fix */
   html, body, #root {
     @apply h-full;
   }
@@ -161,13 +156,13 @@
 
   .btn-checkin {
     @apply bg-primary text-primary-foreground font-semibold py-4 px-8 rounded-full;
-    box-shadow: 0 4px 14px -2px hsl(var(--primary) / 0.4);
+    box-shadow: 0 4px 14px -2px hsl(var(--primary) / 0.35);
     transition: all 0.2s ease;
   }
 
   .btn-checkin:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px -2px hsl(var(--primary) / 0.5);
+    box-shadow: 0 6px 20px -2px hsl(var(--primary) / 0.4);
   }
 
   .btn-checkin:active {
@@ -175,7 +170,7 @@
   }
 
   .glass-effect {
-    @apply backdrop-blur-xl bg-background/70;
+    @apply backdrop-blur-xl bg-background/80;
   }
 
   .interaction-btn {

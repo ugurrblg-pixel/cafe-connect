@@ -25,7 +25,9 @@ export function Header({
     <header
       className={cn(
         'fixed top-0 left-0 right-0 z-50 safe-top',
-        transparent ? 'bg-transparent' : 'backdrop-blur-xl bg-background/70 border-b border-border/50',
+        transparent
+          ? 'bg-transparent'
+          : 'backdrop-blur-xl bg-background/80 border-b border-border/50',
         className
       )}
     >
@@ -35,20 +37,20 @@ export function Header({
             onClick={() => navigate(-1)}
             className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-secondary transition-colors"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-6 h-6 text-foreground" />
           </button>
         ) : (
           <div className="w-10" />
         )}
 
-        <h1 className="font-semibold text-lg text-foreground">{title}</h1>
+        <h1 className="font-semibold text-[17px] text-foreground tracking-tight">{title}</h1>
 
         {showMenu ? (
           <button
             onClick={onMenuClick}
             className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-secondary transition-colors"
           >
-            <MoreVertical className="w-5 h-5" />
+            <MoreVertical className="w-5 h-5 text-muted-foreground" />
           </button>
         ) : (
           <div className="w-10" />

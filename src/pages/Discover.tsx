@@ -71,18 +71,19 @@ export default function Discover() {
           <ProfileCompletionBanner />
 
           {/* Location Banner */}
-          <div className="mb-6 p-4 rounded-[20px] bg-card flex items-center gap-3"
-            style={{ boxShadow: '0 2px 16px -2px hsl(18 30% 50% / 0.06)' }}
+          <div
+            className="mb-6 p-4 rounded-[20px] bg-card flex items-center gap-3"
+            style={{ boxShadow: 'var(--shadow-card)' }}
           >
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-primary/8 flex items-center justify-center">
               {locationLoading ? (
                 <Loader2 className="w-5 h-5 text-primary animate-spin" />
               ) : (
                 <MapPin className="w-5 h-5 text-primary" />
               )}
             </div>
-            <div className="flex-1">
-              <p className="text-xs text-muted-foreground">{t.discover.yourLocation}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">{t.discover.yourLocation}</p>
               {position ? (
                 <p className="font-semibold text-foreground text-sm">
                   {t.discover.nearbyCafes}
@@ -146,7 +147,7 @@ export default function Discover() {
           {loading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-48 w-full rounded-[20px]" />
+                <Skeleton key={i} className="h-52 w-full rounded-[20px]" />
               ))}
             </div>
           ) : (
@@ -159,7 +160,7 @@ export default function Discover() {
                     checked={showOpenOnly}
                     onCheckedChange={(checked) => setShowOpenOnly(checked === true)}
                   />
-                  <Label htmlFor="open-only" className="text-sm text-muted-foreground cursor-pointer">
+                  <Label htmlFor="open-only" className="text-[13px] text-muted-foreground cursor-pointer font-medium">
                     {t.discover.openOnly}
                   </Label>
                 </div>
@@ -173,8 +174,8 @@ export default function Discover() {
               {/* Active Section */}
               <section className="mb-8">
                 <div className="flex items-center gap-2 mb-4">
-                  <Coffee className="w-5 h-5 text-primary" />
-                  <h2 className="font-bold text-lg text-foreground">{t.discover.activeCafes}</h2>
+                  <div className="w-2 h-2 rounded-full bg-accent animate-pulse-soft" />
+                  <h2 className="font-semibold text-[15px] text-foreground tracking-tight">{t.discover.activeCafes}</h2>
                 </div>
                 <div className="grid gap-4">
                   {activeCafes.map((cafe, index) => (
@@ -198,7 +199,7 @@ export default function Discover() {
               {/* All Cafes */}
               {otherCafes.length > 0 && (
                 <section>
-                  <h2 className="font-bold text-lg text-foreground mb-4">{t.discover.allCafes}</h2>
+                  <h2 className="font-semibold text-[15px] text-foreground tracking-tight mb-4">{t.discover.allCafes}</h2>
                   <div className="grid gap-4">
                     {otherCafes.map((cafe, index) => (
                       <CafeCard
@@ -214,12 +215,12 @@ export default function Discover() {
 
               {/* Empty State */}
               {filteredCafes.length === 0 && position && !loading && !error && (
-                <div className="text-center py-12">
-                  <Coffee className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="font-bold text-lg mb-2">
+                <div className="text-center py-16">
+                  <Coffee className="w-12 h-12 text-muted-foreground/40 mx-auto mb-4" />
+                  <h3 className="font-semibold text-lg text-foreground mb-2">
                     {showOpenOnly ? t.discover.noOpenCafes : t.discover.noCafesNearby}
                   </h3>
-                  <p className="text-muted-foreground text-sm mb-4">
+                  <p className="text-muted-foreground text-sm mb-5 max-w-[260px] mx-auto">
                     {showOpenOnly 
                       ? t.discover.noOpenCafesDesc
                       : t.discover.noCafesDesc}
