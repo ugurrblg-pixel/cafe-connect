@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { CafeImage } from '@/components/CafeImage';
 import { formatActiveUserCount } from '@/lib/photoAccess';
+import { RandomMatchCard } from '@/components/RandomMatchCard';
 
 function VenueCard({ cafe, onClick, style }: { cafe: any; onClick: () => void; style?: React.CSSProperties }) {
   return (
@@ -115,6 +116,9 @@ export default function Discover() {
 
         <main className="pt-16 px-4">
           <ProfileCompletionBanner />
+
+          {/* Random Match Mini Game */}
+          <RandomMatchCard />
 
           {/* Location Banner */}
           <div

@@ -234,6 +234,41 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_random_matches: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          id: string
+          match_date: string
+          matched_user_id: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          match_date?: string
+          matched_user_id: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          match_date?: string
+          matched_user_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_random_matches_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matches: {
         Row: {
           cafe_id: string
@@ -478,6 +513,7 @@ export type Database = {
           created_at: string
           date_of_birth: string | null
           display_name: string | null
+          gender: string | null
           hide_last_seen: boolean
           hobbies: string[] | null
           id: string
@@ -507,6 +543,7 @@ export type Database = {
           created_at?: string
           date_of_birth?: string | null
           display_name?: string | null
+          gender?: string | null
           hide_last_seen?: boolean
           hobbies?: string[] | null
           id?: string
@@ -536,6 +573,7 @@ export type Database = {
           created_at?: string
           date_of_birth?: string | null
           display_name?: string | null
+          gender?: string | null
           hide_last_seen?: boolean
           hobbies?: string[] | null
           id?: string
