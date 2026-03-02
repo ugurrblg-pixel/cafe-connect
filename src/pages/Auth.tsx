@@ -131,8 +131,9 @@ export default function Auth() {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
       <div className="flex flex-col items-center mb-8">
-        <img src="/riyo-logo-new.png" alt="Riyo" className="h-16 object-contain" />
-        <p className="text-sm text-muted-foreground mt-2">Connect over coffee</p>
+        <img src="/riyo-logo-new.png" alt="Riyo" className="h-12 object-contain" />
+        <h1 className="text-2xl font-bold text-foreground mt-3">Riyo</h1>
+        <p className="text-sm text-muted-foreground mt-1">Connect over coffee</p>
       </div>
 
       <div className="w-full max-w-sm card-elevated p-6">
