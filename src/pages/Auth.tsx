@@ -245,9 +245,9 @@ export default function Auth() {
                 className="mt-0.5"
               />
               <label htmlFor="terms" className="text-xs text-muted-foreground leading-snug cursor-pointer">
-                <Link to="/settings/terms" className="text-primary underline">Kullanım Koşullarını</Link>
+                <a href="/settings/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline">Kullanım Koşullarını</a>
                 {' '}ve{' '}
-                <Link to="/settings/privacy" className="text-primary underline">Gizlilik Politikasını</Link>
+                <a href="/settings/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline">Gizlilik Politikasını</a>
                 {' '}kabul ediyorum.
               </label>
             </div>
