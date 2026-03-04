@@ -513,12 +513,14 @@ export type Database = {
           created_at: string
           date_of_birth: string | null
           display_name: string | null
+          food_personality: string | null
           gender: string | null
           hide_last_seen: boolean
           hobbies: string[] | null
           id: string
           is_verified: boolean
           is_visible: boolean | null
+          motto: string | null
           name: string
           notifications_enabled: boolean
           phone: string | null
@@ -533,6 +535,8 @@ export type Database = {
           verification_requested_at: string | null
           verification_selfie_url: string | null
           verification_status: string
+          weekend_plan: string | null
+          zodiac_sign: string | null
         }
         Insert: {
           age?: number | null
@@ -543,12 +547,14 @@ export type Database = {
           created_at?: string
           date_of_birth?: string | null
           display_name?: string | null
+          food_personality?: string | null
           gender?: string | null
           hide_last_seen?: boolean
           hobbies?: string[] | null
           id?: string
           is_verified?: boolean
           is_visible?: boolean | null
+          motto?: string | null
           name?: string
           notifications_enabled?: boolean
           phone?: string | null
@@ -563,6 +569,8 @@ export type Database = {
           verification_requested_at?: string | null
           verification_selfie_url?: string | null
           verification_status?: string
+          weekend_plan?: string | null
+          zodiac_sign?: string | null
         }
         Update: {
           age?: number | null
@@ -573,12 +581,14 @@ export type Database = {
           created_at?: string
           date_of_birth?: string | null
           display_name?: string | null
+          food_personality?: string | null
           gender?: string | null
           hide_last_seen?: boolean
           hobbies?: string[] | null
           id?: string
           is_verified?: boolean
           is_visible?: boolean | null
+          motto?: string | null
           name?: string
           notifications_enabled?: boolean
           phone?: string | null
@@ -593,6 +603,8 @@ export type Database = {
           verification_requested_at?: string | null
           verification_selfie_url?: string | null
           verification_status?: string
+          weekend_plan?: string | null
+          zodiac_sign?: string | null
         }
         Relationships: []
       }

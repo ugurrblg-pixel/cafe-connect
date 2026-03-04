@@ -13,7 +13,8 @@ import { useProfileViews } from '@/hooks/useProfileViews';
 import { useActiveCheckIn } from '@/hooks/useActiveCheckIn';
 import { COFFEE_OPTIONS } from '@/components/profile/CoffeePreferenceSelector';
 import { ENERGY_OPTIONS } from '@/components/profile/SocialEnergySelector';
-import { Coffee, Zap } from 'lucide-react';
+import { Coffee, Zap, Quote, UtensilsCrossed, Star, CalendarDays } from 'lucide-react';
+import { ZODIAC_OPTIONS } from '@/pages/ProfileEdit';
 
 interface UserProfile {
   displayName: string;
@@ -27,6 +28,10 @@ interface UserProfile {
   isVerified: boolean;
   coffeePreference: string | null;
   socialEnergy: string | null;
+  motto: string | null;
+  foodPersonality: string | null;
+  zodiacSign: string | null;
+  weekendPlan: string | null;
 }
 
 export default function UserProfileView() {
@@ -45,7 +50,7 @@ export default function UserProfileView() {
       const [profileRes, subscriptionRes] = await Promise.all([
         supabase
           .from('profiles')
-          .select('display_name, age, bio, photo_url, photo_urls, purpose, hobbies, is_verified, coffee_preference, social_energy')
+          .select('display_name, age, bio, photo_url, photo_urls, purpose, hobbies, is_verified, coffee_preference, social_energy, motto, food_personality, zodiac_sign, weekend_plan')
           .eq('user_id', userId)
           .maybeSingle(),
         supabase
@@ -72,6 +77,10 @@ export default function UserProfileView() {
           isVerified: profileRes.data.is_verified || false,
           coffeePreference: profileRes.data.coffee_preference || null,
           socialEnergy: profileRes.data.social_energy || null,
+          motto: (profileRes.data as any).motto || null,
+          foodPersonality: (profileRes.data as any).food_personality || null,
+          zodiacSign: (profileRes.data as any).zodiac_sign || null,
+          weekendPlan: (profileRes.data as any).weekend_plan || null,
         });
       }
       setProfileLoading(false);
@@ -180,6 +189,54 @@ export default function UserProfileView() {
                   </div>
                 ) : null;
               })()}
+            </div>
+          </section>
+        )}
+
+        {/* Personal Touch */}
+        {(profile.motto || profile.foodPersonality || profile.zodiacSign || profile.weekendPlan) && (
+          <section className="card-elevated p-4 mb-4">
+            <h2 className="font-semibold text-foreground mb-3">Kişisel</h2>
+            <div className="space-y-3">
+              {profile.motto && (
+                <div className="flex items-start gap-2.5">
+                  <Quote className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Mottoum</p>
+                    <p className="text-sm font-medium text-foreground">{profile.motto}</p>
+                  </div>
+                </div>
+              )}
+              {profile.foodPersonality && (
+                <div className="flex items-start gap-2.5">
+                  <UtensilsCrossed className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Bir yemekle tanımla</p>
+                    <p className="text-sm font-medium text-foreground">{profile.foodPersonality}</p>
+                  </div>
+                </div>
+              )}
+              {profile.zodiacSign && (() => {
+                const zodiac = ZODIAC_OPTIONS.find(z => z.value === profile.zodiacSign);
+                return zodiac ? (
+                  <div className="flex items-start gap-2.5">
+                    <Star className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Burç</p>
+                      <p className="text-sm font-medium text-foreground">{zodiac.emoji} {zodiac.label}</p>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
+              {profile.weekendPlan && (
+                <div className="flex items-start gap-2.5">
+                  <CalendarDays className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Hafta sonu planım</p>
+                    <p className="text-sm font-medium text-foreground">{profile.weekendPlan}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
         )}

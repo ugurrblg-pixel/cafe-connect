@@ -14,11 +14,26 @@ import { ProfilePhotoManager } from '@/components/ProfilePhotoManager';
 import { FavoriteVenuesSelector } from '@/components/profile/FavoriteVenuesSelector';
 import { CoffeePreferenceSelector } from '@/components/profile/CoffeePreferenceSelector';
 import { SocialEnergySelector } from '@/components/profile/SocialEnergySelector';
-import { Loader2, MessageCircle, Users, Heart, Camera, Pencil, Compass, Sparkles, MapPin, Coffee, Zap, User } from 'lucide-react';
+import { Loader2, MessageCircle, Users, Heart, Camera, Pencil, Compass, Sparkles, MapPin, Coffee, Zap, User, Quote, UtensilsCrossed, Star, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Purpose } from '@/types';
 import { containsProfanity, getProfanityError } from '@/lib/profanityFilter';
+
+export const ZODIAC_OPTIONS = [
+  { value: 'aries', label: 'Koç', emoji: '♈' },
+  { value: 'taurus', label: 'Boğa', emoji: '♉' },
+  { value: 'gemini', label: 'İkizler', emoji: '♊' },
+  { value: 'cancer', label: 'Yengeç', emoji: '♋' },
+  { value: 'leo', label: 'Aslan', emoji: '♌' },
+  { value: 'virgo', label: 'Başak', emoji: '♍' },
+  { value: 'libra', label: 'Terazi', emoji: '♎' },
+  { value: 'scorpio', label: 'Akrep', emoji: '♏' },
+  { value: 'sagittarius', label: 'Yay', emoji: '♐' },
+  { value: 'capricorn', label: 'Oğlak', emoji: '♑' },
+  { value: 'aquarius', label: 'Kova', emoji: '♒' },
+  { value: 'pisces', label: 'Balık', emoji: '♓' },
+];
 
 interface ProfileData {
   id: string;
@@ -32,6 +47,10 @@ interface ProfileData {
   coffee_preference: string | null;
   social_energy: string | null;
   gender: string | null;
+  motto: string;
+  food_personality: string;
+  zodiac_sign: string | null;
+  weekend_plan: string;
 }
 
 export default function ProfileEdit() {
@@ -52,6 +71,10 @@ export default function ProfileEdit() {
     coffee_preference: null,
     social_energy: null,
     gender: null,
+    motto: '',
+    food_personality: '',
+    zodiac_sign: null,
+    weekend_plan: '',
   });
 
   useEffect(() => {
@@ -62,7 +85,7 @@ export default function ProfileEdit() {
       const [profileRes, favRes] = await Promise.all([
         supabase
           .from('profiles')
-          .select('id, display_name, bio, photo_url, photo_urls, is_visible, purpose, hobbies, coffee_preference, social_energy, gender')
+          .select('id, display_name, bio, photo_url, photo_urls, is_visible, purpose, hobbies, coffee_preference, social_energy, gender, motto, food_personality, zodiac_sign, weekend_plan')
           .eq('user_id', user.id)
           .maybeSingle(),
         supabase
@@ -88,6 +111,10 @@ export default function ProfileEdit() {
           coffee_preference: (data as any).coffee_preference || null,
           social_energy: (data as any).social_energy || null,
           gender: (data as any).gender || null,
+          motto: (data as any).motto || '',
+          food_personality: (data as any).food_personality || '',
+          zodiac_sign: (data as any).zodiac_sign || null,
+          weekend_plan: (data as any).weekend_plan || '',
         });
       }
 
@@ -163,6 +190,10 @@ export default function ProfileEdit() {
           coffee_preference: profile.coffee_preference,
           social_energy: profile.social_energy,
           gender: profile.gender,
+          motto: profile.motto.trim() || null,
+          food_personality: profile.food_personality.trim() || null,
+          zodiac_sign: profile.zodiac_sign,
+          weekend_plan: profile.weekend_plan.trim() || null,
         } as any)
         .eq('id', profile.id),
       saveFavoriteVenues(),
@@ -416,6 +447,77 @@ export default function ProfileEdit() {
                   onVenuesChange={setFavoriteVenueIds}
                 />
               )}
+            </div>
+          </section>
+
+          {/* Motto Section */}
+          <section className="card-elevated p-4">
+            <SectionHeader icon={Quote} title="Hayattaki Mottoum" subtitle="Seni tanımlayan bir cümle veya alıntı" />
+            <div className="mt-4">
+              <Input
+                value={profile.motto}
+                onChange={(e) => setProfile(prev => ({ ...prev, motto: e.target.value }))}
+                placeholder="Hayat kısa, kahveni sıcak iç ☕"
+                maxLength={80}
+                className="h-11"
+              />
+              <p className="text-xs text-muted-foreground text-right mt-1">{profile.motto.length}/80</p>
+            </div>
+          </section>
+
+          {/* Food Personality Section */}
+          <section className="card-elevated p-4">
+            <SectionHeader icon={UtensilsCrossed} title="Bir Yemekle Tanımla" subtitle="Sen bir yemek olsan ne olurdun?" />
+            <div className="mt-4">
+              <Input
+                value={profile.food_personality}
+                onChange={(e) => setProfile(prev => ({ ...prev, food_personality: e.target.value }))}
+                placeholder="Pizza — her ortama uyarım 🍕"
+                maxLength={60}
+                className="h-11"
+              />
+              <p className="text-xs text-muted-foreground text-right mt-1">{profile.food_personality.length}/60</p>
+            </div>
+          </section>
+
+          {/* Zodiac Section */}
+          <section className="card-elevated p-4">
+            <SectionHeader icon={Star} title="Burcum" subtitle="Astroloji meraklıları için" />
+            <div className="mt-4">
+              <ToggleGroup
+                type="single"
+                value={profile.zodiac_sign || ''}
+                onValueChange={(value) => {
+                  if (value) setProfile(prev => ({ ...prev, zodiac_sign: value }));
+                }}
+                className="grid grid-cols-4 gap-2"
+              >
+                {ZODIAC_OPTIONS.map(({ value, label, emoji }) => (
+                  <ToggleGroupItem
+                    key={value}
+                    value={value}
+                    className="flex flex-col items-center gap-1 py-3 px-1 h-auto rounded-xl border border-border data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary transition-all text-xs"
+                  >
+                    <span className="text-base">{emoji}</span>
+                    <span className="font-semibold leading-tight">{label}</span>
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </div>
+          </section>
+
+          {/* Weekend Plan Section */}
+          <section className="card-elevated p-4">
+            <SectionHeader icon={CalendarDays} title="Hafta Sonu Planım" subtitle="Hafta sonları genelde ne yaparsın?" />
+            <div className="mt-4">
+              <Input
+                value={profile.weekend_plan}
+                onChange={(e) => setProfile(prev => ({ ...prev, weekend_plan: e.target.value }))}
+                placeholder="Kafede kitap okur, akşam arkadaşlarla buluşurum 📚"
+                maxLength={80}
+                className="h-11"
+              />
+              <p className="text-xs text-muted-foreground text-right mt-1">{profile.weekend_plan.length}/80</p>
             </div>
           </section>
 

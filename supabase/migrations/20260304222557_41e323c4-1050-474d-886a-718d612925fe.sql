@@ -1,0 +1,5 @@
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS motto text DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS food_personality text DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS zodiac_sign text DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS weekend_plan text DEFAULT NULL;
