@@ -11,6 +11,9 @@ import { Purpose } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProfileViews } from '@/hooks/useProfileViews';
 import { useActiveCheckIn } from '@/hooks/useActiveCheckIn';
+import { COFFEE_OPTIONS } from '@/components/profile/CoffeePreferenceSelector';
+import { ENERGY_OPTIONS } from '@/components/profile/SocialEnergySelector';
+import { Coffee, Zap } from 'lucide-react';
 
 interface UserProfile {
   displayName: string;
@@ -22,6 +25,8 @@ interface UserProfile {
   hobbies: string[];
   isPremium: boolean;
   isVerified: boolean;
+  coffeePreference: string | null;
+  socialEnergy: string | null;
 }
 
 export default function UserProfileView() {
@@ -40,7 +45,7 @@ export default function UserProfileView() {
       const [profileRes, subscriptionRes] = await Promise.all([
         supabase
           .from('profiles')
-          .select('display_name, age, bio, photo_url, photo_urls, purpose, hobbies, is_verified')
+          .select('display_name, age, bio, photo_url, photo_urls, purpose, hobbies, is_verified, coffee_preference, social_energy')
           .eq('user_id', userId)
           .maybeSingle(),
         supabase
@@ -65,6 +70,8 @@ export default function UserProfileView() {
           hobbies: (profileRes.data.hobbies as string[]) || [],
           isPremium,
           isVerified: profileRes.data.is_verified || false,
+          coffeePreference: profileRes.data.coffee_preference || null,
+          socialEnergy: profileRes.data.social_energy || null,
         });
       }
       setProfileLoading(false);
@@ -141,6 +148,39 @@ export default function UserProfileView() {
           <section className="card-elevated p-4 mb-4">
             <h2 className="font-semibold text-foreground mb-3">Hobiler</h2>
             <HobbyDisplay hobbies={profile.hobbies} />
+          </section>
+        )}
+
+        {/* Coffee & Social Energy */}
+        {(profile.coffeePreference || profile.socialEnergy) && (
+          <section className="card-elevated p-4 mb-4">
+            <h2 className="font-semibold text-foreground mb-3">Tercihler</h2>
+            <div className="flex flex-wrap gap-3">
+              {profile.coffeePreference && (() => {
+                const coffee = COFFEE_OPTIONS.find(o => o.value === profile.coffeePreference);
+                return coffee ? (
+                  <div className="flex items-center gap-2 bg-secondary/50 rounded-xl px-3 py-2">
+                    <span className="text-lg">{coffee.emoji}</span>
+                    <div>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1"><Coffee className="w-3 h-3" /> Kahve Tercihi</p>
+                      <p className="text-sm font-medium text-foreground">{coffee.label}</p>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
+              {profile.socialEnergy && (() => {
+                const energy = ENERGY_OPTIONS.find(o => o.value === profile.socialEnergy);
+                return energy ? (
+                  <div className="flex items-center gap-2 bg-secondary/50 rounded-xl px-3 py-2">
+                    <span className="text-lg">{energy.emoji}</span>
+                    <div>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1"><Zap className="w-3 h-3" /> Sosyal Enerji</p>
+                      <p className="text-sm font-medium text-foreground">{energy.label}</p>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
+            </div>
           </section>
         )}
       </main>
