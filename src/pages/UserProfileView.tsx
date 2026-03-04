@@ -5,6 +5,7 @@ import { ProfilePhotoCarousel } from '@/components/ProfilePhotoCarousel';
 import { PurposeBadge } from '@/components/PurposeBadge';
 import { HobbyDisplay } from '@/components/HobbyDisplay';
 import { PremiumBadge } from '@/components/PremiumBadge';
+import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { supabase } from '@/integrations/supabase/client';
 import { Purpose } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,6 +21,7 @@ interface UserProfile {
   purpose: Purpose;
   hobbies: string[];
   isPremium: boolean;
+  isVerified: boolean;
 }
 
 export default function UserProfileView() {
@@ -38,7 +40,7 @@ export default function UserProfileView() {
       const [profileRes, subscriptionRes] = await Promise.all([
         supabase
           .from('profiles')
-          .select('display_name, age, bio, photo_url, photo_urls, purpose, hobbies')
+          .select('display_name, age, bio, photo_url, photo_urls, purpose, hobbies, is_verified')
           .eq('user_id', userId)
           .maybeSingle(),
         supabase
@@ -62,6 +64,7 @@ export default function UserProfileView() {
           purpose: (profileRes.data.purpose as Purpose) || 'chat',
           hobbies: (profileRes.data.hobbies as string[]) || [],
           isPremium,
+          isVerified: profileRes.data.is_verified || false,
         });
       }
       setProfileLoading(false);
@@ -118,6 +121,7 @@ export default function UserProfileView() {
             <h1 className="text-2xl font-bold text-foreground">
               {profile.displayName}{profile.age ? `, ${profile.age}` : ''}
             </h1>
+            {profile.isVerified && <VerifiedBadge size="sm" showText />}
             {profile.isPremium && <PremiumBadge size="sm" />}
           </div>
 
