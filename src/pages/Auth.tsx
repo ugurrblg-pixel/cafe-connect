@@ -121,13 +121,13 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
-      <div className="flex items-center gap-3 mb-8">
-        <img src="/riyo-logo-dark.png" alt="Riyo" className="w-14 h-14 rounded-2xl" />
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Riyo</h1>
-          <p className="text-sm text-muted-foreground">Connect over coffee</p>
-        </div>
+    <div className="min-h-screen bg-[#F0F4FA] flex flex-col items-center justify-center p-6">
+      <div className="flex flex-col items-center mb-10 relative">
+        {/* Subtle radial glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full bg-[#D6E4F7] opacity-60 blur-3xl pointer-events-none" />
+        <img src="/riyo-logo-dark.png" alt="Riyo" className="w-16 h-16 rounded-2xl relative z-10" />
+        <h1 className="text-3xl font-bold text-foreground mt-4 tracking-tight relative z-10">Riyo</h1>
+        <p className="text-sm font-medium text-muted-foreground mt-1 relative z-10 tracking-wide">Connect over coffee</p>
       </div>
 
       <div className="w-full max-w-sm card-elevated p-6">
