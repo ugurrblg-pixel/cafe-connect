@@ -100,7 +100,7 @@ export function ProfilePhotoCarousel({
           <div
             className="flex transition-transform duration-300 ease-out h-full"
             style={{
-              transform: hasMultiple ? `translateX(-${safeIndex * 100}%)` : 'none',
+              transform: hasMultiple ? `translateX(-${safeIndex * (100 / displayPhotos.length)}%)` : 'none',
               width: hasMultiple ? `${displayPhotos.length * 100}%` : '100%',
             }}
           >
