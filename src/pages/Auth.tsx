@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Coffee, Mail, Lock, User, Eye, EyeOff, Phone, CalendarIcon } from 'lucide-react';
+import { Coffee, Mail, Lock, User, Eye, EyeOff, CalendarIcon } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Link } from 'react-router-dom';
 import { containsProfanity, getProfanityError } from '@/lib/profanityFilter';
@@ -38,14 +38,8 @@ export default function Auth() {
         return;
       }
 
-      // Validate phone and DOB for signup
+      // Validate DOB for signup
       if (!isLogin) {
-        const cleanPhone = formData.phone.replace(/\s/g, '');
-        if (!cleanPhone || cleanPhone.length < 10) {
-          toast.error('Geçerli bir telefon numarası girin');
-          setLoading(false);
-          return;
-        }
         if (!formData.dateOfBirth) {
           toast.error('Doğum tarihinizi girin');
           setLoading(false);
@@ -85,13 +79,11 @@ export default function Auth() {
         });
         if (error) throw error;
 
-        // Save phone and DOB to profile
+        // Save DOB to profile
         if (signUpData.user) {
-          const cleanPhone = formData.phone.replace(/\s/g, '');
           await supabase
             .from('profiles')
             .update({ 
-              phone: cleanPhone,
               date_of_birth: formData.dateOfBirth || null,
             })
             .eq('user_id', signUpData.user.id);
@@ -181,21 +173,6 @@ export default function Auth() {
                     placeholder={t.auth.yourName}
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="pl-10 h-12"
-                    required={!isLogin}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Telefon Numarası</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="05XX XXX XX XX"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="pl-10 h-12"
                     required={!isLogin}
                   />
