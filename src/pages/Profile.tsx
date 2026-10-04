@@ -7,15 +7,13 @@ import { ProfilePhotoCarousel } from '@/components/ProfilePhotoCarousel';
 import { HobbyDisplay } from '@/components/HobbyDisplay';
 import { DeleteAccountDialog } from '@/components/DeleteAccountDialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNotifications } from '@/contexts/NotificationContext';
 import { usePremium } from '@/hooks/usePremium';
 import { useI18n } from '@/contexts/I18nContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Purpose } from '@/types';
-import { Edit2, Shield, Bell, HelpCircle, LogOut, MessageCircle, Users, Heart, Eye, BellOff, BellRing, Loader2, Crown, ChevronRight, Zap, Trash2, Mail, Phone, User as UserIcon, CalendarDays } from 'lucide-react';
+import { Edit2, Shield, Bell, HelpCircle, LogOut, MessageCircle, Users, Heart, Eye, Crown, ChevronRight, Zap, Trash2, Mail, Phone, User as UserIcon, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
 import { VerificationRequest } from '@/components/VerificationRequest';
 
 interface Profile {
@@ -39,12 +37,10 @@ interface Profile {
 export default function Profile() {
   const navigate = useNavigate();
   const { user, signOut, refreshProfile } = useAuth();
-  const { isSubscribed, isSupported, permission, subscribe, unsubscribe } = useNotifications();
   const { isPremium } = usePremium();
   const { t, formatString } = useI18n();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [notificationLoading, setNotificationLoading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   useEffect(() => {
@@ -89,22 +85,6 @@ export default function Profile() {
     if (error) { toast.error('Failed to update DM settings'); return; }
     setProfile({ ...profile, allow_dms: enabled });
     toast.success(enabled ? t.profile.dmEnabled : t.profile.dmDisabled);
-  };
-
-  const handleNotificationToggle = async () => {
-    if (!profile) return;
-    setNotificationLoading(true);
-    try {
-      if (isSubscribed) {
-        await unsubscribe();
-        await supabase.from('profiles').update({ notifications_enabled: false }).eq('id', profile.id);
-        setProfile({ ...profile, notifications_enabled: false });
-      } else {
-        await subscribe();
-        await supabase.from('profiles').update({ notifications_enabled: true }).eq('id', profile.id);
-        setProfile({ ...profile, notifications_enabled: true });
-      }
-    } finally { setNotificationLoading(false); }
   };
 
   const handleLogout = async () => { await signOut(); navigate('/auth'); };
@@ -341,29 +321,6 @@ export default function Profile() {
                   <span className="text-sm font-medium">{label}</span>
                 </button>
               ))}
-            </div>
-          </div>
-
-          {/* Notification Settings */}
-          <div className={cardClass} style={cardShadow}>
-            <h2 className="font-semibold text-foreground mb-3">{t.profile.notificationSection}</h2>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isSubscribed ? 'bg-primary/10' : 'bg-secondary'}`}>
-                  {isSubscribed ? <BellRing className="w-5 h-5 text-primary" /> : <BellOff className="w-5 h-5 text-muted-foreground" />}
-                </div>
-                <div>
-                  <p className="font-medium text-foreground text-sm">{t.profile.pushNotifications}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {!isSupported ? t.profile.browserNotSupport : permission === 'denied' ? t.profile.notificationsBlocked : isSubscribed ? t.profile.waveMatchNotifs : t.profile.enableNotifs}
-                  </p>
-                </div>
-              </div>
-              {isSupported && permission !== 'denied' && (
-                <Button variant={isSubscribed ? 'outline' : 'default'} size="sm" onClick={handleNotificationToggle} disabled={notificationLoading} className="rounded-full">
-                  {notificationLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : isSubscribed ? t.profile.turnOff : t.profile.turnOn}
-                </Button>
-              )}
             </div>
           </div>
 
