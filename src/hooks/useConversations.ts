@@ -137,7 +137,7 @@ export function useConversations() {
 
     // Subscribe to realtime changes
     const channel = supabase
-      .channel('conversations-list')
+      .channel(`conversations-list-${user.id}-${crypto.randomUUID()}`)
       .on(
         'postgres_changes',
         {
@@ -272,7 +272,7 @@ export function useChat(conversationId: string) {
 
     // Subscribe to new messages
     channelRef.current = supabase
-      .channel(`chat-${conversationId}`)
+      .channel(`chat-${conversationId}-${crypto.randomUUID()}`)
       .on(
         'postgres_changes',
         {

@@ -236,7 +236,7 @@ export function useWaves(): UseWavesReturn {
     if (!user) return;
 
     const channel: RealtimeChannel = supabase
-      .channel('waves-realtime')
+      .channel(`waves-realtime-${user.id}-${crypto.randomUUID()}`)
       .on(
         'postgres_changes',
         {

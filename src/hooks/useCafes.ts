@@ -141,7 +141,7 @@ export function useCafes(initialCafes?: Cafe[]) {
 
     // Subscribe to realtime changes on check_ins for active user count updates
     const channel = supabase
-      .channel('cafes-check-ins')
+      .channel(`cafes-check-ins-${crypto.randomUUID()}`)
       .on(
         'postgres_changes',
         {

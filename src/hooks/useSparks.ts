@@ -234,7 +234,7 @@ export function useSparks(): UseSparksReturn {
     if (!user) return;
 
     const channel: RealtimeChannel = supabase
-      .channel('sparks-realtime')
+      .channel(`sparks-realtime-${user.id}-${crypto.randomUUID()}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',

@@ -149,7 +149,7 @@ export function useProfileViews() {
     if (!user) return;
 
     const channel = supabase
-      .channel('profile-views-realtime')
+      .channel(`profile-views-realtime-${user.id}-${crypto.randomUUID()}`)
       .on(
         'postgres_changes',
         {

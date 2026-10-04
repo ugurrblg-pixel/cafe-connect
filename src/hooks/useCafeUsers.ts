@@ -329,7 +329,7 @@ export function useCafeUsers(cafeId: string, options: UseCafeUsersOptions = {}) 
     fetchActiveUsers();
 
     const channel = supabase
-      .channel(`cafe-db-${cafeId}`)
+      .channel(`cafe-db-${cafeId}-${crypto.randomUUID()}`)
       .on(
         'postgres_changes',
         {

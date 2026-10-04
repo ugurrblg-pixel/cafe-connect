@@ -167,7 +167,7 @@ export function useMatches(): UseMatchesReturn {
     if (!user) return;
 
     const channel: RealtimeChannel = supabase
-      .channel('matches-realtime')
+      .channel(`matches-realtime-${user.id}-${crypto.randomUUID()}`)
       .on(
         'postgres_changes',
         {
