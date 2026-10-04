@@ -57,7 +57,7 @@ export function useActiveCheckIn() {
 
     // Subscribe to changes
     const channel = supabase
-      .channel('active-checkin')
+      .channel(`active-checkin-${user.id}-${crypto.randomUUID()}`)
       .on(
         'postgres_changes',
         {

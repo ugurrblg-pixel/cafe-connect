@@ -86,7 +86,7 @@ export function useMessageRequests() {
 
     // Subscribe to realtime changes
     const channel = supabase
-      .channel('message-requests')
+      .channel(`message-requests-${user.id}-${crypto.randomUUID()}`)
       .on(
         'postgres_changes',
         {

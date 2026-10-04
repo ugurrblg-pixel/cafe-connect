@@ -214,7 +214,7 @@ export function useInboxData() {
     if (!user) return;
 
     channelRef.current = supabase
-      .channel('inbox-updates')
+      .channel(`inbox-updates-${user.id}-${crypto.randomUUID()}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, () => {
         fetchInboxData();
       })
