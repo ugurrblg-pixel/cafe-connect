@@ -203,7 +203,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     if (!user) return;
 
     const channel = supabase
-      .channel('unread-counts')
+      .channel(`unread-counts-${user.id}-${crypto.randomUUID()}`)
       .on(
         'postgres_changes',
         {
