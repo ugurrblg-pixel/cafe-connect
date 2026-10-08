@@ -10,10 +10,18 @@ const CACHE_FRESHNESS_MS = 60 * 24 * 60 * 60 * 1000;
 const DB_MIN_VENUES = 15;
 const SEARCH_RADIUS = 1200;
 
+// Google Maps connector gateway (Places API New)
+const GATEWAY_URL = 'https://connector-gateway.lovable.dev/google_maps';
+
 const VENUE_TYPES = ['cafe', 'bar', 'night_club', 'gym'] as const;
 
-// Types that trigger immediate exclusion
-const EXCLUDED_TYPES = ['restaurant', 'meal_takeaway', 'meal_delivery', 'food'];
+// Places API (New) includedTypes per app category
+const VENUE_TYPE_GROUPS: Record<string, string[]> = {
+  cafe: ['cafe', 'coffee_shop'],
+  bar: ['bar'],
+  night_club: ['night_club'],
+  gym: ['gym', 'fitness_center'],
+};
 
 // Name blacklist - case-insensitive
 const NAME_BLACKLIST = [
@@ -26,18 +34,16 @@ const NAME_BLACKLIST = [
 ];
 
 interface GooglePlace {
-  place_id: string;
-  name: string;
-  geometry: { location: { lat: number; lng: number } };
-  types: string[];
-  opening_hours?: { open_now?: boolean };
-  business_status?: string;
+  id: string;
+  displayName?: { text?: string };
+  location?: { latitude: number; longitude: number };
+  types?: string[];
+  businessStatus?: string;
+  currentOpeningHours?: { openNow?: boolean };
 }
 
 interface GoogleResponse {
-  results: GooglePlace[];
-  status: string;
-  error_message?: string;
+  places?: GooglePlace[];
 }
 
 function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -55,13 +61,8 @@ function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
 function mapCategory(types: string[]): string {
   if (types.includes('night_club')) return 'night_club';
   if (types.includes('bar')) return 'bar';
-  if (types.includes('gym')) return 'gym';
+  if (types.includes('gym') || types.includes('fitness_center')) return 'gym';
   return 'cafe';
-}
-
-/** Returns true if the place should be EXCLUDED */
-function isExcludedByType(types: string[]): boolean {
-  return types.some((t) => EXCLUDED_TYPES.includes(t));
 }
 
 /** Returns true if the place name contains a blacklisted word */
@@ -71,48 +72,99 @@ function isExcludedByName(name: string): boolean {
 }
 
 /** Returns true if the place passes strict acceptance rules */
-function isAcceptedVenue(place: GooglePlace): boolean {
+function isAcceptedVenue(place: GooglePlace, categoryTypes: string[]): boolean {
+  const name = place.displayName?.text || '';
+  if (!name) return false;
+  if (!place.location) return false;
+
+  // Rule 1: Exclude by name blacklist
+  if (isExcludedByName(name)) return false;
+
+  // Rule 2: Exclude permanently closed
+  if (place.businessStatus === 'CLOSED_PERMANENTLY') return false;
+
+  // Rule 3: Exclude food-only venues (restaurant etc. types that slipped in)
   const types = place.types || [];
-
-  // Rule 1: Must have at least one venue type
-  const hasVenueType = types.some((t) => VENUE_TYPES.includes(t as any));
-  if (!hasVenueType) return false;
-
-  // Rule 2: Exclude by name blacklist
-  if (isExcludedByName(place.name)) return false;
-
-  // Rule 3: Exclude permanently closed
-  if (place.business_status === 'CLOSED_PERMANENTLY') return false;
-
-  // Rule 4: If it's ONLY a restaurant/food (no cafe/bar/night_club), exclude
-  // But if it has both cafe AND restaurant types, allow it
-  const isOnlyFood = !hasVenueType && types.some((t) => EXCLUDED_TYPES.includes(t));
-  if (isOnlyFood) return false;
+  const foodOnly = ['restaurant', 'meal_takeaway', 'meal_delivery', 'food'].some((t) => types.includes(t)) &&
+    !categoryTypes.some((t) => types.includes(t));
+  if (foodOnly) return false;
 
   return true;
+}
+
+function getGatewayCredentials(): { lovableKey: string; mapsKey: string } | null {
+  const lovableKey = Deno.env.get('LOVABLE_API_KEY');
+  const mapsKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
+  if (!lovableKey || !mapsKey) return null;
+  return { lovableKey, mapsKey };
+}
+
+/** Search nearby venues for one category group via the connector gateway */
+async function searchNearbyCategory(
+  lat: number,
+  lng: number,
+  includedTypes: string[],
+  fieldMask: string,
+  creds: { lovableKey: string; mapsKey: string }
+): Promise<GooglePlace[]> {
+  try {
+    const res = await fetch(`${GATEWAY_URL}/places/v1/places:searchNearby`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${creds.lovableKey}`,
+        'X-Connection-Api-Key': creds.mapsKey,
+        'Content-Type': 'application/json',
+        'X-Goog-FieldMask': fieldMask,
+      },
+      body: JSON.stringify({
+        includedTypes,
+        maxResultCount: 20,
+        locationRestriction: {
+          circle: {
+            center: { latitude: lat, longitude: lng },
+            radius: SEARCH_RADIUS,
+          },
+        },
+      }),
+    });
+
+    if (res.status === 403) {
+      const body = await res.json().catch(() => ({}));
+      const details: Array<{ reason?: string }> = body?.error?.details ?? [];
+      const reason = details.find((d) => d.reason)?.reason;
+      console.error(`Google Places 403 (${reason || 'unknown'}):`, JSON.stringify(body).slice(0, 500));
+      return [];
+    }
+
+    if (!res.ok) {
+      console.error(`Google Places HTTP ${res.status}`);
+      return [];
+    }
+
+    const data: GoogleResponse = await res.json();
+    return data.places || [];
+  } catch (err) {
+    console.error('Google Places fetch error:', err);
+    return [];
+  }
 }
 
 /** Fetch fresh open_now status from Google Places for the area */
 async function fetchFreshOpenStatus(
   lat: number,
   lng: number,
-  apiKey: string
+  creds: { lovableKey: string; mapsKey: string }
 ): Promise<Record<string, boolean | null>> {
   const statusMap: Record<string, boolean | null> = {};
+  const fieldMask = 'places.id,places.currentOpeningHours.openNow';
+
   const fetches = VENUE_TYPES.map(async (type) => {
-    const keyword = type === 'cafe' ? '&keyword=cafe' : '';
-    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${SEARCH_RADIUS}&type=${type}${keyword}&key=${apiKey}`;
-    try {
-      const res = await fetch(url);
-      if (!res.ok) return;
-      const data: GoogleResponse = await res.json();
-      if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') return;
-      for (const place of data.results || []) {
-        if (!statusMap.hasOwnProperty(place.place_id) && place.opening_hours?.open_now !== undefined) {
-          statusMap[place.place_id] = place.opening_hours.open_now;
-        }
+    const places = await searchNearbyCategory(lat, lng, VENUE_TYPE_GROUPS[type], fieldMask, creds);
+    for (const place of places) {
+      if (!statusMap.hasOwnProperty(place.id) && place.currentOpeningHours?.openNow !== undefined) {
+        statusMap[place.id] = place.currentOpeningHours.openNow;
       }
-    } catch (_) {}
+    }
   });
   await Promise.all(fetches);
   return statusMap;
@@ -126,7 +178,7 @@ Deno.serve(async (req) => {
   try {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const GOOGLE_PLACES_KEY = Deno.env.get('GOOGLE_PLACES_API_KEY');
+    const creds = getGatewayCredentials();
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error('Missing Supabase configuration');
@@ -191,11 +243,11 @@ Deno.serve(async (req) => {
     // If enough cached venues, refresh is_open status from Google then return
     if (validVenues.length >= DB_MIN_VENUES) {
       console.log(`Cache hit: ${validVenues.length} venues (filtered from ${nearbyVenues.length})`);
-      
-      // Refresh is_open status from Google API if key is available
-      if (GOOGLE_PLACES_KEY) {
+
+      // Refresh is_open status from Google Places if connector is available
+      if (creds) {
         try {
-          const freshOpenStatus = await fetchFreshOpenStatus(lat, lng, GOOGLE_PLACES_KEY);
+          const freshOpenStatus = await fetchFreshOpenStatus(lat, lng, creds);
           for (const v of validVenues) {
             if (v.google_place_id && freshOpenStatus.hasOwnProperty(v.google_place_id)) {
               v.is_open = freshOpenStatus[v.google_place_id];
@@ -219,45 +271,32 @@ Deno.serve(async (req) => {
           console.error('Error refreshing open status:', err);
         }
       }
-      
+
       return respond(validVenues, userCounts, 'cache');
     }
 
-    // --- Step 2: Call Google Places API ---
-    if (!GOOGLE_PLACES_KEY) {
-      console.warn('GOOGLE_PLACES_API_KEY not set, returning cache only');
+    // --- Step 2: Call Google Places API (New) via connector gateway ---
+    if (!creds) {
+      console.warn('Google Maps connector credentials not set, returning cache only');
       return respond(nearbyVenues, userCounts, 'cache_fallback');
     }
 
     console.log('Cache miss, calling Google Places API...');
 
-    const allPlaces: GooglePlace[] = [];
+    const allPlaces: Array<{ place: GooglePlace; categoryTypes: string[] }> = [];
     const seenIds = new Set<string>();
 
-    // Parallel fetch for all venue types
+    const searchFieldMask =
+      'places.id,places.displayName,places.location,places.types,places.businessStatus,places.currentOpeningHours.openNow';
+
+    // Parallel fetch for all venue type groups
     const fetches = VENUE_TYPES.map(async (type) => {
-      // Add keyword=cafe for cafe type to improve result quality
-      const keyword = type === 'cafe' ? '&keyword=cafe' : '';
-      const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${SEARCH_RADIUS}&type=${type}${keyword}&key=${GOOGLE_PLACES_KEY}`;
-      try {
-        const res = await fetch(url);
-        if (!res.ok) {
-          console.error(`Google API ${type}: HTTP ${res.status}`);
-          return;
+      const places = await searchNearbyCategory(lat, lng, VENUE_TYPE_GROUPS[type], searchFieldMask, creds);
+      for (const place of places) {
+        if (!seenIds.has(place.id) && isAcceptedVenue(place, VENUE_TYPE_GROUPS[type])) {
+          seenIds.add(place.id);
+          allPlaces.push({ place, categoryTypes: VENUE_TYPE_GROUPS[type] });
         }
-        const data: GoogleResponse = await res.json();
-        if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-          console.error(`Google API ${type}: ${data.status} - ${data.error_message || ''}`);
-          return;
-        }
-        for (const place of data.results || []) {
-          if (!seenIds.has(place.place_id) && isAcceptedVenue(place)) {
-            seenIds.add(place.place_id);
-            allPlaces.push(place);
-          }
-        }
-      } catch (err) {
-        console.error(`Google fetch error (${type}):`, err);
       }
     });
 
@@ -266,22 +305,22 @@ Deno.serve(async (req) => {
 
     // --- Step 3: Upsert ONLY filtered venues to DB ---
     if (allPlaces.length > 0) {
-      const rows = allPlaces.map((p) => {
+      const rows = allPlaces.map(({ place: p, categoryTypes }) => {
         const row: Record<string, any> = {
-          google_place_id: p.place_id,
-          name: p.name,
+          google_place_id: p.id,
+          name: p.displayName?.text || '',
           address: '',
-          latitude: p.geometry.location.lat,
-          longitude: p.geometry.location.lng,
-          category: mapCategory(p.types),
+          latitude: p.location!.latitude,
+          longitude: p.location!.longitude,
+          category: mapCategory(p.types || []),
           rating: 4.5,
           image_url: '',
           opening_hours: null,
           last_synced_at: new Date().toISOString(),
         };
         // Only set is_open if Google actually provided the value
-        if (p.opening_hours?.open_now !== undefined) {
-          row.is_open = p.opening_hours.open_now;
+        if (p.currentOpeningHours?.openNow !== undefined) {
+          row.is_open = p.currentOpeningHours.openNow;
         }
         return row;
       });
