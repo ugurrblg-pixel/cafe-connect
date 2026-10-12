@@ -80,10 +80,9 @@ export function useActiveCheckIn() {
   const checkOut = async () => {
     if (!activeCheckIn) return false;
 
-    const { error } = await supabase
-      .from('check_ins')
-      .delete()
-      .eq('id', activeCheckIn.id);
+    const { error } = await supabase.rpc('end_own_check_in', {
+      target_check_in_id: activeCheckIn.id,
+    });
 
     if (error) return false;
     

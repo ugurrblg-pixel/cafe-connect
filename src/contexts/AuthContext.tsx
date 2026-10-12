@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -29,6 +29,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const activeUserId = useRef<string | null>(null);
+  const profileRequest = useRef(0);
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -46,45 +48,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = async () => {
     if (user) {
+      const request = ++profileRequest.current;
       const profileData = await fetchProfile(user.id);
-      setProfile(profileData);
+      if (activeUserId.current === user.id && request === profileRequest.current) {
+        setProfile(profileData);
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    let disposed = false;
+    let authEventReceived = false;
+    const applySession = (nextSession: Session | null) => {
+      if (disposed) return;
+      const userId = nextSession?.user.id ?? null;
+      const request = ++profileRequest.current;
+      if (activeUserId.current !== userId) setProfile(null);
+      activeUserId.current = userId;
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+      setLoading(!!userId);
+      if (!userId) {
+        setProfile(null);
+        return;
+      }
+      // Keep Supabase requests outside its synchronous auth callback.
+      setTimeout(async () => {
+        if (disposed || request !== profileRequest.current) return;
+        const profileData = await fetchProfile(userId);
+        if (disposed || request !== profileRequest.current || activeUserId.current !== userId) return;
+        setProfile(profileData);
+        setLoading(false);
+      }, 0);
+    };
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Defer profile fetch to avoid blocking auth state
-          setTimeout(async () => {
-            const profileData = await fetchProfile(session.user.id);
-            setProfile(profileData);
-            setLoading(false);
-          }, 0);
-        } else {
-          setProfile(null);
-          setLoading(false);
-        }
+      (_event, nextSession) => {
+        authEventReceived = true;
+        applySession(nextSession);
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        const profileData = await fetchProfile(session.user.id);
-        setProfile(profileData);
-      }
-      setLoading(false);
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      if (!authEventReceived) applySession(initialSession);
+    }).catch(() => {
+      if (!authEventReceived) applySession(null);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      disposed = true;
+      ++profileRequest.current;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {

@@ -1,3 +1,4 @@
+import { PrivateProfileImage } from '@/components/PrivateProfileImage';
 import { useNavigate } from 'react-router-dom';
 import { Spark } from '@/hooks/useSparks';
 import { usePremium } from '@/hooks/usePremium';
@@ -91,7 +92,7 @@ export function SparkReceivedList({ sparks, onAccept, onReject, onShowPaywall }:
               <div className="relative flex-shrink-0">
                 {isPremium ? (
                   spark.fromUser?.photoUrl ? (
-                    <img
+                    <PrivateProfileImage
                       src={spark.fromUser.photoUrl}
                       alt={spark.fromUser.displayName}
                       className="w-14 h-14 rounded-full object-cover"
@@ -108,7 +109,7 @@ export function SparkReceivedList({ sparks, onAccept, onReject, onShowPaywall }:
                     <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400/30 to-purple-500/30 flex items-center justify-center overflow-hidden">
                       {/* Blurred silhouette */}
                       {spark.fromUser?.photoUrl ? (
-                        <img
+                        <PrivateProfileImage
                           src={spark.fromUser.photoUrl}
                           alt=""
                           className="w-full h-full object-cover blur-xl scale-150"

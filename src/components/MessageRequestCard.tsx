@@ -1,3 +1,4 @@
+import { PrivateProfileImage } from '@/components/PrivateProfileImage';
 import { InitialsAvatar } from './InitialsAvatar';
 import { Button } from '@/components/ui/button';
 import { Check, X } from 'lucide-react';
@@ -29,7 +30,7 @@ export function MessageRequestCard({ request, onAccept, onReject }: MessageReque
         {/* Avatar */}
         <div className="flex-shrink-0">
           {photoUrl ? (
-            <img
+            <PrivateProfileImage
               src={photoUrl}
               alt={displayName}
               className="w-12 h-12 rounded-full object-cover"

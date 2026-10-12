@@ -90,16 +90,14 @@ export default function Discover() {
 
   const handleRequestLocation = async () => {
     try {
-      const result = await getPosition(true);
-      if (result) fetchNearbyCafes(result.coords);
+      await getPosition(true);
     } catch {}
   };
 
   const handleRefresh = async () => {
     if (position) {
       if (isStale) {
-        const result = await getPosition(true);
-        if (result) fetchNearbyCafes(result.coords);
+        await getPosition(true);
       } else {
         fetchNearbyCafes(position);
       }

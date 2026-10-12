@@ -25,6 +25,7 @@ const ProfileEdit = lazy(() => import("./pages/ProfileEdit"));
 const Search = lazy(() => import("./pages/Search"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const Auth = lazy(() => import("./pages/Auth"));
+const PasswordRecovery = lazy(() => import("./pages/PasswordRecovery"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const Subscription = lazy(() => import("./pages/Subscription"));
 const ProfileViewers = lazy(() => import("./pages/ProfileViewers"));
@@ -119,6 +120,8 @@ function AppRoutes() {
       {user && !hideStatusBar && <CheckInStatusBar />}
       
       <Routes>
+        <Route path="/forgot-password" element={<SuspensePage><PasswordRecovery /></SuspensePage>} />
+        <Route path="/reset-password" element={<SuspensePage><PasswordRecovery /></SuspensePage>} />
         <Route 
           path="/onboarding" 
           element={user ? <Navigate to="/" replace /> : <SuspensePage><Onboarding /></SuspensePage>} 

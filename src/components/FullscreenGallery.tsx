@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PrivateProfileImage } from './PrivateProfileImage';
 
 interface FullscreenGalleryProps {
   photos: string[];
@@ -217,7 +218,7 @@ function GalleryImage({ src, alt, scale, translate }: { src: string; alt: string
           <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
         </div>
       )}
-      <img
+      <PrivateProfileImage
         src={error ? DEFAULT_PLACEHOLDER : src}
         alt={alt}
         className="max-w-full max-h-full object-contain select-none"

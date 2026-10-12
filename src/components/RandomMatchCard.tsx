@@ -1,3 +1,4 @@
+import { PrivateProfileImage } from '@/components/PrivateProfileImage';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRandomMatch } from '@/hooks/useRandomMatch';
@@ -45,7 +46,7 @@ export function RandomMatchCard() {
         style={{ boxShadow: '0 2px 16px -4px rgba(0,0,0,0.08)' }}
       >
         <div className="flex items-center gap-4">
-          <img
+          <PrivateProfileImage
                 src={matchedUser.photo_url || '/placeholder.svg'}
                 alt={matchedUser.display_name}
                 className="w-16 h-16 rounded-full object-cover border-2 border-primary/20 cursor-pointer"
@@ -102,7 +103,7 @@ export function RandomMatchCard() {
         )}>
           <div className="flex items-center gap-4 mb-4">
             <div className="relative cursor-pointer" onClick={() => navigate(`/profile/${matchedUser.user_id}`)}>
-              <img
+              <PrivateProfileImage
                 src={matchedUser.photo_url || '/placeholder.svg'}
                 alt={matchedUser.display_name}
                 className="w-20 h-20 rounded-2xl object-cover"

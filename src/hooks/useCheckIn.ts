@@ -27,6 +27,16 @@ interface CafeLocation {
   longitude: number | null;
 }
 
+function checkInErrorMessage(error: { message?: string }): string {
+  const message = error.message || '';
+  if (message.includes('Sign in required')) return 'Lütfen yeniden giriş yapın.';
+  if (message.includes('within 150 metres')) return 'Kafeye giriş için 150 metre içinde olmalısın.';
+  if (message.includes('wait 5 minutes')) return 'Tekrar kafeye giriş yapmadan önce 5 dakika beklemelisin.';
+  if (message.includes('Account restricted')) return 'Hesabın bu işlem için kısıtlanmış.';
+  if (message.includes('location unavailable')) return 'Kafenin konumu doğrulanamadı.';
+  return 'Kafeye giriş işlemi tamamlanamadı. Lütfen tekrar deneyin.';
+}
+
 export function useCheckIn(cafeId: string) {
   const { user } = useAuth();
   const [isCheckedIn, setIsCheckedIn] = useState(false);
@@ -87,9 +97,8 @@ export function useCheckIn(cafeId: string) {
     try {
       // Get cafe location
       const cafeLocation = await getCafeLocation();
-      if (!cafeLocation?.latitude || !cafeLocation?.longitude) {
-        // If cafe has no coordinates, allow check-in (legacy cafes)
-        return { valid: true };
+      if (cafeLocation?.latitude == null || cafeLocation.longitude == null) {
+        return { valid: false, error: 'Kafenin konumu doğrulanamadı. Lütfen daha sonra tekrar deneyin.' };
       }
 
       // Get user's current position
@@ -124,13 +133,6 @@ export function useCheckIn(cafeId: string) {
   useEffect(() => {
     if (!isCheckedIn || !currentCheckIn) return;
 
-    const updateActivity = async () => {
-      await supabase
-        .from('check_ins')
-        .update({ last_active_at: new Date().toISOString() })
-        .eq('id', currentCheckIn.id);
-    };
-
     const updateActivityAndVerifyLocation = async () => {
       // First, verify user is still within cafe radius
       const locationResult = await verifyLocation();
@@ -139,14 +141,13 @@ export function useCheckIn(cafeId: string) {
         gpsFailureCountRef.current++;
         
         if (gpsFailureCountRef.current >= GPS_FAILURE_GRACE_COUNT) {
+          const { error } = await supabase.rpc('end_own_check_in', {
+            target_check_in_id: currentCheckIn.id,
+          });
+          if (error) return;
           toast.info('Kafeden ayrıldın, otomatik check-out yapıldı', {
             description: `${formatDistance(locationResult.distance)} uzaklaştın`,
           });
-          
-          await supabase
-            .from('check_ins')
-            .delete()
-            .eq('id', currentCheckIn.id);
           
           setCurrentCheckIn(null);
           setIsCheckedIn(false);
@@ -160,11 +161,20 @@ export function useCheckIn(cafeId: string) {
         gpsFailureCountRef.current = 0;
       }
 
-      await updateActivity();
+      if (!locationResult.userCoords) return;
+      const { data: active, error } = await supabase.rpc('refresh_own_check_in', {
+        target_check_in_id: currentCheckIn.id,
+        latitude: locationResult.userCoords.latitude,
+        longitude: locationResult.userCoords.longitude,
+      });
+      if (!error && !active) {
+        setCurrentCheckIn(null);
+        setIsCheckedIn(false);
+      }
     };
 
     // Update immediately on mount
-    updateActivity();
+    updateActivityAndVerifyLocation();
 
     // Then update every 5 minutes with location verification
     const interval = setInterval(updateActivityAndVerifyLocation, ACTIVITY_PING_INTERVAL_MS);
@@ -172,7 +182,7 @@ export function useCheckIn(cafeId: string) {
     // Re-ping activity when app returns from background
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        updateActivity();
+        updateActivityAndVerifyLocation();
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -204,7 +214,7 @@ export function useCheckIn(cafeId: string) {
       // Verify location first
       const locationResult = await verifyLocation();
       
-      if (!locationResult.valid) {
+      if (!locationResult.valid || !locationResult.userCoords) {
         toast.error('Konum doğrulaması başarısız', {
           description: locationResult.error,
         });
@@ -212,41 +222,23 @@ export function useCheckIn(cafeId: string) {
         return false;
       }
 
-      // First, delete any existing check-ins for this user at any cafe
-      await supabase
-        .from('check_ins')
-        .delete()
-        .eq('user_id', user.id);
-
-      // Create new check-in with explicit expiry (60 minutes from now)
-      const expiryTime = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-      const insertData: any = {
-        user_id: user.id,
-        cafe_id: cafeId,
-        expiry_time: expiryTime,
-        last_active_at: new Date().toISOString(),
-      };
-
-      // Store check-in location if available
-      if (locationResult.userCoords) {
-        insertData.check_in_latitude = locationResult.userCoords.latitude;
-        insertData.check_in_longitude = locationResult.userCoords.longitude;
-      }
-
-      const { data, error } = await supabase
-        .from('check_ins')
-        .insert(insertData)
-        .select()
-        .single();
+      // Ownership, distance, cooldown and expiry are enforced by the server.
+      const { data: rows, error } = await supabase.rpc('start_own_check_in', {
+        target_cafe_id: cafeId,
+        latitude: locationResult.userCoords.latitude,
+        longitude: locationResult.userCoords.longitude,
+      });
 
       if (error) throw error;
+      const data = rows?.[0];
+      if (!data) throw new Error('Kafeye giriş kaydı oluşturulamadı');
 
       setCurrentCheckIn(data);
       setIsCheckedIn(true);
       setVerifyingLocation(false);
       return true;
     } catch (error: any) {
-      toast.error('Check-in başarısız: ' + error.message);
+      toast.error(checkInErrorMessage(error));
       setVerifyingLocation(false);
       return false;
     }
@@ -256,18 +248,18 @@ export function useCheckIn(cafeId: string) {
     if (!user || !currentCheckIn) return false;
 
     try {
-      const { error } = await supabase
-        .from('check_ins')
-        .delete()
-        .eq('id', currentCheckIn.id);
+      const { error } = await supabase.rpc('end_own_check_in', {
+        target_check_in_id: currentCheckIn.id,
+      });
 
       if (error) throw error;
 
       setCurrentCheckIn(null);
       setIsCheckedIn(false);
+      setLastCheckOutTime(Date.now());
       return true;
     } catch (error: any) {
-      toast.error('Check-out başarısız: ' + error.message);
+      toast.error('Kafeden çıkış tamamlanamadı. Lütfen tekrar deneyin.');
       return false;
     }
   };

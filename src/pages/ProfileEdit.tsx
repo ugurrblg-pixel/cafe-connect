@@ -55,10 +55,12 @@ interface ProfileData {
 
 export default function ProfileEdit() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [photosBusy, setPhotosBusy] = useState(false);
   const [favoriteVenueIds, setFavoriteVenueIds] = useState<string[]>([]);
+  const [savedFavoriteVenueIds, setSavedFavoriteVenueIds] = useState<string[]>([]);
   const [profile, setProfile] = useState<ProfileData>({
     id: '',
     display_name: '',
@@ -120,6 +122,7 @@ export default function ProfileEdit() {
 
       if (!favRes.error && favRes.data) {
         setFavoriteVenueIds(favRes.data.map(f => f.venue_id));
+        setSavedFavoriteVenueIds(favRes.data.map(f => f.venue_id));
       }
 
       setLoading(false);
@@ -128,11 +131,10 @@ export default function ProfileEdit() {
   }, [user]);
 
   const handleSave = async () => {
-    if (!user || !profile.id) return;
+    if (!user || !profile.id || photosBusy) return;
 
-    // Minimum 2 photos required
-    const photoCount = profile.photo_urls.filter(u => !!u).length;
-    if (photoCount < 2) { toast.error('En az 2 fotoğraf eklemelisin'); return; }
+    // Basic edits can be saved before the profile is complete.
+    // The existing profile gate still determines eligibility for social actions.
 
     const trimmedName = profile.display_name.trim();
     if (!trimmedName) { toast.error('İsim zorunludur'); return; }
@@ -173,17 +175,12 @@ export default function ProfileEdit() {
     }
 
     setSaving(true);
-    const mainPhotoUrl = profile.photo_urls.length > 0 ? profile.photo_urls[0] : profile.photo_url;
-
-    // Save profile + favorite venues in parallel
-    const [profileRes] = await Promise.all([
-      supabase
+    try {
+      const profileRes = await supabase
         .from('profiles')
         .update({
           display_name: trimmedName,
           bio: trimmedBio,
-          photo_url: mainPhotoUrl,
-          photo_urls: profile.photo_urls,
           is_visible: profile.is_visible,
           purpose: profile.purpose,
           hobbies: profile.hobbies,
@@ -195,32 +192,30 @@ export default function ProfileEdit() {
           zodiac_sign: profile.zodiac_sign,
           weekend_plan: profile.weekend_plan.trim() || null,
         } as any)
-        .eq('id', profile.id),
-      saveFavoriteVenues(),
-    ]);
-
-    if (profileRes.error) {
-      console.error('Error saving profile:', profileRes.error);
-      toast.error('Profil kaydedilemedi');
-    } else {
+        .eq('id', profile.id)
+        .select('id')
+        .single();
+      if (profileRes.error) throw profileRes.error;
+      await refreshProfile();
+      const favoritesChanged = JSON.stringify([...favoriteVenueIds].sort())
+        !== JSON.stringify([...savedFavoriteVenueIds].sort());
+      if (favoritesChanged) {
+        const { error } = await supabase.rpc('save_own_favorite_venues', {
+          venue_ids: favoriteVenueIds,
+        });
+        if (error) {
+          toast.error('Profil bilgilerin kaydedildi, fakat favori mekanlar kaydedilemedi. Lütfen tekrar deneyin.');
+          return;
+        }
+        setSavedFavoriteVenueIds([...favoriteVenueIds]);
+      }
       toast.success('Profil kaydedildi!');
       navigate('/profile');
-    }
-    setSaving(false);
-  };
-
-  const saveFavoriteVenues = async () => {
-    if (!user) return;
-
-    // Delete existing, insert new
-    await supabase.from('user_favorite_venues').delete().eq('user_id', user.id);
-
-    if (favoriteVenueIds.length > 0) {
-      const rows = favoriteVenueIds.map(venue_id => ({
-        user_id: user.id,
-        venue_id,
-      }));
-      await supabase.from('user_favorite_venues').insert(rows);
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      toast.error('Profil kaydedilemedi');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -302,7 +297,8 @@ export default function ProfileEdit() {
             <div className="mt-3">
               <ProfilePhotoManager
                 photos={profile.photo_urls.length > 0 ? profile.photo_urls : (profile.photo_url ? [profile.photo_url] : [])}
-                onPhotosChange={(photos) => setProfile(prev => ({ ...prev, photo_urls: photos }))}
+                onPhotosChange={(photos) => setProfile(prev => ({ ...prev, photo_urls: photos, photo_url: photos[0] || '' }))}
+                onBusyChange={setPhotosBusy}
               />
             </div>
           </section>
@@ -525,7 +521,7 @@ export default function ProfileEdit() {
           <div className="pt-2">
             <Button
               onClick={handleSave}
-              disabled={saving || !profile.display_name.trim()}
+              disabled={saving || photosBusy || !profile.display_name.trim()}
               className="w-full h-12 text-base font-semibold rounded-xl"
             >
               {saving ? (

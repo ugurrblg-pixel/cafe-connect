@@ -1,3 +1,4 @@
+import { PrivateProfileImage } from '@/components/PrivateProfileImage';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
@@ -18,12 +19,12 @@ interface BlockedProfile {
 
 export default function SafetyPrivacy() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { blockedUsers, unblockUser, loading: blockLoading } = useBlocking();
+  const { user, refreshProfile } = useAuth();
+  const { blockedUsers, unblockUser, loading: blockLoading, listLoading: profilesLoading, listError } = useBlocking();
   const [isVisible, setIsVisible] = useState(true);
   const [visibilityLoading, setVisibilityLoading] = useState(false);
-  const [blockedProfiles, setBlockedProfiles] = useState<BlockedProfile[]>([]);
-  const [profilesLoading, setProfilesLoading] = useState(true);
+  const blockedProfiles: BlockedProfile[] = blockedUsers.map((block, index) => ({ blockedId: block.blockedId, name: `Kullanıcı ${index + 1} · ${block.createdAt.toLocaleDateString('tr-TR')}`, photoUrl: '' }));
+
 
   // Fetch current visibility
   useEffect(() => {
@@ -37,34 +38,6 @@ export default function SafetyPrivacy() {
         if (data) setIsVisible(data.is_visible ?? true);
       });
   }, [user]);
-
-  // Fetch blocked user profiles
-  useEffect(() => {
-    if (blockedUsers.length === 0) {
-      setBlockedProfiles([]);
-      setProfilesLoading(false);
-      return;
-    }
-
-    const fetchProfiles = async () => {
-      const ids = blockedUsers.map(b => b.blockedId);
-      const { data } = await supabase
-        .from('profiles')
-        .select('user_id, name, display_name, photo_url')
-        .in('user_id', ids);
-
-      if (data) {
-        setBlockedProfiles(data.map(p => ({
-          blockedId: p.user_id,
-          name: p.display_name || p.name || 'Kullanıcı',
-          photoUrl: p.photo_url || '',
-        })));
-      }
-      setProfilesLoading(false);
-    };
-
-    fetchProfiles();
-  }, [blockedUsers]);
 
   const handleVisibilityToggle = async (hidden: boolean) => {
     if (!user) return;
@@ -83,6 +56,7 @@ export default function SafetyPrivacy() {
     }
 
     setIsVisible(!hidden);
+    await refreshProfile();
     toast.success(hidden ? 'Profiliniz gizlendi' : 'Profiliniz görünür');
   };
 
@@ -124,7 +98,7 @@ export default function SafetyPrivacy() {
               <div>
                 <h3 className="font-semibold text-foreground">Engellenen Kullanıcılar</h3>
                 <p className="text-sm text-muted-foreground">
-                  {blockedUsers.length === 0
+                  {listError ? 'Engel listesi yüklenemedi. Sayfayı yenileyin.' : blockedUsers.length === 0
                     ? 'Engellediğiniz kimse yok'
                     : `${blockedUsers.length} kullanıcı engelli`}
                 </p>
@@ -141,7 +115,7 @@ export default function SafetyPrivacy() {
                   <div key={bp.blockedId} className="flex items-center justify-between py-2 border-b border-border last:border-b-0">
                     <div className="flex items-center gap-3">
                       {bp.photoUrl ? (
-                        <img
+                        <PrivateProfileImage
                           src={bp.photoUrl}
                           alt={bp.name}
                           className="w-10 h-10 rounded-full object-cover"

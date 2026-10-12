@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { lovable } from '@/integrations/lovable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,8 +10,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Link } from 'react-router-dom';
 import { containsProfanity, getProfanityError } from '@/lib/profanityFilter';
 import { useI18n } from '@/contexts/I18nContext';
+import { adultBirthDate, latestAdultBirthDate } from '@/lib/birthDate';
 
 export default function Auth() {
+  const googleEnabled = import.meta.env.VITE_GOOGLE_SIGN_IN_ENABLED === 'true';
   const navigate = useNavigate();
   const { t } = useI18n();
   const [isLogin, setIsLogin] = useState(true);
@@ -40,19 +41,22 @@ export default function Auth() {
 
       // Validate DOB for signup
       if (!isLogin) {
+        if (!acceptedTerms) {
+          toast.error('Kayıt için koşulları kabul etmelisiniz.');
+          return;
+        }
+        if (formData.name.trim().length < 2 || formData.name.trim().length > 50) {
+          toast.error('İsim 2 ile 50 karakter arasında olmalı.');
+          return;
+        }
         if (!formData.dateOfBirth) {
           toast.error('Doğum tarihinizi girin');
           setLoading(false);
           return;
         }
         // Validate age (must be at least 18)
-        const dob = new Date(formData.dateOfBirth);
-        const today = new Date();
-        let age = today.getFullYear() - dob.getFullYear();
-        const m = today.getMonth() - dob.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
-        if (age < 18) {
-          toast.error('18 yaşından büyük olmalısınız');
+        if (!adultBirthDate(formData.dateOfBirth)) {
+          toast.error('Geçerli bir doğum tarihi girin; en az 18 yaşında olmalısınız.');
           setLoading(false);
           return;
         }
@@ -73,23 +77,19 @@ export default function Auth() {
           options: {
             emailRedirectTo: `${window.location.origin}/`,
             data: {
-              name: formData.name,
+              name: formData.name.trim(),
+              date_of_birth: formData.dateOfBirth,
             },
           },
         });
         if (error) throw error;
 
-        // Save DOB to profile
-        if (signUpData.user) {
-          await supabase
-            .from('profiles')
-            .update({ 
-              date_of_birth: formData.dateOfBirth || null,
-            })
-            .eq('user_id', signUpData.user.id);
+        if (signUpData.session) {
+          toast.success(t.auth.welcomeBack + '!');
+          navigate('/');
+        } else {
+          toast.success(t.auth.checkEmail);
         }
-
-        toast.success(t.auth.checkEmail);
       }
     } catch (error: any) {
       if (error.message.includes('User already registered')) {
@@ -105,15 +105,14 @@ export default function Auth() {
   };
 
   const handleGoogleSignIn = async () => {
+    if (!googleEnabled || loading) return;
     setLoading(true);
     try {
-      const result = await lovable.auth.signInWithOAuth('google', {
-        redirect_uri: `${window.location.origin}/`,
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/` },
       });
-      if (result.error) throw result.error;
-      if (!result.redirected) {
-        navigate('/');
-      }
+      if (error) throw error;
     } catch (error: any) {
       toast.error(error.message || t.auth.googleFailed);
       setLoading(false);
@@ -135,6 +134,7 @@ export default function Auth() {
           {isLogin ? t.auth.welcomeBack : t.auth.createAccount}
         </h2>
 
+        {googleEnabled && <>
         <Button
           type="button"
           variant="outline"
@@ -159,6 +159,8 @@ export default function Auth() {
             <span className="bg-card px-2 text-muted-foreground">{t.auth.or}</span>
           </div>
         </div>
+
+        </>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
@@ -189,7 +191,8 @@ export default function Auth() {
                     onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
                     className="pl-10 h-12"
                     required={!isLogin}
-                    max={new Date(new Date().getFullYear() - 18, new Date().getMonth(), new Date().getDate()).toISOString().split('T')[0]}
+                    min="1900-01-01"
+                    max={latestAdultBirthDate()}
                   />
                 </div>
               </div>
@@ -256,6 +259,7 @@ export default function Auth() {
           <Button type="submit" className="w-full h-12" disabled={loading || (!isLogin && !acceptedTerms)}>
             {loading ? t.auth.loading : isLogin ? t.auth.signIn : t.auth.signUp}
           </Button>
+          {isLogin && <Link to="/forgot-password" className="block text-center text-sm text-primary underline">Şifremi unuttum</Link>}
         </form>
 
         <p className="text-center text-sm text-muted-foreground mt-6">

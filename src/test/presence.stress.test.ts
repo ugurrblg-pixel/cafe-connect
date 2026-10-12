@@ -15,10 +15,20 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { createClient, RealtimeChannel } from '@supabase/supabase-js';
 
-// Use test environment variables or defaults
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://enyxdizsycghxuqsnrwc.supabase.co';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVueXhkaXpzeWNnaHh1cXNucndjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwNjUzODAsImV4cCI6MjA4NTY0MTM4MH0.BlA9j7noTbo9tB-B6PfpcgSY-78sh8NxeIbu1oL4im4';
-
+// Network stress tests require explicit opt-in and a separate test project.
+const stressEnabled = process.env.RUN_PRESENCE_STRESS === '1';
+const SUPABASE_URL = process.env.PRESENCE_TEST_SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = process.env.PRESENCE_TEST_SUPABASE_KEY || '';
+if (stressEnabled) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error('Provide PRESENCE_TEST_SUPABASE_URL and PRESENCE_TEST_SUPABASE_KEY for an isolated test project.');
+  }
+  const hostname = new URL(SUPABASE_URL).hostname;
+  if (hostname === 'enyxdizsycghxuqsnrwc.supabase.co') {
+    throw new Error('Stress tests must not target the existing application project.');
+  }
+}
+const describeStress = stressEnabled ? describe : describe.skip;
 interface SimulatedUser {
   id: string;
   displayName: string;
@@ -38,7 +48,7 @@ const TEST_CAFE_ID = 'test-stress-cafe-' + Date.now();
 const NUM_USERS = 15;
 const SYNC_TIMEOUT_MS = 10000;
 
-describe('Presence Stress Test', () => {
+describeStress('Presence Stress Test', () => {
   const users: SimulatedUser[] = [];
 
   // Create simulated users
@@ -261,7 +271,7 @@ describe('Presence Stress Test', () => {
   }, 5000);
 });
 
-describe('Presence Performance Metrics', () => {
+describeStress('Presence Performance Metrics', () => {
   it('should report performance summary', async () => {
     console.log('\n📊 Performance Summary:');
     console.log('========================');

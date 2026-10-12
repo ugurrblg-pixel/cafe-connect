@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Environment files belong to each environment, never to source control.
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

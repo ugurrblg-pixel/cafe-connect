@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { UserCard } from '@/components/UserCard';
@@ -21,7 +21,7 @@ import { useMatches } from '@/hooks/useMatches';
 import { usePremium } from '@/hooks/usePremium';
 import { useProfileCompletion } from '@/hooks/useProfileCompletion';
 import { useI18n } from '@/contexts/I18nContext';
-import { MapPin, Users, Clock, AlertCircle, UserPlus, ShieldCheck } from 'lucide-react';
+import { MapPin, Users, Clock, AlertCircle, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
@@ -51,22 +51,9 @@ export default function CafeRoom() {
   const { cafes, loading: cafesLoading } = useCafes();
   const { isCheckedIn, loading: checkInLoading, verifyingLocation, checkIn, checkOut } = useCheckIn(id || '');
   
-  // Throttled join notification callback
-  const handleUserJoined = useCallback(() => {
-    toast(t.cafeRoom.someoneJoined, {
-      icon: <UserPlus className="w-4 h-4 text-primary" />,
-      duration: 3000,
-    });
-  }, [t]);
-  
-  // Pass presence options to useCafeUsers - user joins presence when checked in
+  // Load only server-authorized records without public profile broadcasts.
   const { users: activeUsers, loading: usersLoading, connectionStatus } = useCafeUsers(id || '', {
-    joinPresence: true,
     isCheckedIn,
-    displayName: profile?.display_name || '',
-    photoUrl: profile?.photo_url || '',
-    purpose: profile?.purpose || 'chat',
-    onUserJoined: handleUserJoined,
   });
   
   const { sendWave, hasWavedAt, hasReceivedWaveFrom, sentWaves } = useWaves();
@@ -149,48 +136,14 @@ export default function CafeRoom() {
     }
   };
 
-  const handleOpenChat = async (userId: string, userName: string) => {
-    // Gate messaging behind profile completion
-    if (!isProfileComplete) {
-      setGatedAction('message');
-      setShowProfileGate(true);
-      return;
+  const handleOpenChat = async (userId: string, _userName: string) => {
+    if (import.meta.env.VITE_SAFE_CHAT_ENABLED !== 'true') {
+      toast.info('Güvenli mesajlaşma hazırlanıyor.'); return;
     }
-
-    // Check if matched
-    if (!hasMatchWith(userId)) {
-      toast.info('Wave at each other first to unlock chat');
-      return;
-    }
-
-    // Check existing conversation first - this doesn't count as new chat
-    const existingConversationId = getMatchConversation(userId);
-    if (existingConversationId) {
-      navigate(`/chat/${existingConversationId}`);
-      return;
-    }
-
-    // Check chat limit for new conversation
-    if (!canStartChat) {
-      setShowPaywall(true);
-      return;
-    }
-
-    // Find the match and create conversation
-    const match = matches.find(m => m.otherUser?.userId === userId);
-    if (match) {
-      // Increment chat count before creating conversation
-      const allowed = await incrementChatCount();
-      if (!allowed) {
-        setShowPaywall(true);
-        return;
-      }
-
-      const newConvoId = await createConversationForMatch(match.id);
-      if (newConvoId) {
-        navigate(`/chat/${newConvoId}`);
-      }
-    }
+    const match = matches.find(row => row.otherUser.userId === userId && row.cafeId === id);
+    if (!match) { toast.info('Önce karşılıklı selamlaşın.'); return; }
+    const chatId = await createConversationForMatch(match.id);
+    if (chatId) navigate(`/chat/${chatId}`);
   };
 
   const handleWave = async (userId: string, userName: string) => {
@@ -209,40 +162,19 @@ export default function CafeRoom() {
       return;
     }
 
-    // Daily wave limit for free users (3 per day)
-    if (!isPremium) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayWaves = sentWaves.filter(w => w.createdAt >= today);
-      if (todayWaves.length >= 3) {
-        setShowPaywall(true);
-        return;
-      }
-    }
-    
     setWavingAt(userId);
     const result = await sendWave(userId, id);
     setWavingAt(null);
     
     if (result.success) {
       if (result.isMatch) {
-        toast.success(`${userName} ile eşleştiniz! 🎉`, {
-          description: 'Sohbete yönlendiriliyorsunuz...',
+        await refetchMatches();
+        toast.success(`${userName} ile karşılıklı selamlaştınız!`, {
+          description: import.meta.env.VITE_SAFE_CHAT_ENABLED === 'true' ? 'Sohbet düğmesiyle konuşmaya başlayabilirsiniz.' : 'Mesajlaşma henüz hazırlanıyor.',
         });
-        // Navigate to messages after short delay to let match/conversation be created
-        setTimeout(async () => {
-          // Refetch matches to get the new conversation
-          await refetchMatches();
-          const convId = getMatchConversation(userId);
-          if (convId) {
-            navigate(`/chat/${convId}`);
-          } else {
-            navigate('/messages');
-          }
-        }, 1500);
       } else {
         toast.success(`👋 ${userName} kişisine el salladın!`, {
-          description: 'Bildirim gönderildi',
+          description: 'Selamın kaydedildi',
         });
       }
     }
@@ -399,7 +331,7 @@ export default function CafeRoom() {
                   onMessage={() => handleOpenChat(activeUser.userId, activeUser.displayName || activeUser.name)}
                   onInteraction={(type) => handleInteraction(type, activeUser.userId, activeUser.displayName || activeUser.name)}
                   waveState={
-                    hasMatchWith(activeUser.userId) ? 'matched' :
+                    hasMatchWith(activeUser.userId, id) ? 'matched' :
                     hasWavedAt(activeUser.userId, id || '') ? 'waved' :
                     hasReceivedWaveFrom(activeUser.userId, id || '') ? 'received' :
                     'none'

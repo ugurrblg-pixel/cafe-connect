@@ -1,3 +1,4 @@
+import { PrivateProfileImage } from '@/components/PrivateProfileImage';
 import { memo } from 'react';
 import { User } from '@/types';
 import { PurposeBadge } from './PurposeBadge';
@@ -43,7 +44,7 @@ export const UserCard = memo(function UserCard({ user, onMessage, onInteraction,
       {/* Avatar */}
       <div className="relative flex-shrink-0">
         {user.photoUrl ? (
-          <img
+          <PrivateProfileImage
             src={user.photoUrl}
             alt={displayName}
             className="w-16 h-16 rounded-2xl object-cover"

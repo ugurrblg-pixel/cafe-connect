@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FullscreenGallery } from './FullscreenGallery';
 import { filterPhotosForViewer } from '@/lib/photoAccess';
+import { PrivateProfileImage } from './PrivateProfileImage';
 
 const DEFAULT_PLACEHOLDER = '/placeholder.svg';
 
@@ -198,7 +199,7 @@ function CarouselImage({ src, alt, name }: { src: string; alt: string; name: str
           <div className="w-6 h-6 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
         </div>
       )}
-      <img
+      <PrivateProfileImage
         src={src}
         alt={alt}
         className={cn('w-full h-full object-cover transition-opacity duration-300', loaded ? 'opacity-100' : 'opacity-0')}

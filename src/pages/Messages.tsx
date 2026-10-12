@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 export default function Messages() {
   const navigate = useNavigate();
   const { t } = useI18n();
-  const { conversations, loading, createConversation, refetch } = useInboxData();
+  const { conversations, loading, error, createConversation, refetch } = useInboxData();
   const { isComplete: isProfileComplete } = useProfileCompletion();
   const [openingChat, setOpeningChat] = useState<string | null>(null);
   const [showProfileGate, setShowProfileGate] = useState(false);
@@ -51,8 +51,8 @@ export default function Messages() {
   const handleDeleteConversation = () => {
     if (!selectedConversation) return;
     setDeletedConversations(prev => new Set(prev).add(selectedConversation.matchId));
-    toast.success('Sohbet silindi', {
-      description: `${selectedConversation.otherUserName} ile sohbet kaldırıldı`,
+    toast.success('Sohbet bu listede gizlendi', {
+      description: 'Sayfayı yenilediğinde yeniden görünür.',
     });
     setSelectedConversation(null);
   };
@@ -86,6 +86,12 @@ export default function Messages() {
         </header>
 
         <main className="pt-14">
+          {error && (
+            <div className="px-5 py-4 text-sm text-muted-foreground">
+              Sohbet listesi yüklenemedi.
+              <Button variant="ghost" onClick={() => void refetch()}>Tekrar dene</Button>
+            </div>
+          )}
           {loading ? (
             <div className="px-4 py-4 space-y-2">
               {/* Match row skeleton */}

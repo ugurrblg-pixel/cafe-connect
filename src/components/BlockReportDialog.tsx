@@ -76,7 +76,7 @@ export function ReportDialog({ open, onOpenChange, userName, onConfirm }: Report
         <AlertDialogHeader>
           <AlertDialogTitle>{userName} şikayet edilsin mi?</AlertDialogTitle>
           <AlertDialogDescription>
-            Bu, güvenlik ekibimize inceleme için bir rapor gönderecektir.
+            Şikâyetiniz uygulamada kaydedilir.
           </AlertDialogDescription>
         </AlertDialogHeader>
         

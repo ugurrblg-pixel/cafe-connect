@@ -1,29 +1,58 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Plus, X, GripVertical, Loader2, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { privatePhotoPath, privatePhotoReference, prepareProfilePhoto } from '@/lib/privatePhotos';
+import { PrivateProfileImage } from './PrivateProfileImage';
 
 interface ProfilePhotoManagerProps {
   photos: string[];
   onPhotosChange: (photos: string[]) => void;
+  onBusyChange?: (busy: boolean) => void;
 }
 
 const MAX_PHOTOS = 5;
 
-export function ProfilePhotoManager({ photos, onPhotosChange }: ProfilePhotoManagerProps) {
-  const { user } = useAuth();
+export function ProfilePhotoManager({ photos, onPhotosChange, onBusyChange }: ProfilePhotoManagerProps) {
+  const { user, refreshProfile } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const dragOriginal = useRef<string[]>([]);
+  const [unusedPaths, setUnusedPaths] = useState<string[]>([]);
 
   const currentPhotos = photos.filter(Boolean);
   const canAddMore = currentPhotos.length < MAX_PHOTOS;
+  const photoKey = JSON.stringify(currentPhotos);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    supabase.storage.from('avatars').list(user.id, { limit: 100 }).then(({ data, error }) => {
+      if (!cancelled && !error) {
+        const referenced = new Set(currentPhotos.map(privatePhotoPath));
+        setUnusedPaths((data || []).filter(item => item.id).map(item => `${user.id}/${item.name}`)
+          .filter(path => !referenced.has(path)));
+      }
+    });
+    return () => { cancelled = true; };
+  }, [user?.id, photoKey, uploading]);
+
+  const setBusy = (busy: boolean) => { setUploading(busy); onBusyChange?.(busy); };
+  const persistPhotos = async (next: string[]) => {
+    const paths = next.map(privatePhotoPath);
+    if (paths.some(path => !path)) throw new Error('Fotoğraf yolu doğrulanamadı.');
+    const { error } = await supabase.rpc('save_own_profile_photos', { object_paths: paths as string[] });
+    if (error) throw error;
+    onPhotosChange(next);
+    await refreshProfile();
+  };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user) return;
+    if (!file || !user || uploading || !canAddMore) return;
 
     if (!file.type.startsWith('image/')) {
       toast.error('Lütfen bir resim dosyası yükleyin');
@@ -35,71 +64,61 @@ export function ProfilePhotoManager({ photos, onPhotosChange }: ProfilePhotoMana
       return;
     }
 
-    setUploading(true);
+    setBusy(true);
 
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      const prepared = await prepareProfilePhoto(file);
+      const fileName = `${user.id}/${crypto.randomUUID()}.webp`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, prepared, { upsert: false, contentType: 'image/webp' });
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
-
-      const newPhotos = [...currentPhotos, publicUrl];
-      onPhotosChange(newPhotos);
-      toast.success('Fotoğraf yüklendi!');
-
-      // Run AI moderation in background
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          const modRes = await supabase.functions.invoke('moderate-photo', {
-            body: { imageUrl: publicUrl },
-          });
-          if (modRes.data && !modRes.data.approved) {
-            // Remove the photo and notify user
-            onPhotosChange(currentPhotos); // revert
-            toast.error('Bu fotoğraf uygunsuz içerik nedeniyle reddedildi', {
-              description: modRes.data.reason || 'Lütfen farklı bir fotoğraf deneyin.',
-            });
-          }
-        }
-      } catch (modError) {
-        // Don't block upload if moderation fails
-        console.error('Photo moderation error:', modError);
-      }
+      await persistPhotos([...currentPhotos, privatePhotoReference(fileName)]);
+      toast.success('Fotoğraf kaydedildi. Şimdilik yalnızca sen görebilirsin.');
     } catch (error) {
       console.error('Error uploading photo:', error);
-      toast.error('Fotoğraf yüklenemedi');
+      toast.error(error instanceof Error ? error.message : 'Fotoğraf kaydedilemedi. Lütfen tekrar deneyin.');
     } finally {
-      setUploading(false);
+      setBusy(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     }
   };
 
-  const handleRemovePhoto = (index: number) => {
+  const handleRemovePhoto = async (index: number) => {
+    if (uploading) return;
     const newPhotos = currentPhotos.filter((_, i) => i !== index);
-    onPhotosChange(newPhotos);
+    setBusy(true);
+    try {
+      await persistPhotos(newPhotos);
+      const path = privatePhotoPath(currentPhotos[index]);
+      if (path) {
+        const { data, error } = await supabase.storage.from('avatars').remove([path]);
+        if (error || !data?.length) toast.error('Fotoğraf profilden kaldırıldı, fakat dosya temizlenemedi. Tekrar temizlemeyi deneyin.');
+      }
+    } catch { toast.error('Fotoğraf kaldırılamadı.'); }
+    finally { setBusy(false); }
   };
 
-  const handleSetMainPhoto = (index: number) => {
-    if (index === 0) return;
+  const handleSetMainPhoto = async (index: number) => {
+    if (index === 0 || uploading) return;
     const newPhotos = [...currentPhotos];
     const [photo] = newPhotos.splice(index, 1);
     newPhotos.unshift(photo);
-    onPhotosChange(newPhotos);
-    toast.success('Ana fotoğraf güncellendi');
+    setBusy(true);
+    try { await persistPhotos(newPhotos); toast.success('Ana fotoğraf güncellendi'); }
+    catch { toast.error('Fotoğraf sırası kaydedilemedi.'); }
+    finally { setBusy(false); }
   };
 
   const handleDragStart = (index: number) => {
+    if (uploading) return;
+    dragOriginal.current = [...currentPhotos];
+    onBusyChange?.(true);
     setDraggedIndex(index);
   };
 
@@ -114,8 +133,24 @@ export function ProfilePhotoManager({ photos, onPhotosChange }: ProfilePhotoMana
     setDraggedIndex(index);
   };
 
-  const handleDragEnd = () => {
+  const handleDragEnd = async () => {
     setDraggedIndex(null);
+    setBusy(true);
+    try { await persistPhotos(currentPhotos); }
+    catch { onPhotosChange(dragOriginal.current); toast.error('Fotoğraf sırası kaydedilemedi.'); }
+    finally { setBusy(false); }
+  };
+
+  const cleanupUnused = async () => {
+    if (!user || uploading) return;
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.storage.from('avatars').remove(unusedPaths);
+      if (error || data?.length !== unusedPaths.length) throw new Error('Temizlik tamamlanamadı.');
+      setUnusedPaths([]);
+      toast.success('Kaydedilmemiş yüklemeler temizlendi.');
+    } catch { toast.error('Temizlik tamamlanamadı. Lütfen tekrar deneyin.'); }
+    finally { setBusy(false); }
   };
 
   return (
@@ -133,7 +168,7 @@ export function ProfilePhotoManager({ photos, onPhotosChange }: ProfilePhotoMana
         {currentPhotos.map((photo, index) => (
           <div
             key={`${photo}-${index}`}
-            draggable
+            draggable={!uploading}
             onDragStart={() => handleDragStart(index)}
             onDragOver={(e) => handleDragOver(e, index)}
             onDragEnd={handleDragEnd}
@@ -145,7 +180,7 @@ export function ProfilePhotoManager({ photos, onPhotosChange }: ProfilePhotoMana
               draggedIndex === index && 'opacity-50 scale-95'
             )}
           >
-            <img
+            <PrivateProfileImage
               src={photo}
               alt={`Fotoğraf ${index + 1}`}
               className="w-full h-full object-cover"
@@ -164,6 +199,7 @@ export function ProfilePhotoManager({ photos, onPhotosChange }: ProfilePhotoMana
 
             <button
               type="button"
+              disabled={uploading}
               onClick={() => handleRemovePhoto(index)}
               className="absolute bottom-1.5 right-1.5 w-6 h-6 bg-destructive/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-destructive transition-colors"
             >
@@ -173,6 +209,7 @@ export function ProfilePhotoManager({ photos, onPhotosChange }: ProfilePhotoMana
             {index !== 0 && (
               <button
                 type="button"
+                disabled={uploading}
                 onClick={() => handleSetMainPhoto(index)}
                 className="absolute bottom-1.5 left-1.5 px-2 py-0.5 bg-black/50 backdrop-blur-sm text-white text-xs rounded-full hover:bg-black/70 transition-colors"
               >
@@ -209,14 +246,20 @@ export function ProfilePhotoManager({ photos, onPhotosChange }: ProfilePhotoMana
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp,image/gif"
         onChange={handleFileSelect}
         className="hidden"
       />
 
       <p className="text-xs text-muted-foreground">
-        İlk fotoğraf ana fotoğrafın olarak gösterilir. Sürükleyerek sıralayabilirsin.
+        Fotoğraf değişiklikleri hemen kaydedilir. İlk fotoğraf ana fotoğrafındır.
+        İnceleme tamamlanana kadar fotoğraflarını yalnızca sen görebilirsin.
       </p>
+      {unusedPaths.length > 0 && (
+        <button type="button" disabled={uploading} onClick={cleanupUnused} className="text-xs text-muted-foreground underline">
+          Kaydedilmemiş yüklemeleri temizle ({unusedPaths.length})
+        </button>
+      )}
     </div>
   );
 }

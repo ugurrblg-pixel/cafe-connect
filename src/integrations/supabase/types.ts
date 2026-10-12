@@ -961,6 +961,65 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_own_admin_role: { Args: Record<PropertyKey, never>; Returns: string | null }
+      list_admin_reports: { Args: { report_filter?: string }; Returns: Json }
+      review_admin_report: { Args: { target_report_id: string; new_status: string }; Returns: undefined }
+      submit_own_report: { Args: { target_user_id: string; report_reason: string; report_description?: string | null }; Returns: string }
+      open_own_match_chat: { Args: { target_match_id: string }; Returns: string }
+      get_own_chat: { Args: { target_conversation_id: string }; Returns: Json }
+      list_own_chat_inbox: { Args: Record<PropertyKey, never>; Returns: Json }
+      send_own_chat_message: { Args: { target_conversation_id: string; message_content: string; request_id: string }; Returns: Json }
+      mark_own_chat_read: { Args: { target_conversation_id: string; message_ids: string[] }; Returns: undefined }
+      remove_own_chat_message: { Args: { target_conversation_id: string; target_message_id: string }; Returns: boolean }
+      send_own_wave: { Args: { target_user_id: string; target_cafe_id: string }; Returns: Json }
+      list_own_current_waves: {
+        Args: Record<PropertyKey, never>
+        Returns: { id: string; from_user_id: string; to_user_id: string; cafe_id: string; created_at: string; display_name: string }[]
+      }
+      list_own_current_matches: {
+        Args: Record<PropertyKey, never>
+        Returns: { id: string; user1_id: string; user2_id: string; cafe_id: string; conversation_id: string | null; created_at: string; display_name: string }[]
+      }
+      list_own_blocks: {
+        Args: Record<PropertyKey, never>
+        Returns: { id: string; blocked_id: string; created_at: string }[]
+      }
+      set_own_block: {
+        Args: { target_user_id: string; blocked: boolean }
+        Returns: undefined
+      }
+      list_current_cafe_members: {
+        Args: { target_cafe_id: string }
+        Returns: {
+          id: string; user_id: string; display_name: string; age: number | null;
+          bio: string; purpose: string; allow_dms: boolean; is_verified: boolean;
+          hobbies: string[]; check_in_time: string; last_active_at: string;
+        }[]
+      }
+      save_own_profile_photos: {
+        Args: { object_paths: string[] }
+        Returns: undefined
+      }
+      can_upload_own_avatar: {
+        Args: { object_name: string }
+        Returns: boolean
+      }
+      start_own_check_in: {
+        Args: { target_cafe_id: string; latitude: number; longitude: number }
+        Returns: Database["public"]["Tables"]["check_ins"]["Row"][]
+      }
+      refresh_own_check_in: {
+        Args: { target_check_in_id: string; latitude: number; longitude: number }
+        Returns: boolean
+      }
+      end_own_check_in: {
+        Args: { target_check_in_id: string }
+        Returns: boolean
+      }
+      save_own_favorite_venues: {
+        Args: { venue_ids: string[] }
+        Returns: undefined
+      }
       can_send_spark: { Args: { target_user_id: string }; Returns: boolean }
       check_mutual_wave: {
         Args: { target_cafe_id: string; user_a: string; user_b: string }

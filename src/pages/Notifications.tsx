@@ -1,3 +1,4 @@
+import { PrivateProfileImage } from '@/components/PrivateProfileImage';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
@@ -207,7 +208,7 @@ export default function Notifications() {
                           onClick={() => wave.fromUserId && navigate(`/profile/${wave.fromUserId}`)}
                         >
                           {wave.fromUser?.photoUrl ? (
-                            <img
+                            <PrivateProfileImage
                               src={wave.fromUser.photoUrl}
                               alt={wave.fromUser.displayName}
                               className="w-14 h-14 rounded-full object-cover"
@@ -344,7 +345,7 @@ function MatchCard({
           onClick={(e) => { e.stopPropagation(); onViewProfile(); }}
         >
           {match.otherUser?.photoUrl ? (
-            <img
+            <PrivateProfileImage
               src={match.otherUser.photoUrl}
               alt={match.otherUser.displayName}
               className="w-14 h-14 rounded-full object-cover"

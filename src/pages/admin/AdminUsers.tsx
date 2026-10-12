@@ -1,3 +1,4 @@
+import { PrivateProfileImage } from '@/components/PrivateProfileImage';
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
@@ -384,7 +385,7 @@ export default function AdminUsers() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           {u.photo_url ? (
-                            <img src={u.photo_url} alt="" className="w-9 h-9 rounded-full object-cover" />
+                            <PrivateProfileImage src={u.photo_url} alt="" className="w-9 h-9 rounded-full object-cover" />
                           ) : (
                             <InitialsAvatar name={displayName} size="sm" />
                           )}
@@ -486,7 +487,7 @@ export default function AdminUsers() {
             <div className="space-y-4">
               <div className="flex items-center gap-4">
                 {selectedUser.photo_url ? (
-                  <img src={selectedUser.photo_url} alt="" className="w-16 h-16 rounded-xl object-cover" />
+                  <PrivateProfileImage src={selectedUser.photo_url} alt="" className="w-16 h-16 rounded-xl object-cover" />
                 ) : (
                   <InitialsAvatar name={selectedUser.display_name || selectedUser.name} size="md" />
                 )}
@@ -521,7 +522,7 @@ export default function AdminUsers() {
                   <div className="grid grid-cols-3 gap-2">
                     {selectedUser.photo_urls.map((url, i) => (
                       <div key={i} className="relative group">
-                        <img src={url} alt="" className="rounded-lg object-cover aspect-square w-full" />
+                        <PrivateProfileImage src={url} alt="" className="rounded-lg object-cover aspect-square w-full" />
                         <button
                           onClick={() => setDeletePhotoTarget({ userId: selectedUser.user_id, photoUrl: url, index: i })}
                           className="absolute top-1 right-1 p-1 bg-destructive/90 rounded-md text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
@@ -622,7 +623,7 @@ export default function AdminUsers() {
           </DialogHeader>
           {deletePhotoTarget && (
             <div className="flex justify-center">
-              <img src={deletePhotoTarget.photoUrl} alt="" className="rounded-lg max-h-48 object-cover" />
+              <PrivateProfileImage src={deletePhotoTarget.photoUrl} alt="" className="rounded-lg max-h-48 object-cover" />
             </div>
           )}
           <DialogFooter>

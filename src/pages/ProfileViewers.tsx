@@ -1,3 +1,4 @@
+import { PrivateProfileImage } from '@/components/PrivateProfileImage';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -61,7 +62,7 @@ function RevealedViewerCard({ view, onTap }: { view: ProfileView; onTap: () => v
     >
       <div className="flex-shrink-0">
         {view.viewer_profile?.photo_url ? (
-          <img
+          <PrivateProfileImage
             src={view.viewer_profile.photo_url}
             alt={view.viewer_profile.display_name || ''}
             className="w-12 h-12 rounded-full object-cover"

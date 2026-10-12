@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
@@ -103,7 +104,7 @@ async function fetchFreshOpenStatus(
     const keyword = type === 'cafe' ? '&keyword=cafe' : '';
     const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${SEARCH_RADIUS}&type=${type}${keyword}&key=${apiKey}`;
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
       if (!res.ok) return;
       const data: GoogleResponse = await res.json();
       if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') return;
@@ -123,6 +124,12 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'POST required' }), {
+      status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -132,21 +139,51 @@ Deno.serve(async (req) => {
       throw new Error('Missing Supabase configuration');
     }
 
-    const body = await req.json();
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const token = req.headers.get('Authorization')?.match(/^Bearer\s+(.+)$/i)?.[1];
+    if (!token) {
+      return new Response(JSON.stringify({ error: 'Sign in required' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Sign in required' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    let body;
+    try { body = await req.json(); } catch {
+      return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return new Response(JSON.stringify({ error: 'Coordinates required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     const { latitude, longitude } = body;
     const lat = latitude ?? body.lat;
     const lng = longitude ?? body.lng;
 
-    if (!lat || !lng) {
+    if (typeof lat !== 'number' || typeof lng !== 'number' || !Number.isFinite(lat)
+        || !Number.isFinite(lng) || Math.abs(lat) > 85 || Math.abs(lng) > 180) {
       return new Response(
-        JSON.stringify({ error: 'lat and lng are required' }),
+        JSON.stringify({ error: 'Valid numeric latitude and longitude required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Venue search: ${lat}, ${lng}`);
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const { data: reserved, error: quotaError } = await supabase.rpc('reserve_places_lookup', {
+      target_user_id: user.id,
+    });
+    if (quotaError || !reserved) {
+      return new Response(JSON.stringify({ error: quotaError ? 'Search temporarily unavailable' : 'Please wait before searching again' }), {
+        status: quotaError ? 503 : 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '60' },
+      });
+    }
 
     // --- Step 1: Check DB cache (bounding box for 1200m) ---
     const latDelta = SEARCH_RADIUS / 111000;
@@ -166,7 +203,7 @@ Deno.serve(async (req) => {
 
     // Filter by actual distance
     const nearbyVenues = (cachedVenues || []).filter(
-      (v) => v.latitude && v.longitude && haversineDistance(lat, lng, v.latitude, v.longitude) <= SEARCH_RADIUS
+      (v) => v.latitude != null && v.longitude != null && haversineDistance(lat, lng, v.latitude, v.longitude) <= SEARCH_RADIUS
     );
 
     // Get active check-in counts
@@ -232,6 +269,7 @@ Deno.serve(async (req) => {
     console.log('Cache miss, calling Google Places API...');
 
     const allPlaces: GooglePlace[] = [];
+    let successfulGoogleRequests = 0;
     const seenIds = new Set<string>();
 
     // Parallel fetch for all venue types
@@ -240,16 +278,17 @@ Deno.serve(async (req) => {
       const keyword = type === 'cafe' ? '&keyword=cafe' : '';
       const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${SEARCH_RADIUS}&type=${type}${keyword}&key=${GOOGLE_PLACES_KEY}`;
       try {
-        const res = await fetch(url);
+        const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
         if (!res.ok) {
           console.error(`Google API ${type}: HTTP ${res.status}`);
           return;
         }
         const data: GoogleResponse = await res.json();
         if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-          console.error(`Google API ${type}: ${data.status} - ${data.error_message || ''}`);
+          console.error(`Google API ${type}: ${data.status}`);
           return;
         }
+        successfulGoogleRequests++;
         for (const place of data.results || []) {
           if (!seenIds.has(place.place_id) && isAcceptedVenue(place)) {
             seenIds.add(place.place_id);
@@ -262,6 +301,11 @@ Deno.serve(async (req) => {
     });
 
     await Promise.all(fetches);
+    if (successfulGoogleRequests === 0) {
+      return new Response(JSON.stringify({ error: 'Google Places search unavailable. Check API activation, billing and key restrictions.' }), {
+        status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     console.log(`Google returned ${allPlaces.length} accepted venues (after strict filtering)`);
 
     // --- Step 3: Upsert ONLY filtered venues to DB ---
@@ -304,7 +348,7 @@ Deno.serve(async (req) => {
       .lte('longitude', lng + lngDelta);
 
     const filteredFinal = (finalVenues || []).filter(
-      (v) => v.latitude && v.longitude && haversineDistance(lat, lng, v.latitude, v.longitude) <= SEARCH_RADIUS
+      (v) => v.latitude != null && v.longitude != null && haversineDistance(lat, lng, v.latitude, v.longitude) <= SEARCH_RADIUS
     ).filter((v) => {
       if (isExcludedByName(v.name || '')) return false;
       if (!['cafe', 'bar', 'night_club', 'gym'].includes(v.category)) return false;
@@ -316,7 +360,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Edge function error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Search temporarily unavailable' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

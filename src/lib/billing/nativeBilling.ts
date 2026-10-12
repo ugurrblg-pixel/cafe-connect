@@ -1,3 +1,5 @@
+// Deliberately closed until server receipt validation is ready.
+function billingEnabled(): boolean { return false; }
 /**
  * Native billing service using cordova-plugin-purchase (CdvPurchase)
  * Handles real Google Play Billing and Apple StoreKit purchases.
@@ -117,6 +119,8 @@ function getNativePlatform(): string | null {
  * Initialize the native billing SDK
  */
 export async function initializeBilling(): Promise<boolean> {
+  // Store verification and receipt replay protection are not configured yet.
+  if (!billingEnabled()) return false;
   if (storeReady) return true;
   if (initPromise) return initPromise;
 
@@ -238,6 +242,7 @@ export async function purchaseSubscription(
   productId: string,
   userId: string
 ): Promise<PurchaseResult> {
+  if (!billingEnabled()) return { success: false, error: 'Ödeme özelliği henüz kullanıma açılmadı.' };
   const store = getNativeStore();
   if (!store || !storeReady) {
     return { success: false, error: 'Mağaza bağlantısı kurulamadı. Uygulama güncelleniyor olabilir.' };
@@ -313,6 +318,7 @@ export async function purchaseBoost(
   productId: string,
   userId: string
 ): Promise<PurchaseResult> {
+  if (!billingEnabled()) return { success: false, error: 'Ödeme özelliği henüz kullanıma açılmadı.' };
   const store = getNativeStore();
   if (!store || !storeReady) {
     return { success: false, error: 'Mağaza bağlantısı kurulamadı.' };

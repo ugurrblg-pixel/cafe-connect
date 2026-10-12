@@ -3,14 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useChat } from '@/hooks/useConversations';
 import { useBlocking } from '@/hooks/useBlocking';
-import { useMatches } from '@/hooks/useMatches';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { useChatScroll } from '@/hooks/useChatScroll';
 import { usePremium } from '@/hooks/usePremium';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useNotifications } from '@/contexts/NotificationContext';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Send, MoreVertical, Flag, Ban, Loader2, ShieldAlert, ChevronLeft, Sparkles, User } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,7 +19,6 @@ import { ChatHeader } from '@/components/chat/ChatHeader';
 import { NewMessagesButton } from '@/components/chat/NewMessagesButton';
 import { DateSeparator, isDifferentDay } from '@/components/chat/DateSeparator';
 import { BlockDialog, ReportDialog } from '@/components/BlockReportDialog';
-import { ChatLimitBanner } from '@/components/chat/ChatLimitBanner';
 import { cn } from '@/lib/utils';
 import { containsProfanity, getProfanityError } from '@/lib/profanityFilter';
 import {
@@ -50,24 +47,20 @@ export default function ChatRoom() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useI18n();
-  const { messages, loading, sendMessage, retryMessage, softDeleteMessage } = useChat(conversationId || '');
+  const { messages, loading, chat, error: chatError, sendMessage, retryMessage, softDeleteMessage } = useChat(conversationId || '');
   const { blockUser, reportUser } = useBlocking();
-  const { hasMatchWith, loading: matchesLoading } = useMatches();
   const { resetUnreadCount } = useNotifications();
   const { isPremium } = usePremium();
   
   const [messageInput, setMessageInput] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [otherUser, setOtherUser] = useState<OtherUser | null>(null);
-  const [cafeInfo, setCafeInfo] = useState<CafeInfo | null>(null);
+  const otherUser: OtherUser | null = chat ? { userId: chat.peer_id, displayName: chat.peer_name || 'Kullanıcı', photoUrl: '', photoUrls: [] } : null;
+  const cafeInfo: CafeInfo | null = chat ? { id: chat.cafe_id, name: chat.cafe_name } : null;
   const [showBlockDialog, setShowBlockDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
-  const [hasMatch, setHasMatch] = useState<boolean | null>(null);
+  const hasMatch = loading ? null : !!chat && !chatError;
   const inputRef = useRef<HTMLTextAreaElement>(null);
   
-  // Rate limiting: track messages sent in first minute of conversation
-  const sentTimestampsRef = useRef<number[]>([]);
-  const conversationStartRef = useRef<number | null>(null);
   const profanityCountRef = useRef(0);
 
   // Typing indicator with debouncing
@@ -99,84 +92,6 @@ export default function ChatRoom() {
     }
   }, [conversationId, resetUnreadCount]);
 
-  // Fetch other user's info, cafe info, and verify match
-  useEffect(() => {
-    const fetchConversation = async () => {
-      if (!conversationId || !user) return;
-
-      const { data: conv } = await supabase
-        .from('conversations')
-        .select('user1_id, user2_id, cafe_id')
-        .eq('id', conversationId)
-        .maybeSingle();
-
-      if (!conv) {
-        navigate('/messages');
-        return;
-      }
-
-      const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id;
-
-      // Fetch profile, check-in, cafe info, and premium status
-      const [profileRes, checkInRes, cafeRes, subscriptionRes] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select('user_id, display_name, photo_url, photo_urls')
-          .eq('user_id', otherUserId)
-          .maybeSingle(),
-        supabase
-          .from('check_ins')
-          .select('last_active_at')
-          .eq('user_id', otherUserId)
-          .gt('expiry_time', new Date().toISOString())
-          .maybeSingle(),
-        supabase
-          .from('cafes')
-          .select('id, name')
-          .eq('id', conv.cafe_id)
-          .maybeSingle(),
-        supabase
-          .from('subscriptions')
-          .select('status, expires_at')
-          .eq('user_id', otherUserId)
-          .maybeSingle(),
-      ]);
-
-      const profile = profileRes.data;
-      const checkIn = checkInRes.data;
-      const cafe = cafeRes.data;
-      const subscription = subscriptionRes.data;
-      
-      // Check if other user is premium
-      const isOtherUserPremium = subscription?.status === 'active' && 
-        (!subscription?.expires_at || new Date(subscription.expires_at) > new Date());
-
-      if (profile) {
-        setOtherUser({
-          userId: profile.user_id,
-          displayName: profile.display_name || 'Anonymous',
-          photoUrl: profile.photo_url || '',
-          photoUrls: (profile.photo_urls as string[]) || [],
-          lastActiveAt: checkIn?.last_active_at ? new Date(checkIn.last_active_at) : undefined,
-          isPremium: isOtherUserPremium,
-        });
-      }
-
-      if (cafe) {
-        setCafeInfo({ id: cafe.id, name: cafe.name });
-      }
-    };
-
-    fetchConversation();
-  }, [conversationId, user, navigate]);
-
-  // Check if match exists
-  useEffect(() => {
-    if (otherUser && !matchesLoading) {
-      setHasMatch(hasMatchWith(otherUser.userId));
-    }
-  }, [otherUser, hasMatchWith, matchesLoading]);
-
   // Hide typing indicator when message received from other user
   const prevMessageCountRef = useRef(messages.length);
   useEffect(() => {
@@ -197,23 +112,6 @@ export default function ChatRoom() {
 
   const handleSend = useCallback(async () => {
     if (!messageInput.trim() || isSending) return;
-    
-    // Rate limiting: max 2 messages in first minute of a new conversation
-    const now = Date.now();
-    if (!conversationStartRef.current && messages.length === 0) {
-      conversationStartRef.current = now;
-    }
-    
-    if (conversationStartRef.current && (now - conversationStartRef.current) < 60_000) {
-      // We're in the first minute — count own messages sent in this window
-      sentTimestampsRef.current = sentTimestampsRef.current.filter(t => (now - t) < 60_000);
-      if (sentTimestampsRef.current.length >= 2) {
-        toast.info('Biraz yavaşla 🙂', {
-          description: 'Yeni eşleşmelerde ilk dakikada en fazla 2 mesaj gönderebilirsin.',
-        });
-        return;
-      }
-    }
     
     // Profanity check with escalating warnings
     if (containsProfanity(messageInput)) {
@@ -240,7 +138,6 @@ export default function ChatRoom() {
       inputRef.current.focus();
     }
     
-    sentTimestampsRef.current.push(now);
     await sendMessage(contentToSend);
     setIsSending(false);
     
@@ -323,7 +220,7 @@ export default function ChatRoom() {
   }, [messages, user?.id]);
 
   // Loading state
-  if (loading || matchesLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-secondary/20 flex flex-col">
         <div className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-border shadow-sm">
@@ -370,7 +267,7 @@ export default function ChatRoom() {
             {t.chat.chatUnavailable}
           </h3>
           <p className="text-muted-foreground text-sm max-w-xs leading-relaxed">
-            {t.chat.chatUnavailableDesc}
+            İki taraf da aynı kafede aktif ve görünür olmalı; engel veya kapalı mesaj tercihi sohbeti durdurur.
           </p>
           <Button 
             onClick={() => navigate('/messages')} 
@@ -508,9 +405,8 @@ export default function ChatRoom() {
         label={t.chat.newMessages}
       />
 
-      {/* Chat limit banner for free users */}
-      <div className="fixed bottom-20 left-0 right-0 z-40">
-        <ChatLimitBanner />
+      <div className="fixed bottom-20 left-0 right-0 z-40 text-center text-xs text-muted-foreground bg-background/90 py-1">
+        Son 100 mesaj gösterilir.
       </div>
 
       {/* Message input - refined, warm, and modern */}

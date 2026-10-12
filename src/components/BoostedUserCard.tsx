@@ -1,3 +1,4 @@
+import { PrivateProfileImage } from '@/components/PrivateProfileImage';
 import { User } from '@/types';
 import { PurposeBadge } from './PurposeBadge';
 import { InitialsAvatar } from './InitialsAvatar';
@@ -105,7 +106,7 @@ export function BoostedUserCard({
             showEnhanced && 'ring-2 ring-amber-400/50 ring-offset-2 ring-offset-card'
           )}>
             {user.photoUrl ? (
-              <img
+              <PrivateProfileImage
                 src={user.photoUrl}
                 alt={displayName}
                 className={cn(

@@ -24,8 +24,8 @@ const statusConfig: Record<ConnectionStatus, {
 }> = {
   connected: {
     icon: Wifi,
-    label: 'Live',
-    description: 'Real-time updates active',
+    label: 'Güncel',
+    description: 'Liste 30 saniyede bir yenilenir',
     colorClass: 'text-accent',
     animate: false,
   },
