@@ -249,6 +249,11 @@ export default function Discover() {
               )}
             </>
           )}
+          {cafes.length > 0 && (
+            <p className="mb-4 text-[12px] font-normal text-muted-foreground">
+              Mekan bilgileri: <span translate="no">Google Maps</span>
+            </p>
+          )}
         </main>
       </div>
     </PageLayout>

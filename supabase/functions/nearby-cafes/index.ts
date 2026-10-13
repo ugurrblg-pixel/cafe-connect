@@ -6,25 +6,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-// Cache freshness: 60 days
-const CACHE_FRESHNESS_MS = 60 * 24 * 60 * 60 * 1000;
-const DB_MIN_VENUES = 15;
-const SEARCH_RADIUS = 1200;
+// This is a bounded cache, not a permanent replacement for Google Places.
+const CACHE_FRESHNESS_MS = 28 * 24 * 60 * 60 * 1000;
+const SEARCH_RADIUS = 1500;
+// A 0.01 degree bucket's furthest corner is <800m from its center.
+const GOOGLE_SEARCH_RADIUS = SEARCH_RADIUS + 800;
 
 const VENUE_TYPES = ['cafe', 'bar', 'night_club', 'gym'] as const;
 
 // Types that trigger immediate exclusion
 const EXCLUDED_TYPES = ['restaurant', 'meal_takeaway', 'meal_delivery', 'food'];
-
-// Name blacklist - case-insensitive
-const NAME_BLACKLIST = [
-  'kebap', 'kebab', 'ızgara', 'izgara', 'doner', 'döner',
-  'pide', 'börek', 'borek', 'lokanta', 'tantuni', 'çorba', 'corba',
-  'restaurant', 'grill', 'steak', 'burger', 'pizza',
-  'çiğ köfte', 'komagene', 'little caesars', 'domino', 'ev yemekleri',
-  'kıraathane', 'kiraathane',
-  'playstation', 'ps cafe', 'ps salon',
-];
 
 interface GooglePlace {
   place_id: string;
@@ -60,17 +51,6 @@ function mapCategory(types: string[]): string {
   return 'cafe';
 }
 
-/** Returns true if the place should be EXCLUDED */
-function isExcludedByType(types: string[]): boolean {
-  return types.some((t) => EXCLUDED_TYPES.includes(t));
-}
-
-/** Returns true if the place name contains a blacklisted word */
-function isExcludedByName(name: string): boolean {
-  const lower = name.toLocaleLowerCase('tr-TR');
-  return NAME_BLACKLIST.some((word) => lower.includes(word));
-}
-
 /** Returns true if the place passes strict acceptance rules */
 function isAcceptedVenue(place: GooglePlace): boolean {
   const types = place.types || [];
@@ -79,8 +59,7 @@ function isAcceptedVenue(place: GooglePlace): boolean {
   const hasVenueType = types.some((t) => VENUE_TYPES.includes(t as any));
   if (!hasVenueType) return false;
 
-  // Rule 2: Exclude by name blacklist
-  if (isExcludedByName(place.name)) return false;
+  // Trust the explicit venue type. A cafe can also sell pizza or burgers.
 
   // Rule 3: Exclude permanently closed
   if (place.business_status === 'CLOSED_PERMANENTLY') return false;
@@ -91,32 +70,6 @@ function isAcceptedVenue(place: GooglePlace): boolean {
   if (isOnlyFood) return false;
 
   return true;
-}
-
-/** Fetch fresh open_now status from Google Places for the area */
-async function fetchFreshOpenStatus(
-  lat: number,
-  lng: number,
-  apiKey: string
-): Promise<Record<string, boolean | null>> {
-  const statusMap: Record<string, boolean | null> = {};
-  const fetches = VENUE_TYPES.map(async (type) => {
-    const keyword = type === 'cafe' ? '&keyword=cafe' : '';
-    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${SEARCH_RADIUS}&type=${type}${keyword}&key=${apiKey}`;
-    try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
-      if (!res.ok) return;
-      const data: GoogleResponse = await res.json();
-      if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') return;
-      for (const place of data.results || []) {
-        if (!statusMap.hasOwnProperty(place.place_id) && place.opening_hours?.open_now !== undefined) {
-          statusMap[place.place_id] = place.opening_hours.open_now;
-        }
-      }
-    } catch (_) {}
-  });
-  await Promise.all(fetches);
-  return statusMap;
 }
 
 Deno.serve(async (req) => {
@@ -175,22 +128,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { data: reserved, error: quotaError } = await supabase.rpc('reserve_places_lookup', {
-      target_user_id: user.id,
-    });
-    if (quotaError || !reserved) {
-      return new Response(JSON.stringify({ error: quotaError ? 'Search temporarily unavailable' : 'Please wait before searching again' }), {
-        status: quotaError ? 503 : 429,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '60' },
-      });
-    }
-
-    // --- Step 1: Check DB cache (bounding box for 1200m) ---
+    const areaLat = Math.round(lat * 100);
+    const areaLng = Math.round(lng * 100);
+    const areaKey = `${areaLat}:${areaLng}`;
+    // --- Step 1: Check the shared DB cache before reserving a paid lookup. ---
     const latDelta = SEARCH_RADIUS / 111000;
     const lngDelta = SEARCH_RADIUS / (111000 * Math.cos((lat * Math.PI) / 180));
     const cacheThreshold = new Date(Date.now() - CACHE_FRESHNESS_MS).toISOString();
 
-    const { data: cachedVenues, error: cacheErr } = await supabase
+    const readCache = () => supabase
       .from('cafes')
       .select('*')
       .gte('latitude', lat - latDelta)
@@ -198,6 +144,8 @@ Deno.serve(async (req) => {
       .gte('longitude', lng - lngDelta)
       .lte('longitude', lng + lngDelta)
       .gte('last_synced_at', cacheThreshold);
+
+    const { data: cachedVenues, error: cacheErr } = await readCache();
 
     if (cacheErr) console.error('Cache error:', cacheErr);
 
@@ -219,51 +167,35 @@ Deno.serve(async (req) => {
 
     // Re-filter cached venues in memory (safety net for legacy data)
     const validVenues = nearbyVenues.filter((v) => {
-      const name = v.name || '';
-      if (isExcludedByName(name)) return false;
+
       if (!['cafe', 'bar', 'night_club', 'gym'].includes(v.category)) return false;
       return true;
     });
 
-    // If enough cached venues, refresh is_open status from Google then return
-    if (validVenues.length >= DB_MIN_VENUES) {
-      console.log(`Cache hit: ${validVenues.length} venues (filtered from ${nearbyVenues.length})`);
-      
-      // Refresh is_open status from Google API if key is available
-      if (GOOGLE_PLACES_KEY) {
-        try {
-          const freshOpenStatus = await fetchFreshOpenStatus(lat, lng, GOOGLE_PLACES_KEY);
-          for (const v of validVenues) {
-            if (v.google_place_id && freshOpenStatus.hasOwnProperty(v.google_place_id)) {
-              v.is_open = freshOpenStatus[v.google_place_id];
-            }
-            // If not in Google response, keep existing is_open value (don't reset to null)
-          }
-          // Batch update is_open in DB only for venues with fresh data
-          const updates = validVenues
-            .filter((v) => v.google_place_id && freshOpenStatus.hasOwnProperty(v.google_place_id))
-            .map((v) => ({
-              id: v.id,
-              is_open: v.is_open,
-            }));
-          if (updates.length > 0) {
-            for (const u of updates) {
-              await supabase.from('cafes').update({ is_open: u.is_open }).eq('id', u.id);
-            }
-            console.log(`Updated is_open for ${updates.length} cached venues`);
-          }
-        } catch (err) {
-          console.error('Error refreshing open status:', err);
-        }
-      }
-      
-      return respond(validVenues, userCounts, 'cache');
-    }
-
     // --- Step 2: Call Google Places API ---
     if (!GOOGLE_PLACES_KEY) {
       console.warn('GOOGLE_PLACES_API_KEY not set, returning cache only');
-      return respond(nearbyVenues, userCounts, 'cache_fallback');
+      return respond(validVenues, userCounts, 'cache_fallback');
+    }
+
+    const { data: claim, error: quotaError } = await supabase.rpc('claim_places_search_area', {
+      target_area_key: areaKey, target_user_id: user.id,
+    });
+    if (!quotaError && claim?.state === 'cache') {
+      // Another request may have finished importing between our first read and claim.
+      const { data: currentVenues, error: readError } = await readCache();
+      if (readError) throw new Error('Cache unavailable');
+      const current = (currentVenues || []).filter(v => v.latitude != null && v.longitude != null
+        && haversineDistance(lat, lng, v.latitude, v.longitude) <= SEARCH_RADIUS
+        && VENUE_TYPES.includes(v.category));
+      return respond(current, userCounts, 'cache');
+    }
+    if (quotaError || claim?.state !== 'reserved') {
+      if (validVenues.length) return respond(validVenues, userCounts, 'cache_fallback');
+      return new Response(JSON.stringify({ error: quotaError ? 'Search temporarily unavailable' : 'Please wait before searching again' }), {
+        status: quotaError ? 503 : 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '60' },
+      });
     }
 
     console.log('Cache miss, calling Google Places API...');
@@ -275,8 +207,8 @@ Deno.serve(async (req) => {
     // Parallel fetch for all venue types
     const fetches = VENUE_TYPES.map(async (type) => {
       // Add keyword=cafe for cafe type to improve result quality
-      const keyword = type === 'cafe' ? '&keyword=cafe' : '';
-      const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${SEARCH_RADIUS}&type=${type}${keyword}&key=${GOOGLE_PLACES_KEY}`;
+      const keyword = '';
+      const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${areaLat / 100},${areaLng / 100}&radius=${GOOGLE_SEARCH_RADIUS}&type=${type}${keyword}&key=${GOOGLE_PLACES_KEY}`;
       try {
         const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
         if (!res.ok) {
@@ -302,6 +234,8 @@ Deno.serve(async (req) => {
 
     await Promise.all(fetches);
     if (successfulGoogleRequests === 0) {
+      await supabase.rpc('finish_places_search_area', { target_area_key: areaKey, target_lease_token: claim.lease_token, completed: false });
+      if (validVenues.length) return respond(validVenues, userCounts, 'cache_fallback');
       return new Response(JSON.stringify({ error: 'Google Places search unavailable. Check API activation, billing and key restrictions.' }), {
         status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -309,6 +243,7 @@ Deno.serve(async (req) => {
     console.log(`Google returned ${allPlaces.length} accepted venues (after strict filtering)`);
 
     // --- Step 3: Upsert ONLY filtered venues to DB ---
+    let persistenceSucceeded = true;
     if (allPlaces.length > 0) {
       const rows = allPlaces.map((p) => {
         const row: Record<string, any> = {
@@ -334,9 +269,14 @@ Deno.serve(async (req) => {
         .from('cafes')
         .upsert(rows, { onConflict: 'google_place_id', ignoreDuplicates: false });
 
-      if (upsertErr) console.error('Upsert error:', upsertErr);
+      if (upsertErr) { persistenceSucceeded = false; console.error('Upsert error:', upsertErr); }
       else console.log(`Upserted ${rows.length} venues`);
     }
+    // Even a genuinely empty/rural region is cached. Partial/failed searches are not.
+    await supabase.rpc('finish_places_search_area', {
+      target_area_key: areaKey, target_lease_token: claim.lease_token,
+      completed: persistenceSucceeded && successfulGoogleRequests === VENUE_TYPES.length,
+    });
 
     // --- Step 4: Re-fetch all venues in radius ---
     const { data: finalVenues } = await supabase
@@ -345,12 +285,12 @@ Deno.serve(async (req) => {
       .gte('latitude', lat - latDelta)
       .lte('latitude', lat + latDelta)
       .gte('longitude', lng - lngDelta)
-      .lte('longitude', lng + lngDelta);
+      .lte('longitude', lng + lngDelta)
+      .gte('last_synced_at', cacheThreshold);
 
     const filteredFinal = (finalVenues || []).filter(
       (v) => v.latitude != null && v.longitude != null && haversineDistance(lat, lng, v.latitude, v.longitude) <= SEARCH_RADIUS
     ).filter((v) => {
-      if (isExcludedByName(v.name || '')) return false;
       if (!['cafe', 'bar', 'night_club', 'gym'].includes(v.category)) return false;
       return true;
     });
@@ -379,14 +319,15 @@ function respond(
     latitude: v.latitude,
     longitude: v.longitude,
     category: v.category || 'cafe',
-    is_open: v.is_open ?? null,
+    is_open: source === 'google_places' ? v.is_open ?? null : null,
     image_url: v.image_url || '',
     opening_hours: v.opening_hours || null,
     activeUsers: userCounts[v.id] || 0,
   }));
 
   return new Response(
-    JSON.stringify({ cafes, source, count: cafes.length }),
+    JSON.stringify({ cafes, source, count: cafes.length, radius: SEARCH_RADIUS }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
 }
+

@@ -272,7 +272,7 @@ export default function CafeRoom() {
                 'w-4 h-4',
                 cafeStatus?.status === 'closing-soon' && 'animate-pulse'
               )} />
-              <span>{cafeStatus?.label || (cafe.isOpen ? 'Open now' : 'Closed')}</span>
+              <span>{cafeStatus?.label || 'Açılış bilgisi doğrulanmadı'}</span>
             </div>
           </div>
         </div>
