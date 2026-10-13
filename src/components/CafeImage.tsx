@@ -29,8 +29,8 @@ export function CafeImage({
   const [hasError, setHasError] = useState(false);
   useEffect(() => { setHasError(false); setIsLoading(true); }, [cafeId, imageUrl]);
   const representative = !imageUrl || hasError;
-  const categoryFallback = category === 'gym' ? '/placeholders/cafes/venue-gym.svg'
-    : category === 'bar' || category === 'night_club' ? '/placeholders/cafes/venue-bar.svg' : null;
+  const categoryFallback = category === 'gym' ? '/placeholders/cafes/riyo-gym.webp'
+    : category === 'bar' || category === 'night_club' ? '/placeholders/cafes/riyo-bar.webp' : null;
   
   // Get the appropriate image source
   const imageSrc = hasError 

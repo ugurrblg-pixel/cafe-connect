@@ -191,6 +191,10 @@
 }
 
 @layer utilities {
+  .venue-heat-warm { border-color: #fdba74; background-image: linear-gradient(110deg, #fff7ed90, transparent 60%); }
+  .venue-heat-hot { border-color: #fb923c; background-image: linear-gradient(110deg, #ffedd590, transparent 65%); animation: venue-glow 3s ease-in-out infinite; }
+  .venue-flame-badge { display: inline-flex; align-items: center; gap: 4px; width: fit-content; margin-bottom: 6px; border-radius: 999px; padding: 4px 8px; background: #fff1e3; color: #9a3412; font-size: 10px; font-weight: 600; }
+  .venue-flame-hot .venue-flame { transform-origin: center bottom; animation: venue-flicker 1.8s ease-in-out infinite; }
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom, 1rem);
   }
@@ -199,3 +203,6 @@
     padding-top: env(safe-area-inset-top, 1rem);
   }
 }
+@keyframes venue-flicker { 0%, 100% { transform: rotate(-5deg) scale(1); } 50% { transform: rotate(5deg) scale(1.15); } }
+@keyframes venue-glow { 0%, 100% { box-shadow: 0 0 0 1px #fb923c30, 0 3px 16px #f9731610; } 50% { box-shadow: 0 0 0 2px #fb923c50, 0 4px 22px #f9731625; } }
+@media (prefers-reduced-motion: reduce) { .venue-heat-hot, .venue-flame-hot .venue-flame { animation: none; } }

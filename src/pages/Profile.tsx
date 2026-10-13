@@ -141,14 +141,15 @@ export default function Profile() {
         <main className="pt-6 px-4 max-w-2xl mx-auto">
 
           {/* Profile Hero */}
-          <div className="relative flex flex-col items-center pt-8 pb-7 mb-6 rounded-[32px] border border-primary/10 bg-gradient-to-b from-primary/10 via-card to-card animate-scale-in">
-            <p className="text-xs font-semibold tracking-[0.2em] uppercase text-primary mb-5">Senin Riyo alanın</p>
-            <div className="relative mb-4">
+          <div className="relative p-6 mb-6 rounded-[32px] border border-primary/10 bg-card overflow-hidden animate-scale-in">
+            <div className="absolute top-0 inset-x-0 h-24 bg-gradient-to-r from-primary/20 via-rose-100 to-amber-100" aria-hidden="true" />
+            <div className="relative flex items-end justify-between gap-4 pt-6 mb-5">
+            <div className="relative ring-4 ring-card rounded-2xl">
               <ProfilePhotoCarousel
                 photos={profile.photo_urls}
                 avatarUrl={profile.photo_url}
                 name={displayName}
-                size="lg"
+                size="md"
               />
               {isPremium && (
                 <div className="absolute -bottom-1 -right-1">
@@ -157,20 +158,17 @@ export default function Profile() {
               )}
             </div>
 
-            <h1 className="text-2xl font-bold text-foreground mb-1">
+            <button onClick={() => navigate('/profile/edit')} className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold"><Edit2 className="w-3.5 h-3.5" />{t.profile.editProfile}</button>
+            </div>
+            <p className="text-[10px] font-semibold tracking-[0.18em] uppercase text-primary mb-2">Burası senin köşen</p>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">
               {displayName}{profile.age ? `, ${profile.age}` : ''}
             </h1>
 
             <PurposeBadge purpose={profile.purpose} size="sm" />
-            {profile.bio && <p className="mt-3 px-6 text-center text-sm text-muted-foreground max-w-md">{profile.bio}</p>}
+            {profile.bio && <p className="mt-3 text-sm leading-relaxed text-muted-foreground max-w-md">{profile.bio}</p>}
 
-            <button
-              onClick={() => navigate('/profile/edit')}
-              className="mt-5 flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground text-sm font-semibold transition-opacity hover:opacity-90"
-            >
-              <Edit2 className="w-3.5 h-3.5" />
-              {t.profile.editProfile}
-            </button>
+            <div className="grid grid-cols-2 gap-3 mt-5 border-t border-border pt-4"><div><p className="text-lg font-bold">{profile.photo_urls.filter(Boolean).length}</p><p className="text-xs text-muted-foreground">Fotoğrafın</p></div><div><p className="text-lg font-bold">{profile.hobbies.length}</p><p className="text-xs text-muted-foreground">İlgi alanın</p></div></div>
           </div>
 
           {/* Boost CTA */}

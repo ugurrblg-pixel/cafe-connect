@@ -5,26 +5,8 @@
 
 // Available placeholder images
 const CAFE_PLACEHOLDERS = [
-  '/placeholders/cafes/cafe-1.jpg',
-  '/placeholders/cafes/cafe-2.jpg',
-  '/placeholders/cafes/cafe-3.jpg',
-  '/placeholders/cafes/cafe-4.jpg',
-  '/placeholders/cafes/cafe-5.jpg',
-  '/placeholders/cafes/cafe-6.jpg',
-  '/placeholders/cafes/cafe-7.jpg',
-  '/placeholders/cafes/cafe-8.jpg',
-  '/placeholders/cafes/cafe-9.jpg',
-  '/placeholders/cafes/cafe-10.jpg',
-  '/placeholders/cafes/cafe-11.jpg',
-  '/placeholders/cafes/cafe-12.jpg',
-  '/placeholders/cafes/cafe-13.jpg',
-  '/placeholders/cafes/cafe-14.jpg',
-  '/placeholders/cafes/cafe-15.jpg',
-  '/placeholders/cafes/cafe-16.jpg',
-  '/placeholders/cafes/cafe-17.jpg',
-  '/placeholders/cafes/cafe-18.jpg',
-  '/placeholders/cafes/cafe-19.jpg',
-  '/placeholders/cafes/cafe-20.jpg',
+  '/placeholders/cafes/riyo-cafe-sunlit.webp',
+  '/placeholders/cafes/riyo-cafe-cozy.webp',
 ];
 
 /**

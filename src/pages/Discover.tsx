@@ -12,12 +12,13 @@ import { Button } from '@/components/ui/button';
 import { CafeImage } from '@/components/CafeImage';
 import { formatActiveUserCount } from '@/lib/photoAccess';
 import { RandomMatchCard } from '@/components/RandomMatchCard';
+import { VenueActivity, venueHeat } from '@/components/VenueActivity';
 
 function VenueCard({ cafe, onClick, style }: { cafe: any; onClick: () => void; style?: React.CSSProperties }) {
   return (
     <button
       onClick={onClick}
-      className="w-full flex gap-4 bg-card rounded-3xl border border-border/60 p-3 overflow-hidden text-left transition-all duration-200 hover:border-primary/40 active:scale-[0.99] animate-slide-up"
+      className={`w-full flex gap-4 bg-card rounded-3xl border border-border/60 p-3 overflow-hidden text-left transition-all duration-200 hover:border-primary/40 active:scale-[0.99] animate-slide-up ${venueHeat(cafe.activeUsers) === 'hot' ? 'venue-heat-hot' : venueHeat(cafe.activeUsers) ? 'venue-heat-warm' : ''}`}
       style={{ boxShadow: '0 2px 16px -4px rgba(0,0,0,0.08)', ...style }}
     >
       <div className="relative w-28 sm:w-40 flex-shrink-0 overflow-hidden rounded-2xl">
@@ -35,6 +36,7 @@ function VenueCard({ cafe, onClick, style }: { cafe: any; onClick: () => void; s
       </div>
 
       <div className="py-2 flex-1 min-w-0 flex flex-col justify-center">
+        <VenueActivity count={cafe.activeUsers} />
         <p className="text-[10px] uppercase tracking-widest text-primary mb-2 font-semibold">{cafe.category === 'gym' ? 'Spor salonu' : cafe.category === 'bar' ? 'Bar' : cafe.category === 'night_club' ? 'Gece kulübü' : 'Kafe'}</p>
         <div className="flex items-end justify-between gap-2">
           <div className="min-w-0 flex-1">
@@ -199,5 +201,3 @@ export default function Discover() {
     </PageLayout>
   );
 }
-
-

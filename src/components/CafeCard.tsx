@@ -5,6 +5,7 @@ import { MapPin, Users } from 'lucide-react';
 import { useI18n } from '@/contexts/I18nContext';
 import { CafeImage } from '@/components/CafeImage';
 import { formatActiveUserCount } from '@/lib/photoAccess';
+import { VenueActivity, venueHeat } from './VenueActivity';
 
 interface CafeCardProps {
   cafe: Cafe;
@@ -21,7 +22,8 @@ export const CafeCard = memo(function CafeCard({ cafe, onClick, className, style
       onClick={onClick}
       className={cn(
         'bg-card overflow-hidden text-left w-full transition-all duration-200 active:scale-[0.98] animate-slide-up rounded-[20px] border-0',
-        className
+        className,
+        venueHeat(cafe.activeUsers) === 'hot' ? 'venue-heat-hot' : venueHeat(cafe.activeUsers) ? 'venue-heat-warm' : ''
       )}
       style={{
         boxShadow: 'var(--shadow-card)',
@@ -50,6 +52,7 @@ export const CafeCard = memo(function CafeCard({ cafe, onClick, className, style
 
       {/* Content */}
       <div className="p-4 pt-3.5">
+        <VenueActivity count={cafe.activeUsers} />
         <div className="flex items-center justify-between mb-1.5">
           <h3 className="font-semibold text-foreground text-[15px] leading-tight line-clamp-1">
             {cafe.name}
