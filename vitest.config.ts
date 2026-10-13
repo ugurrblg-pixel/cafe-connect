@@ -13,6 +13,6 @@ export default defineConfig({
   },
   resolve: {
     preserveSymlinks: process.env.CODEX_LOCAL_PREVIEW === "1",
-    alias: { "@": path.resolve(__dirname, "./src") },
+    alias: { "@": path.resolve(import.meta.dirname, "./src") },
   },
 });
