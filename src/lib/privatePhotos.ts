@@ -17,11 +17,17 @@ export async function prepareProfilePhoto(file: File): Promise<Blob> {
   if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
     throw new Error('JPEG, PNG, WebP veya GIF dosyası seçin.');
   }
-  if (file.size === 0 || file.size > 5 * 1024 * 1024) {
-    throw new Error('Fotoğraf boş olmamalı ve en fazla 5 MB olmalı.');
+  if (file.size === 0 || file.size > 20 * 1024 * 1024) {
+    throw new Error('Fotoğraf boş olmamalı ve en fazla 20 MB olmalı.');
   }
-  const bitmap = await createImageBitmap(file);
+  // Image decoding through <img> also works in browsers without createImageBitmap.
+  const objectUrl = URL.createObjectURL(file);
+  const bitmap = new Image();
   try {
+    bitmap.src = objectUrl;
+    try { await bitmap.decode(); } catch {
+      throw new Error('Bu fotoğraf okunamadı. JPEG, PNG veya WebP olarak kaydedip tekrar seçin.');
+    }
     if (!bitmap.width || !bitmap.height || bitmap.width > 8192 || bitmap.height > 8192) {
       throw new Error('Fotoğraf boyutları çok büyük. Daha küçük bir fotoğraf seçin.');
     }
@@ -38,6 +44,6 @@ export async function prepareProfilePhoto(file: File): Promise<Blob> {
     }
     return result;
   } finally {
-    bitmap.close();
+    URL.revokeObjectURL(objectUrl);
   }
 }

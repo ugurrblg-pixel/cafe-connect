@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { calculateDistance, formatDistance, Coordinates } from '@/lib/geolocation';
+import { isExcludedTeaVenue } from '@/lib/venueEligibility';
 
 interface Cafe {
   id: string;
@@ -108,7 +109,7 @@ export function useNearbyCafes(): UseNearbyCafesResult {
               distanceMeters, imageUrl: row.image_url || '', activeUsers: 0, isOpen: row.is_open,
               openingHours: row.opening_hours || null, latitude: row.latitude, longitude: row.longitude,
               googlePlaceId: row.google_place_id, category: row.category || 'cafe' };
-          }).filter(cafe => cafe.distanceMeters <= 1500).sort((a, b) => a.distanceMeters - b.distanceMeters);
+          }).filter(cafe => cafe.distanceMeters <= 1500 && !isExcludedTeaVenue(cafe.name)).sort((a, b) => a.distanceMeters - b.distanceMeters);
           if (fallback.length) {
             setCafes(fallback); setSource('cache_fallback'); setRadius(1500); setError(null);
             if (nearbyCache.size >= 10) nearbyCache.clear();
@@ -167,9 +168,10 @@ export function useNearbyCafes(): UseNearbyCafesResult {
         return 0;
       });
 
-      setCafes(formattedCafes);
+      const eligibleCafes = formattedCafes.filter(cafe => !isExcludedTeaVenue(cafe.name));
+      setCafes(eligibleCafes);
       if (nearbyCache.size >= 10) nearbyCache.clear();
-      nearbyCache.set(userId, { at: Date.now(), coords: { ...coords }, cafes: formattedCafes, radius: data.radius || null });
+      nearbyCache.set(userId, { at: Date.now(), coords: { ...coords }, cafes: eligibleCafes, radius: data.radius || null });
     } catch (err: any) {
       if (owner.current !== userId) return;
       console.error('Error fetching nearby cafes:', err);

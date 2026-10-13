@@ -47,7 +47,7 @@ export function ProfilePhotoManager({ photos, onPhotosChange, onBusyChange }: Pr
     const { error } = await supabase.rpc('save_own_profile_photos', { object_paths: paths as string[] });
     if (error) throw error;
     onPhotosChange(next);
-    await refreshProfile();
+    await refreshProfile().catch(() => { /* Photo save already succeeded; refresh can retry later. */ });
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,13 +59,13 @@ export function ProfilePhotoManager({ photos, onPhotosChange, onBusyChange }: Pr
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Resim 5MB\'dan küçük olmalı');
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error('Fotoğraf en fazla 20 MB olabilir; yüklemeden önce küçültülür.');
       return;
     }
 
     setBusy(true);
-
+    let uploadedPath: string | null = null;
     try {
       const prepared = await prepareProfilePhoto(file);
       const fileName = `${user.id}/${crypto.randomUUID()}.webp`;
@@ -75,12 +75,23 @@ export function ProfilePhotoManager({ photos, onPhotosChange, onBusyChange }: Pr
         .upload(fileName, prepared, { upsert: false, contentType: 'image/webp' });
 
       if (uploadError) throw uploadError;
+      uploadedPath = fileName;
 
-      await persistPhotos([...currentPhotos, privatePhotoReference(fileName)]);
+      // OAuth avatars and old public URLs are not valid private storage pointers.
+      // A first upload replaces that external avatar instead of failing the entire save.
+      await persistPhotos([...currentPhotos.filter(photo => privatePhotoPath(photo)), privatePhotoReference(fileName)]);
+      uploadedPath = null;
       toast.success('Fotoğraf kaydedildi. Şimdilik yalnızca sen görebilirsin.');
     } catch (error) {
+      if (uploadedPath) {
+        // Roll back only this failed upload, never an existing profile photo.
+        await supabase.storage.from('avatars').remove([uploadedPath]).catch(() => undefined);
+      }
       console.error('Error uploading photo:', error);
-      toast.error(error instanceof Error ? error.message : 'Fotoğraf kaydedilemedi. Lütfen tekrar deneyin.');
+      const message = error && typeof error === 'object' && 'message' in error ? String(error.message) : '';
+      toast.error(message.includes('row-level security')
+        ? 'Fotoğraf alanında kaydedilmemiş dosyalar olabilir. Aşağıdaki temizleme seçeneğini kullanıp tekrar deneyin.'
+        : message || 'Fotoğraf kaydedilemedi. Lütfen tekrar deneyin.');
     } finally {
       setBusy(false);
       if (fileInputRef.current) {
@@ -203,7 +214,7 @@ export function ProfilePhotoManager({ photos, onPhotosChange, onBusyChange }: Pr
               onClick={() => handleRemovePhoto(index)}
               className="absolute bottom-1.5 right-1.5 w-6 h-6 bg-destructive/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-destructive transition-colors"
             >
-              <X className="w-3.5 h-3.5 text-white" />
+              <X className="w-3.5 h-3.5 text-white" /><span className="sr-only">Fotoğrafı kaldır</span>
             </button>
 
             {index !== 0 && (

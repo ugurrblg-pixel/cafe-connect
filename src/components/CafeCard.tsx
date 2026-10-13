@@ -33,6 +33,7 @@ export const CafeCard = memo(function CafeCard({ cafe, onClick, className, style
         <CafeImage
           cafeId={cafe.id}
           imageUrl={cafe.imageUrl}
+          category={cafe.category}
           alt={cafe.name}
           className="h-44"
           aspectRatio="hero"

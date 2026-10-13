@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { calculateDistance, formatDistance, Coordinates } from '@/lib/geolocation';
+import { isExcludedTeaVenue } from '@/lib/venueEligibility';
 
 interface Cafe {
   id: string;
@@ -14,6 +15,7 @@ interface Cafe {
   openingHours: string | null;
   latitude: number | null;
   longitude: number | null;
+  category?: string;
 }
 
 // This hook is now used primarily for realtime active user count updates
@@ -78,7 +80,7 @@ export function useCafes(initialCafes?: Cafe[]) {
       activeUserCounts[checkIn.cafe_id] = (activeUserCounts[checkIn.cafe_id] || 0) + 1;
     });
 
-    const formattedCafes: Cafe[] = (cafesData || []).map((cafe) => {
+    const formattedCafes: Cafe[] = (cafesData || []).filter(cafe => !isExcludedTeaVenue(cafe.name)).map((cafe) => {
       let distanceMeters: number | null = null;
       let distanceText = cafe.distance || '';
 
@@ -98,6 +100,7 @@ export function useCafes(initialCafes?: Cafe[]) {
         distance: distanceText,
         distanceMeters,
         imageUrl: cafe.image_url || '',
+        category: cafe.category || 'cafe',
         activeUsers: activeUserCounts[cafe.id] || 0,
         isOpen: cafe.is_open,
         openingHours: (cafe as { opening_hours?: string | null }).opening_hours || null,

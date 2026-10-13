@@ -238,6 +238,7 @@ export default function CafeRoom() {
         <CafeImage
           cafeId={cafe.id}
           imageUrl={cafe.imageUrl}
+          category={cafe.category}
           alt={cafe.name}
           className="h-56"
           aspectRatio="hero"

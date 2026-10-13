@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { getCafeImage, getCafeFallbackImage } from '@/lib/cafeImages';
 
@@ -8,6 +8,7 @@ interface CafeImageProps {
   alt: string;
   className?: string;
   aspectRatio?: 'video' | 'square' | 'hero';
+  category?: string;
 }
 
 const aspectClasses = {
@@ -21,10 +22,15 @@ export function CafeImage({
   imageUrl, 
   alt, 
   className,
+  category = 'cafe',
   aspectRatio = 'video'
 }: CafeImageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  useEffect(() => { setHasError(false); setIsLoading(true); }, [cafeId, imageUrl]);
+  const representative = !imageUrl || hasError;
+  const categoryFallback = category === 'gym' ? '/placeholders/cafes/venue-gym.svg'
+    : category === 'bar' || category === 'night_club' ? '/placeholders/cafes/venue-bar.svg' : null;
   
   // Get the appropriate image source
   const imageSrc = hasError 
@@ -62,8 +68,8 @@ export function CafeImage({
       
       {/* Actual image */}
       <img
-        src={imageSrc}
-        alt={alt}
+        src={representative && categoryFallback ? categoryFallback : imageSrc}
+        alt={representative ? `${alt} için temsili ${category === 'gym' ? 'spor salonu' : category === 'bar' || category === 'night_club' ? 'bar' : 'kafe'} görseli` : alt}
         className={cn(
           'w-full h-full object-cover transition-opacity duration-300',
           isLoading ? 'opacity-0' : 'opacity-100'
@@ -72,6 +78,7 @@ export function CafeImage({
         onError={handleError}
         loading="lazy"
       />
+      {representative && <span className="absolute bottom-2 left-2 rounded-full bg-black/50 px-2 py-1 text-[10px] text-white backdrop-blur-sm">Temsili görsel</span>}
     </div>
   );
 }

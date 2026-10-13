@@ -18,6 +18,7 @@ export interface User {
 }
 
 export interface Cafe {
+  category?: string;
   id: string;
   name: string;
   address: string;

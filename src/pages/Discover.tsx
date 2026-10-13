@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { PageLayout } from '@/components/PageLayout';
@@ -6,7 +6,7 @@ import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
 import { useNearbyCafes } from '@/hooks/useNearbyCafes';
 import { useLocation } from '@/contexts/LocationContext';
 import { useI18n } from '@/contexts/I18nContext';
-import { MapPin, Loader2, AlertCircle, RefreshCw, Coffee, Users } from 'lucide-react';
+import { MapPin, Loader2, AlertCircle, RefreshCw, Coffee, Users, Search, ArrowUpRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { CafeImage } from '@/components/CafeImage';
@@ -17,29 +17,28 @@ function VenueCard({ cafe, onClick, style }: { cafe: any; onClick: () => void; s
   return (
     <button
       onClick={onClick}
-      className="flex-shrink-0 w-[280px] bg-card rounded-[20px] overflow-hidden text-left transition-all duration-200 active:scale-[0.97] animate-slide-up"
+      className="w-full flex gap-4 bg-card rounded-3xl border border-border/60 p-3 overflow-hidden text-left transition-all duration-200 hover:border-primary/40 active:scale-[0.99] animate-slide-up"
       style={{ boxShadow: '0 2px 16px -4px rgba(0,0,0,0.08)', ...style }}
     >
-      <div className="relative">
+      <div className="relative w-28 sm:w-40 flex-shrink-0 overflow-hidden rounded-2xl">
         <CafeImage
           cafeId={cafe.id}
           imageUrl={cafe.imageUrl}
           alt={cafe.name}
-          className="h-[180px]"
+          category={cafe.category}
+          className="!h-32 sm:!h-36"
           aspectRatio="hero"
         />
 
         {/* Popular badge */}
-        <div className="absolute top-3 left-3 bg-card/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-[11px] font-semibold flex items-center gap-1">
-          <span>🔥</span>
-          <span className="text-foreground">Popüler</span>
-        </div>
+        {cafe.activeUsers > 0 && <div className="absolute top-2 left-2 bg-card/95 px-2 py-1 rounded-full text-[10px] font-semibold text-primary">Şu an hareketli</div>}
       </div>
 
-      <div className="p-4 pt-3">
+      <div className="py-2 flex-1 min-w-0 flex flex-col justify-center">
+        <p className="text-[10px] uppercase tracking-widest text-primary mb-2 font-semibold">{cafe.category === 'gym' ? 'Spor salonu' : cafe.category === 'bar' ? 'Bar' : cafe.category === 'night_club' ? 'Gece kulübü' : 'Kafe'}</p>
         <div className="flex items-end justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <h3 className="font-bold text-foreground text-[15px] leading-snug line-clamp-1">
+            <h3 className="font-bold text-foreground text-[16px] leading-snug line-clamp-2">
               {cafe.name}
             </h3>
             {cafe.distance && (
@@ -57,22 +56,9 @@ function VenueCard({ cafe, onClick, style }: { cafe: any; onClick: () => void; s
             </div>
           )}
         </div>
+        <span className="mt-3 flex items-center gap-1 text-xs font-medium text-primary">Mekanı keşfet <ArrowUpRight className="w-3 h-3" /></span>
       </div>
     </button>
-  );
-}
-
-function HorizontalSlider({ children }: { children: React.ReactNode }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  return (
-    <div
-      ref={scrollRef}
-      className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide"
-      style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}
-    >
-      {children}
-    </div>
   );
 }
 
@@ -81,6 +67,12 @@ export default function Discover() {
   const { t, formatString } = useI18n();
   const { cafes, loading, error, source, fetchNearbyCafes } = useNearbyCafes();
   const { position, loading: locationLoading, error: locationError, getPosition, isStale } = useLocation();
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState('all');
+  const visibleCafes = useMemo(() => cafes.filter(c =>
+    c.name.toLocaleLowerCase('tr-TR').includes(query.toLocaleLowerCase('tr-TR'))
+    && (filter === 'all' || filter === 'active' ? filter !== 'active' || c.activeUsers > 0 : c.category === filter)
+  ), [cafes, query, filter]);
 
   useEffect(() => {
     if (position) {
@@ -104,15 +96,16 @@ export default function Discover() {
     }
   };
 
-  const popularCafes = useMemo(() => cafes.filter(c => c.activeUsers > 0), [cafes]);
-  const allCafes = useMemo(() => cafes.filter(c => c.activeUsers === 0), [cafes]);
 
   return (
     <PageLayout>
       <div className="min-h-screen bg-background pb-24">
         <Header title={t.discover.title} />
 
-        <main className="pt-16 px-4">
+        <main className="pt-20 px-4 max-w-3xl mx-auto">
+          <div className="mb-6"><p className="text-xs uppercase tracking-[0.2em] text-primary font-semibold mb-2">Bir kahve, yeni bir hikaye</p><h1 className="text-3xl font-bold tracking-tight">Yakınında keşfet</h1><p className="mt-2 text-sm text-muted-foreground">Bir mekan seç, ortamı gör, sohbete katıl.</p></div>
+          <label className="mb-4 flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3"><Search className="w-4 h-4 text-muted-foreground" /><input aria-label="Mekan ara" value={query} onChange={e => setQuery(e.target.value)} placeholder="Aklındaki mekanı bul…" className="w-full bg-transparent text-sm outline-none" /></label>
+          <div className="flex gap-2 overflow-x-auto pb-3 mb-3">{[['all','Hepsi'],['cafe','Kafeler'],['active','Şu an hareketli'],['bar','Barlar'],['gym','Spor']].map(([value,label]) => <button key={value} onClick={() => setFilter(value)} aria-pressed={filter === value} className={`whitespace-nowrap rounded-full px-4 py-2 text-xs font-semibold ${filter === value ? 'bg-primary text-primary-foreground' : 'bg-card border border-border text-muted-foreground'}`}>{label}</button>)}</div>
           <ProfileCompletionBanner />
 
           {/* Random Match Mini Game */}
@@ -179,66 +172,13 @@ export default function Discover() {
             </div>
           ) : (
             <>
-              {/* Popular Section — Horizontal Slider */}
               <section className="mb-8">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-lg">🔥</span>
-                  <h2 className="font-bold text-[17px] text-foreground tracking-tight">Yakındaki Popüler Mekanlar</h2>
+                <div className="flex items-center justify-between mb-4"><h2 className="font-semibold text-lg">Sana yakın mekanlar</h2><span className="text-xs text-muted-foreground">{visibleCafes.length} mekan</span></div>
+                <div className="space-y-3">
+                  {visibleCafes.map((cafe, i) => <VenueCard key={cafe.id} cafe={cafe} onClick={() => navigate(`/cafe/${cafe.id}`)} style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }} />)}
                 </div>
-
-                {popularCafes.length > 0 ? (
-                  <HorizontalSlider>
-                    {popularCafes.map((cafe, i) => (
-                      <VenueCard
-                        key={cafe.id}
-                        cafe={cafe}
-                        onClick={() => navigate(`/cafe/${cafe.id}`)}
-                        style={{ animationDelay: `${i * 60}ms`, scrollSnapAlign: 'start' }}
-                      />
-                    ))}
-                  </HorizontalSlider>
-                ) : (
-                  <div className="bg-card rounded-[20px] p-8 text-center" style={{ boxShadow: '0 2px 12px -4px rgba(0,0,0,0.06)' }}>
-                    <Coffee className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-                    <p className="text-muted-foreground text-sm">{t.discover.beFirst}</p>
-                  </div>
-                )}
+                {cafes.length > 0 && visibleCafes.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">Bu seçimle eşleşen mekan yok. Başka bir filtre deneyebilirsin.</p>}
               </section>
-
-              {/* All Venues — Vertical Grid */}
-              {allCafes.length > 0 && (
-                <section className="mb-8">
-                  <h2 className="font-bold text-[17px] text-foreground tracking-tight mb-4">Tüm Mekanlar</h2>
-                  <div className="grid grid-cols-2 gap-3">
-                    {allCafes.map((cafe, i) => (
-                      <button
-                        key={cafe.id}
-                        onClick={() => navigate(`/cafe/${cafe.id}`)}
-                        className="bg-card rounded-[20px] overflow-hidden text-left transition-all duration-200 active:scale-[0.97] animate-slide-up"
-                        style={{ boxShadow: '0 2px 12px -4px rgba(0,0,0,0.06)', animationDelay: `${i * 50}ms` }}
-                      >
-                        <CafeImage
-                          cafeId={cafe.id}
-                          imageUrl={cafe.imageUrl}
-                          alt={cafe.name}
-                          className="h-[120px]"
-                          aspectRatio="hero"
-                        />
-                        <div className="p-3">
-                          <h3 className="font-semibold text-foreground text-[13px] leading-snug line-clamp-1">{cafe.name}</h3>
-                          {cafe.distance && (
-                            <div className="flex items-center gap-1 mt-1 text-muted-foreground">
-                              <MapPin className="w-3 h-3" />
-                              <span className="text-[11px]">{cafe.distance}</span>
-                            </div>
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              )}
-
               {/* Empty state */}
               {cafes.length === 0 && position && !loading && !error && (
                 <div className="text-center py-16">
@@ -259,3 +199,5 @@ export default function Discover() {
     </PageLayout>
   );
 }
+
+

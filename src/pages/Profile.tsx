@@ -131,17 +131,18 @@ export default function Profile() {
     );
   }
 
-  const cardClass = "bg-card rounded-[20px] p-4 mb-3 border-0";
+  const cardClass = "bg-card rounded-3xl p-5 mb-4 border border-border/60";
   const cardShadow = { boxShadow: '0 2px 16px -2px hsl(18 30% 50% / 0.07)' };
 
   return (
     <PageLayout>
       <div className="min-h-screen bg-background pb-24">
         {/* No Header — clean profile-first layout */}
-        <main className="pt-6 px-4">
+        <main className="pt-6 px-4 max-w-2xl mx-auto">
 
           {/* Profile Hero */}
-          <div className="flex flex-col items-center pt-8 pb-6 animate-scale-in">
+          <div className="relative flex flex-col items-center pt-8 pb-7 mb-6 rounded-[32px] border border-primary/10 bg-gradient-to-b from-primary/10 via-card to-card animate-scale-in">
+            <p className="text-xs font-semibold tracking-[0.2em] uppercase text-primary mb-5">Senin Riyo alanın</p>
             <div className="relative mb-4">
               <ProfilePhotoCarousel
                 photos={profile.photo_urls}
@@ -161,10 +162,11 @@ export default function Profile() {
             </h1>
 
             <PurposeBadge purpose={profile.purpose} size="sm" />
+            {profile.bio && <p className="mt-3 px-6 text-center text-sm text-muted-foreground max-w-md">{profile.bio}</p>}
 
             <button
               onClick={() => navigate('/profile/edit')}
-              className="mt-4 flex items-center gap-2 px-5 py-2 rounded-full bg-secondary text-foreground text-sm font-medium transition-colors hover:bg-muted"
+              className="mt-5 flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground text-sm font-semibold transition-opacity hover:opacity-90"
             >
               <Edit2 className="w-3.5 h-3.5" />
               {t.profile.editProfile}
