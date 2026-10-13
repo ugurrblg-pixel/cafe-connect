@@ -5,16 +5,16 @@ import { PurposeBadge } from '@/components/PurposeBadge';
 import { PremiumBadge } from '@/components/PremiumBadge';
 import { ProfilePhotoCarousel } from '@/components/ProfilePhotoCarousel';
 import { HobbyDisplay } from '@/components/HobbyDisplay';
-import { DeleteAccountDialog } from '@/components/DeleteAccountDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePremium } from '@/hooks/usePremium';
 import { useI18n } from '@/contexts/I18nContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Purpose } from '@/types';
-import { Edit2, Shield, Bell, HelpCircle, LogOut, MessageCircle, Users, Heart, Eye, Crown, ChevronRight, Zap, Trash2, Mail, Phone, User as UserIcon, CalendarDays } from 'lucide-react';
+import { Edit2, Shield, HelpCircle, LogOut, MessageCircle, Users, Heart, Crown, ChevronRight, Mail, Phone, User as UserIcon, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { VerificationRequest } from '@/components/VerificationRequest';
+import { useProfileCompletion } from '@/hooks/useProfileCompletion';
 
 interface Profile {
   id: string;
@@ -41,7 +41,8 @@ export default function Profile() {
   const { t, formatString } = useI18n();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [purposeSaving, setPurposeSaving] = useState(false);
+  const completion = useProfileCompletion();
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -72,37 +73,21 @@ export default function Profile() {
   ];
 
   const handlePurposeChange = async (purpose: Purpose) => {
-    if (!profile) return;
-    const { error } = await supabase.from('profiles').update({ purpose }).eq('id', profile.id);
-    if (error) { toast.error('Failed to update purpose'); return; }
-    setProfile({ ...profile, purpose });
-    toast.success(formatString(t.profile.purposeUpdated, { purpose }));
-  };
-
-  const handleDMToggle = async (enabled: boolean) => {
-    if (!profile) return;
-    const { error } = await supabase.from('profiles').update({ allow_dms: enabled }).eq('id', profile.id);
-    if (error) { toast.error('Failed to update DM settings'); return; }
-    setProfile({ ...profile, allow_dms: enabled });
-    toast.success(enabled ? t.profile.dmEnabled : t.profile.dmDisabled);
-  };
-
-  const handleLogout = async () => { await signOut(); navigate('/auth'); };
-
-  const handleDeleteAccount = async () => {
-    if (!user || !profile) return;
+    if (!profile || purposeSaving || purpose === profile.purpose) return;
+    setPurposeSaving(true);
     try {
-      await Promise.all([
-        supabase.from('profiles').update({ is_visible: false, bio: '[deleted]', display_name: 'Deleted User', photo_url: null, photo_urls: [] }).eq('user_id', user.id),
-        supabase.from('conversations').update({ is_active: false }).or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`),
-        supabase.from('check_ins').delete().eq('user_id', user.id),
-      ]);
-      await signOut();
-      navigate('/auth');
-      toast.success(t.profile.accountDeleted);
-    } catch {
-      toast.error(t.profile.accountDeleteFailed);
-    }
+      const { error } = await supabase.from('profiles').update({ purpose }).eq('id', profile.id);
+      if (error) throw error;
+      setProfile(previous => previous ? { ...previous, purpose } : previous);
+      await refreshProfile();
+      toast.success('Tanışma amacın güncellendi');
+    } catch { toast.error('Amaç kaydedilemedi. Tekrar deneyebilirsin.'); }
+    finally { setPurposeSaving(false); }
+  };
+
+  const handleLogout = async () => {
+    try { await signOut(); navigate('/auth'); }
+    catch { toast.error('Çıkış yapılamadı. Tekrar deneyebilirsin.'); }
   };
 
   const displayName = profile?.display_name || profile?.name || 'Anonymous';
@@ -126,7 +111,7 @@ export default function Profile() {
   if (!profile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Profile not found</p>
+        <div className="text-center px-6"><p className="text-muted-foreground">Profil bilgilerin yüklenemedi.</p><button onClick={() => window.location.reload()} className="mt-3 text-sm font-semibold text-primary">Tekrar dene</button></div>
       </div>
     );
   }
@@ -171,59 +156,62 @@ export default function Profile() {
             <div className="grid grid-cols-2 gap-3 mt-5 border-t border-border pt-4"><div><p className="text-lg font-bold">{profile.photo_urls.filter(Boolean).length}</p><p className="text-xs text-muted-foreground">Fotoğrafın</p></div><div><p className="text-lg font-bold">{profile.hobbies.length}</p><p className="text-xs text-muted-foreground">İlgi alanın</p></div></div>
           </div>
 
-          {/* Boost CTA */}
-          <button
-            onClick={() => navigate('/boost')}
-            className="w-full rounded-[20px] p-4 mb-3 flex items-center gap-3 transition-all active:scale-[0.98] bg-primary text-primary-foreground border-0"
-            style={{ boxShadow: '0 4px 16px hsl(var(--primary) / 0.25)' }}
-          >
-            <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center">
-              <Zap className="w-5 h-5 fill-current" />
-            </div>
-            <div className="flex-1 text-left">
-              <p className="font-semibold">{t.profile.boost}</p>
-              <p className="text-sm opacity-80">{t.profile.standOutInCafes}</p>
-            </div>
-            <ChevronRight className="w-5 h-5 opacity-60" />
-          </button>
+          <section className={cardClass} style={cardShadow}>
+            <div className="flex items-center justify-between mb-3"><h2 className="font-semibold">Profilini tamamla</h2><span className="text-sm font-bold text-primary">%{completion.percentage}</span></div>
+            <div role="progressbar" aria-label="Profil tamamlama" aria-valuenow={completion.percentage} aria-valuemin={0} aria-valuemax={100} className="h-2 rounded-full bg-secondary overflow-hidden"><div className="h-full bg-primary rounded-full" style={{width: `${completion.percentage}%`}} /></div>
+            <p className="text-xs text-muted-foreground mt-3">{completion.missingFields.length ? `${completion.missingFields.join(', ')} ekleyerek kendini daha iyi anlatabilirsin.` : 'Temel profil bilgilerin tamam. Yeni bir sohbete hazırsın.'}</p>
+            <button onClick={() => navigate('/profile/edit')} className="mt-3 text-sm text-primary font-semibold">Profil bilgilerimi düzenle →</button>
+          </section>
 
-          {/* Premium Card */}
-          <button
-            onClick={() => navigate('/subscription')}
-            className={`w-full ${cardClass} flex items-center gap-3 transition-all active:scale-[0.98] text-left`}
-            style={{
-              boxShadow: isPremium
-                ? '0 2px 20px -2px hsl(43 96% 56% / 0.15)'
-                : cardShadow.boxShadow,
-              border: isPremium ? '1px solid hsl(43 96% 56% / 0.25)' : undefined,
-            }}
-          >
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isPremium ? 'bg-amber-100' : 'bg-secondary'}`}>
-              <Crown className={`w-5 h-5 ${isPremium ? 'text-amber-500' : 'text-muted-foreground'}`} />
+          {/* Bio */}
+          <div className={cardClass} style={cardShadow}>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="font-semibold text-foreground">{t.profile.about}</h2>
+              <button onClick={() => navigate('/profile/edit')} aria-label="Profil bilgilerini düzenle" className="text-primary p-1 rounded-full hover:bg-primary/10 transition-colors">
+                <Edit2 className="w-4 h-4" />
+              </button>
             </div>
-            <div className="flex-1">
-              <p className="font-semibold text-foreground">{isPremium ? t.profile.premiumActive : 'Riyo Premium'}</p>
-              <p className="text-sm text-muted-foreground">{isPremium ? t.profile.allFeaturesUnlocked : t.profile.unlimitedChatAndMore}</p>
-            </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
-          </button>
+            <p className="text-muted-foreground text-sm leading-relaxed">{profile.bio || t.profile.addBio}</p>
+          </div>
 
-          {/* Profile Viewers */}
-          <button
-            onClick={() => navigate('/profile/viewers')}
-            className={`w-full ${cardClass} flex items-center gap-3 transition-all active:scale-[0.98] text-left`}
-            style={cardShadow}
-          >
-            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
-              <Eye className="w-5 h-5 text-muted-foreground" />
+          {/* Hobbies */}
+          {(
+            <div className={cardClass} style={cardShadow}>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="font-semibold text-foreground">{t.profile.hobbies}</h2>
+                <button onClick={() => navigate('/profile/edit')} aria-label="Profil bilgilerini düzenle" className="text-primary p-1 rounded-full hover:bg-primary/10 transition-colors">
+                  <Edit2 className="w-4 h-4" />
+                </button>
+              </div>
+              <HobbyDisplay hobbies={profile.hobbies} />
+              {profile.hobbies.length === 0 && <button onClick={() => navigate('/profile/edit')} className="text-sm text-muted-foreground text-left">Sevdiğin şeyleri ekle; ortak ilgi alanların sohbet başlatmayı kolaylaştırır. <span className="text-primary">İlgi alanı ekle →</span></button>}
             </div>
-            <div className="flex-1">
-              <p className="font-semibold text-foreground">{t.profile.profileViewers}</p>
-              <p className="text-sm text-muted-foreground">{isPremium ? t.profile.seeWhoViewedYou : t.profile.premiumFeature}</p>
-            </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
-          </button>
+          )}
 
+          {/* Purpose Selection */}
+          <div className={cardClass} style={cardShadow}>
+            <h2 className="font-semibold text-foreground mb-3">{t.profile.imHereFor}</h2>
+            <div className="flex gap-2">
+              {purposes.map(({ value, label, icon }) => (
+                <button
+                  key={value}
+                  onClick={() => handlePurposeChange(value)}
+                  disabled={purposeSaving}
+                  aria-pressed={profile.purpose === value}
+                  className={`flex-1 py-3 px-3 rounded-2xl flex flex-col items-center gap-2 transition-all ${
+                    profile.purpose === value
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-secondary text-secondary-foreground hover:bg-muted'
+                  }`}
+                >
+                  {icon}
+                  <span className="text-sm font-medium">{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3 mt-6">Hesabın ve güvenliğin</h2>
           {/* Verification */}
           <div className={cardClass} style={cardShadow}>
             <h2 className="font-semibold text-foreground mb-3">{t.profile.accountVerification}</h2>
@@ -279,56 +267,11 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Bio */}
-          <div className={cardClass} style={cardShadow}>
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="font-semibold text-foreground">{t.profile.about}</h2>
-              <button onClick={() => navigate('/profile/edit')} className="text-primary p-1 rounded-full hover:bg-primary/10 transition-colors">
-                <Edit2 className="w-4 h-4" />
-              </button>
-            </div>
-            <p className="text-muted-foreground text-sm leading-relaxed">{profile.bio || t.profile.addBio}</p>
-          </div>
-
-          {/* Hobbies */}
-          {profile.hobbies && profile.hobbies.length > 0 && (
-            <div className={cardClass} style={cardShadow}>
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="font-semibold text-foreground">{t.profile.hobbies}</h2>
-                <button onClick={() => navigate('/profile/edit')} className="text-primary p-1 rounded-full hover:bg-primary/10 transition-colors">
-                  <Edit2 className="w-4 h-4" />
-                </button>
-              </div>
-              <HobbyDisplay hobbies={profile.hobbies} />
-            </div>
-          )}
-
-          {/* Purpose Selection */}
-          <div className={cardClass} style={cardShadow}>
-            <h2 className="font-semibold text-foreground mb-3">{t.profile.imHereFor}</h2>
-            <div className="flex gap-2">
-              {purposes.map(({ value, label, icon }) => (
-                <button
-                  key={value}
-                  onClick={() => handlePurposeChange(value)}
-                  className={`flex-1 py-3 px-3 rounded-2xl flex flex-col items-center gap-2 transition-all ${
-                    profile.purpose === value
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-secondary-foreground hover:bg-muted'
-                  }`}
-                >
-                  {icon}
-                  <span className="text-sm font-medium">{label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Settings Links */}
-          <div className="bg-card rounded-[20px] overflow-hidden mb-3 border-0" style={cardShadow}>
+          <div className="bg-card rounded-3xl overflow-hidden mb-4 border border-border/60" style={cardShadow}>
             {[
               { icon: Shield, label: t.profile.safetyPrivacy, color: 'text-accent', onClick: () => navigate('/settings/safety') },
-              { icon: Bell, label: t.profile.notificationsLink, color: 'text-primary', onClick: () => navigate('/settings/notifications') },
+              
               { icon: HelpCircle, label: t.profile.helpSupport, color: 'text-muted-foreground', onClick: () => navigate('/settings/help') },
             ].map(({ icon: Icon, label, color, onClick }) => (
               <button key={label} onClick={onClick} className="w-full px-4 py-3.5 flex items-center gap-3 hover:bg-secondary/40 transition-colors border-b border-border/40 last:border-b-0">
@@ -339,19 +282,20 @@ export default function Profile() {
             ))}
           </div>
 
+          <section className={cardClass} style={cardShadow}>
+            <div className="flex items-center gap-3"><div className="p-3 rounded-2xl bg-amber-50"><Crown className="w-5 h-5 text-amber-600" /></div><div><h2 className="font-semibold">Riyo'da daha fazlası</h2><p className="text-xs text-muted-foreground mt-1">Premium, Boost ve profil ziyaretleri henüz kullanılamıyor.</p></div></div>
+          </section>
+
           {/* Danger Zone */}
           <div className="bg-card rounded-[20px] overflow-hidden mb-6 border-0" style={cardShadow}>
             <button onClick={handleLogout} className="w-full px-4 py-3.5 flex items-center gap-3 hover:bg-secondary/40 transition-colors border-b border-border/40">
               <LogOut className="w-5 h-5 text-destructive" />
               <span className="font-medium text-destructive text-sm">{t.profile.signOutLink}</span>
             </button>
-            <button onClick={() => setShowDeleteDialog(true)} className="w-full px-4 py-3.5 flex items-center gap-3 hover:bg-secondary/40 transition-colors">
-              <Trash2 className="w-5 h-5 text-destructive/60" />
-              <span className="font-medium text-destructive/60 text-sm">{t.profile.deleteAccount}</span>
-            </button>
+            <div className="px-4 py-4 border-t border-border/40"><p className="text-sm font-medium text-muted-foreground">Hesap silme</p><p className="text-xs text-muted-foreground mt-1">Kalıcı hesap silme henüz kullanılamıyor. Buradan verilerin silindiği bildirilmeyecek.</p></div>
           </div>
 
-          <DeleteAccountDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog} onConfirm={handleDeleteAccount} />
+
         </main>
       </div>
     </PageLayout>

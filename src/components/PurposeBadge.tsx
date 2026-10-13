@@ -1,6 +1,7 @@
 import { Purpose } from '@/types';
 import { cn } from '@/lib/utils';
 import { MessageCircle, Users, Heart } from 'lucide-react';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface PurposeBadgeProps {
   purpose: Purpose;
@@ -27,7 +28,9 @@ const purposeConfig = {
 };
 
 export function PurposeBadge({ purpose, size = 'md', className }: PurposeBadgeProps) {
-  const config = purposeConfig[purpose];
+  const { t } = useI18n();
+  const safePurpose = purpose in purposeConfig ? purpose : 'friendship';
+  const config = purposeConfig[safePurpose];
   const Icon = config.icon;
 
   return (
@@ -40,7 +43,7 @@ export function PurposeBadge({ purpose, size = 'md', className }: PurposeBadgePr
       )}
     >
       <Icon className={size === 'sm' ? 'w-3 h-3' : 'w-4 h-4'} />
-      {config.label}
+      {t.intents[safePurpose]}
     </span>
   );
 }
