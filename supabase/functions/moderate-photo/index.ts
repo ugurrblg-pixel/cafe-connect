@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { photoVerdict } from './policy.ts';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -9,8 +10,7 @@ const reply = (body: object, status: number) => new Response(JSON.stringify(body
   status, headers: { ...cors, 'Content-Type': 'application/json' },
 });
 
-// No review provider has been configured for the new backend.
-// Never infer approval from an unavailable service or transmit photos to Lovable.
+// Disabled until server secret, quota and explicit upload consent are configured.
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return reply({ error: 'POST required' }, 405);
@@ -26,13 +26,35 @@ Deno.serve(async (req) => {
     let body;
     try { body = await req.json(); } catch { return reply({ error: 'Invalid JSON' }, 400); }
     const path = body?.photoPath;
+    if (body?.reviewConsent !== true) return reply({ error: 'Photo review consent required' }, 400);
     const allowed = new RegExp('^' + user.id + '/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.webp$');
     if (typeof path !== 'string' || !allowed.test(path)) return reply({ error: 'Own photo path required' }, 400);
-    const { data: profile, error: profileError } = await client.from('profiles')
-      .select('photo_urls').eq('user_id', user.id).maybeSingle();
-    if (profileError) return reply({ error: 'Review unavailable' }, 503);
-    if (!profile?.photo_urls?.includes('avatar:' + path)) return reply({ error: 'Photo unavailable' }, 404);
-    return reply({ status: 'pending', error: 'Photo review is not configured' }, 503);
+    const reviewKey = Deno.env.get('OPENAI_API_KEY');
+    if (Deno.env.get('PHOTO_REVIEW_ENABLED') !== 'true' || !reviewKey) return reply({ status: 'pending', error: 'Photo review is not configured' }, 503);
+    const { data: quota, error: quotaError } = await client.rpc('reserve_photo_review', { target_user_id: user.id, target_object_path: path });
+    if (quotaError) return reply({ status: 'pending', error: 'Review unavailable' }, 503);
+    if (!quota) return reply({ status: 'pending', error: 'Please wait before another photo review' }, 429);
+    const { data: photo, error: downloadError } = await client.storage.from('avatars').download(path);
+    if (downloadError || !photo || photo.type !== 'image/webp' || photo.size > 5 * 1024 * 1024) return reply({ error: 'Own photo unavailable' }, 404);
+    const bytes = new Uint8Array(await photo.arrayBuffer());
+    let binary = '';
+    for (let offset = 0; offset < bytes.length; offset += 8192) binary += String.fromCharCode(...bytes.subarray(offset, offset + 8192));
+    const response = await fetch('https://api.openai.com/v1/moderations', {
+      method: 'POST', headers: { Authorization: `Bearer ${reviewKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'omni-moderation-latest', input: [{ type: 'image_url', image_url: { url: `data:image/webp;base64,${btoa(binary)}` } }] }),
+      signal: AbortSignal.timeout(20000),
+    });
+    if (!response.ok) return reply({ status: 'pending', error: 'Review unavailable' }, 503);
+    const result = await response.json();
+    const verdict = photoVerdict(result.results?.[0]);
+    if (verdict !== 'pending') {
+      const { data: recorded, error: recordError } = await client.rpc('record_photo_review', {
+        target_user_id: user.id, target_path: path, target_object_id: quota, target_verdict: verdict,
+      });
+      if (recordError || !recorded) return reply({ status: 'pending', error: 'Review unavailable' }, 503);
+    }
+    // Content screening never grants publication or account verification.
+    return reply({ status: verdict }, verdict === 'pending' ? 503 : 200);
   } catch {
     return reply({ status: 'pending', error: 'Review unavailable' }, 503);
   }

@@ -1,6 +1,7 @@
 import { Purpose } from '@/types';
 import { cn } from '@/lib/utils';
 import { MessageCircle, Users, Heart } from 'lucide-react';
+import { useI18n } from '@/contexts/I18nContext';
 
 type FilterOption = 'all' | Purpose;
 
@@ -18,6 +19,7 @@ const filterOptions: { value: FilterOption; label: string; icon?: React.ElementT
 ];
 
 export function IntentFilterChips({ selected, onChange, className }: IntentFilterChipsProps) {
+  const { t } = useI18n();
   return (
     <div className={cn('flex gap-2 overflow-x-auto pb-2 scrollbar-hide', className)}>
       {filterOptions.map((option) => {
@@ -36,7 +38,7 @@ export function IntentFilterChips({ selected, onChange, className }: IntentFilte
             )}
           >
             {Icon && <Icon className="w-4 h-4" />}
-            {option.label}
+            {t.intents[option.value]}
           </button>
         );
       })}

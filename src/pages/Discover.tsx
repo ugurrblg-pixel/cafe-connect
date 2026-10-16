@@ -18,16 +18,16 @@ function VenueCard({ cafe, onClick, style }: { cafe: any; onClick: () => void; s
   return (
     <button
       onClick={onClick}
-      className={`w-full flex gap-4 bg-card rounded-3xl border border-border/60 p-3 overflow-hidden text-left transition-all duration-200 hover:border-primary/40 active:scale-[0.99] animate-slide-up ${venueHeat(cafe.activeUsers) === 'hot' ? 'venue-heat-hot' : venueHeat(cafe.activeUsers) ? 'venue-heat-warm' : ''}`}
+      className={`group w-full bg-card rounded-3xl border border-border/60 overflow-hidden text-left transition-all duration-200 hover:border-primary/40 active:scale-[0.99] animate-slide-up ${venueHeat(cafe.activeUsers) === 'hot' ? 'venue-heat-hot' : venueHeat(cafe.activeUsers) ? 'venue-heat-warm' : ''}`}
       style={{ boxShadow: '0 2px 16px -4px rgba(0,0,0,0.08)', ...style }}
     >
-      <div className="relative w-28 sm:w-40 flex-shrink-0 overflow-hidden rounded-2xl">
+      <div className="relative w-full overflow-hidden">
         <CafeImage
           cafeId={cafe.id}
           imageUrl={cafe.imageUrl}
           alt={cafe.name}
           category={cafe.category}
-          className="!h-32 sm:!h-36"
+          className="!h-48 sm:!h-52 transition-transform duration-500 motion-safe:group-hover:scale-105"
           aspectRatio="hero"
         />
 
@@ -35,7 +35,7 @@ function VenueCard({ cafe, onClick, style }: { cafe: any; onClick: () => void; s
         {cafe.activeUsers > 0 && <div className="absolute top-2 left-2 bg-card/95 px-2 py-1 rounded-full text-[10px] font-semibold text-primary">Şu an hareketli</div>}
       </div>
 
-      <div className="py-2 flex-1 min-w-0 flex flex-col justify-center">
+      <div className="p-5 min-w-0 flex flex-col justify-center">
         <VenueActivity count={cafe.activeUsers} />
         <p className="text-[10px] uppercase tracking-widest text-primary mb-2 font-semibold">{cafe.category === 'gym' ? 'Spor salonu' : cafe.category === 'bar' ? 'Bar' : cafe.category === 'night_club' ? 'Gece kulübü' : 'Kafe'}</p>
         <div className="flex items-end justify-between gap-2">
@@ -49,6 +49,7 @@ function VenueCard({ cafe, onClick, style }: { cafe: any; onClick: () => void; s
                 <span className="text-[12px]">{cafe.distance}</span>
               </div>
             )}
+            {typeof cafe.distanceMeters === 'number' && <p className="text-[11px] text-muted-foreground mt-1">Yaklaşık {Math.max(1, Math.round(cafe.distanceMeters / 80))} dk yürüyüş · tahmini</p>}
           </div>
 
           {cafe.activeUsers > 0 && (
@@ -71,10 +72,13 @@ export default function Discover() {
   const { position, loading: locationLoading, error: locationError, getPosition, isStale } = useLocation();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
+  const [sort, setSort] = useState('nearby');
   const visibleCafes = useMemo(() => cafes.filter(c =>
     c.name.toLocaleLowerCase('tr-TR').includes(query.toLocaleLowerCase('tr-TR'))
     && (filter === 'all' || filter === 'active' ? filter !== 'active' || c.activeUsers > 0 : c.category === filter)
-  ), [cafes, query, filter]);
+  ).sort((a, b) => sort === 'active'
+    ? b.activeUsers - a.activeUsers || (a.distanceMeters ?? Infinity) - (b.distanceMeters ?? Infinity)
+    : (a.distanceMeters ?? Infinity) - (b.distanceMeters ?? Infinity)), [cafes, query, filter, sort]);
 
   useEffect(() => {
     if (position) {
@@ -175,8 +179,8 @@ export default function Discover() {
           ) : (
             <>
               <section className="mb-8">
-                <div className="flex items-center justify-between mb-4"><h2 className="font-semibold text-lg">Sana yakın mekanlar</h2><span className="text-xs text-muted-foreground">{visibleCafes.length} mekan</span></div>
-                <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4"><div><h2 className="font-semibold text-lg">Sana yakın mekanlar</h2><span className="text-xs text-muted-foreground">{visibleCafes.length} mekan</span></div><select aria-label="Mekan sıralaması" value={sort} onChange={e => setSort(e.target.value)} className="text-xs bg-card border border-border rounded-full px-3 py-2"><option value="nearby">En yakın</option><option value="active">En hareketli</option></select></div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {visibleCafes.map((cafe, i) => <VenueCard key={cafe.id} cafe={cafe} onClick={() => navigate(`/cafe/${cafe.id}`)} style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }} />)}
                 </div>
                 {cafes.length > 0 && visibleCafes.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">Bu seçimle eşleşen mekan yok. Başka bir filtre deneyebilirsin.</p>}

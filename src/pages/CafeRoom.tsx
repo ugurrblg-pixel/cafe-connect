@@ -297,7 +297,7 @@ export default function CafeRoom() {
             Şu an burada
             {intentFilter !== 'all' && (
               <span className="text-sm font-normal text-muted-foreground">
-                ({filteredUsers.length} of {otherUsers.length})
+                ({otherUsers.length} kişiden {filteredUsers.length})
               </span>
             )}
             {/* Connection status indicator */}
@@ -356,16 +356,16 @@ export default function CafeRoom() {
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                 <Users className="w-8 h-8 text-muted-foreground" />
               </div>
-              <p className="text-muted-foreground mb-1">No one matches this filter</p>
-              <p className="text-sm text-muted-foreground">Try selecting "All" to see everyone</p>
+              <p className="text-muted-foreground mb-1">Bu seçime uygun kimse yok</p>
+              <p className="text-sm text-muted-foreground">Herkesi görmek için Tümü seçeneğine dokun</p>
             </div>
           ) : (
             <div className="card-elevated p-8 text-center">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                 <Users className="w-8 h-8 text-muted-foreground" />
               </div>
-              <p className="text-muted-foreground mb-1">No one else here yet</p>
-              <p className="text-sm text-muted-foreground">Be the first to check in!</p>
+              <p className="text-muted-foreground mb-1">Henüz başka kimse burada değil</p>
+              <p className="text-sm text-muted-foreground">Buradayım diyerek ilk sen katıl!</p>
             </div>
           )}
         </section>

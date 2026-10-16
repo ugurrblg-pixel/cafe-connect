@@ -19,6 +19,8 @@ export function ProfilePhotoManager({ photos, onPhotosChange, onBusyChange }: Pr
   const { user, refreshProfile } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const reviewEnabled = import.meta.env.VITE_PHOTO_REVIEW_ENABLED === 'true';
+  const [reviewConsent, setReviewConsent] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const dragOriginal = useRef<string[]>([]);
   const [unusedPaths, setUnusedPaths] = useState<string[]>([]);
@@ -53,6 +55,7 @@ export function ProfilePhotoManager({ photos, onPhotosChange, onBusyChange }: Pr
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user || uploading || !canAddMore) return;
+    if (reviewEnabled && !reviewConsent) { toast.error('Fotoğraf denetimi için izin kutusunu işaretle.'); return; }
 
     if (!file.type.startsWith('image/')) {
       toast.error('Lütfen bir resim dosyası yükleyin');
@@ -76,6 +79,11 @@ export function ProfilePhotoManager({ photos, onPhotosChange, onBusyChange }: Pr
 
       if (uploadError) throw uploadError;
       uploadedPath = fileName;
+      if (reviewEnabled) {
+        const { data: review, error: reviewError } = await supabase.functions.invoke('moderate-photo', { body: { photoPath: fileName, reviewConsent: true } });
+        if (review?.status === 'rejected') throw new Error('Fotoğraf uygunsuz içerik nedeniyle eklenemedi. Başka bir fotoğraf seçebilirsin.');
+        if (reviewError || review?.status !== 'accepted') throw new Error('Fotoğraf denetimi tamamlanamadı. Fotoğraf eklenmedi; daha sonra tekrar dene.');
+      }
 
       // OAuth avatars and old public URLs are not valid private storage pointers.
       // A first upload replaces that external avatar instead of failing the entire save.
@@ -234,7 +242,7 @@ export function ProfilePhotoManager({ photos, onPhotosChange, onBusyChange }: Pr
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
+            disabled={uploading || (reviewEnabled && !reviewConsent)}
             className={cn(
               'aspect-square rounded-xl border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-2 transition-colors',
               uploading 
@@ -261,6 +269,7 @@ export function ProfilePhotoManager({ photos, onPhotosChange, onBusyChange }: Pr
         onChange={handleFileSelect}
         className="hidden"
       />
+      {reviewEnabled && <label className="flex items-start gap-2 rounded-xl bg-secondary/50 p-3 text-xs text-muted-foreground"><input type="checkbox" checked={reviewConsent} onChange={e => setReviewConsent(e.target.checked)} disabled={uploading} className="mt-0.5" />Yüklediğim fotoğrafın cinsel içerik, şiddet ve kendine zarar içeriği kontrolü için OpenAI’a gönderilmesine izin veriyorum. Bu işlem hesap doğrulaması değildir.</label>}
 
       <p className="text-xs text-muted-foreground">
         Fotoğraf değişiklikleri hemen kaydedilir. İlk fotoğraf ana fotoğrafındır.
