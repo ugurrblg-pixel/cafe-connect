@@ -1,16 +1,15 @@
-# Photo content review — activation pending
+# Photo content review — deployment status
 
-This implementation is not deployed or enabled. It does not verify account identity and does not publish photos to other users.
+Installed in Supabase: private quota/receipt tables, service-only reserve/record RPCs and the profile-photo guard trigger. The rollback integration test passed for ownership, rejected/accepted verdicts, immutable object IDs, private photo status and quotas. All temporary test data was rolled back before applying the migration.
 
-Activation order:
-1. Review and test the prepared migration against the actual backend in a transaction before applying it. It adds service-only rate limits and review receipts, then guards new profile photo references. Existing referenced photos are not retroactively classified.
-2. User adds OPENAI_API_KEY as a Supabase secret themselves. Never commit the key or put it in a VITE variable. PHOTO_REVIEW_ENABLED=true is the separate server activation switch.
-3. Deploy moderate-photo including policy.ts, preserving custom Bearer authentication (gateway verification must support the project's publishable key format).
-4. Set VITE_PHOTO_REVIEW_ENABLED=true only after server/database integration tests pass; redeploy the frontend.
-5. Each uploader consents in the upload UI before their image is transmitted to OpenAI. API failure, malformed response or recording failure never produces accepted status. Failed new uploads are cleaned up using existing own-file rules.
+The moderate-photo function has been deployed through the dashboard as a single-file bundle generated from index.ts, policy.ts and selfTestImage.ts. The owner saved OPENAI_API_KEY; the agent verified the secret name only, never opened or exported its value. PHOTO_REVIEW_ENABLED=true is configured on the server.
 
-The server validates ownership, immutable storage object IDs, file type, size, daily/minute limits and provider result shape. It records accepted/rejected receipts through service-only RPCs. Client-only bypasses do not grant a new reviewed profile reference once the SQL guard is active. A missing provider, secret, quota RPC or record RPC blocks acceptance.
+Activation is not yet complete. VITE_PHOTO_REVIEW_ENABLED is still unset/off. Saving the required per-function legacy JWT compatibility setting was rejected by automatic approval review and an explicit action-time confirmation is pending. The dashboard's legacy JWT setting remains ON; it was not bypassed. supabase/config.toml contains the intended setting for review only, not proof of the deployed setting.
 
-Scope: sexual content, violence and self-harm signals supported for image inputs by omni-moderation-latest. This is not face matching, identity verification or a dedicated CSAM detector; unsupported image categories must not be treated as checked. A clean classification is not an infallible guarantee. No real user photos were transmitted while preparing this change.
+After approval: save that setting, invoke the server-authorized self-test using only the built-in synthetic cup image, verify the result, enable VITE_PHOTO_REVIEW_ENABLED and redeploy the frontend. Then check consent, rejection/unavailable behavior and normal own-photo upload. Do not open other users' photo access as part of this task.
 
-The Moderation endpoint is free to use according to https://developers.openai.com/api/docs/guides/moderation ; API credentials and account access are still required. Runtime key access and a real integration test remain pending.
+Each uploader must consent to sending their new image to OpenAI for content review. Failure, malformed response or missing receipt blocks acceptance. The guard also prevents new unreviewed photo references through direct API writes. Existing referenced photos are retained and not retroactively classified. Quota is five checks per minute and 20 per day per user.
+
+The self-test accepts only existing server credentials, never normal user tokens or supplied images, and never reads personal photos. It exists to test the provider connection without altering a profile. Normal review validates auth.getUser, own immutable object ID, WebP MIME/size and stored verdict. Content screening neither verifies account identity nor publishes private photos.
+
+The model checks image-supported sexual, violence and self-harm categories. It is not identity verification or a dedicated CSAM detector, and unsupported image categories must not be presented as checked. The Moderation endpoint is free according to https://developers.openai.com/api/docs/guides/moderation ; account access still needs a real connectivity test.

@@ -1,6 +1,8 @@
 -- Prepared, not automatically applied. Service-only quota, no photo visibility changes.
 BEGIN;
 CREATE TABLE IF NOT EXISTS private.photo_review_usage(user_id uuid PRIMARY KEY, day date NOT NULL, calls integer NOT NULL, last_call timestamptz NOT NULL);
+ALTER TABLE private.photo_review_usage ADD COLUMN IF NOT EXISTS minute_start timestamptz NOT NULL DEFAULT now();
+ALTER TABLE private.photo_review_usage ADD COLUMN IF NOT EXISTS minute_calls integer NOT NULL DEFAULT 0;
 ALTER TABLE private.photo_review_usage ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON private.photo_review_usage FROM PUBLIC,anon,authenticated;
 CREATE OR REPLACE FUNCTION public.reserve_photo_review(target_user_id uuid,target_object_path text)
@@ -10,10 +12,13 @@ BEGIN
  IF NOT EXISTS(SELECT 1 FROM auth.users WHERE id=target_user_id) THEN RETURN NULL; END IF;
  PERFORM pg_advisory_xact_lock(hashtextextended(target_user_id::text,390509));
  SELECT * INTO usage FROM private.photo_review_usage WHERE user_id=target_user_id;
- IF usage.last_call > now()-interval '1 minute' OR (usage.day=CURRENT_DATE AND usage.calls>=20) THEN RETURN NULL; END IF;
- INSERT INTO private.photo_review_usage VALUES(target_user_id,CURRENT_DATE,1,now())
- ON CONFLICT(user_id) DO UPDATE SET day=CURRENT_DATE,calls=CASE WHEN photo_review_usage.day=CURRENT_DATE THEN photo_review_usage.calls+1 ELSE 1 END,last_call=now();
  SELECT id INTO object_id FROM storage.objects WHERE bucket_id='avatars' AND name=target_object_path AND split_part(name,'/',1)=target_user_id::text;
+ IF object_id IS NULL THEN RETURN NULL; END IF;
+ IF (usage.minute_start > now()-interval '1 minute' AND usage.minute_calls>=5) OR (usage.day=CURRENT_DATE AND usage.calls>=20) THEN RETURN NULL; END IF;
+ INSERT INTO private.photo_review_usage(user_id,day,calls,last_call,minute_start,minute_calls) VALUES(target_user_id,CURRENT_DATE,1,now(),now(),1)
+ ON CONFLICT(user_id) DO UPDATE SET day=CURRENT_DATE,calls=CASE WHEN photo_review_usage.day=CURRENT_DATE THEN photo_review_usage.calls+1 ELSE 1 END,last_call=now(),
+ minute_calls=CASE WHEN photo_review_usage.minute_start>now()-interval '1 minute' THEN photo_review_usage.minute_calls+1 ELSE 1 END,
+ minute_start=CASE WHEN photo_review_usage.minute_start>now()-interval '1 minute' THEN photo_review_usage.minute_start ELSE now() END;
  RETURN object_id;
 END $$;
 REVOKE ALL ON FUNCTION public.reserve_photo_review(uuid,text) FROM PUBLIC,anon,authenticated;
@@ -35,6 +40,7 @@ GRANT EXECUTE ON FUNCTION public.record_photo_review(uuid,text,uuid,text) TO ser
 CREATE OR REPLACE FUNCTION public.guard_reviewed_profile_photos()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 BEGIN
+ IF coalesce(auth.role(),'')<>'authenticated' THEN RETURN NEW; END IF;
  IF auth.role()='authenticated' AND TG_OP='INSERT' THEN
   IF cardinality(coalesce(NEW.photo_urls,ARRAY[]::text[]))>0 OR coalesce(NEW.photo_url,'')<>'' THEN
    RAISE EXCEPTION 'Create profile before adding reviewed photos' USING ERRCODE='42501';

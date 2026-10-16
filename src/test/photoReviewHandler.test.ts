@@ -1,0 +1,30 @@
+import { readFileSync } from 'node:fs';
+import { Blob as ServerBlob } from 'node:buffer';
+import { transpileModule, ScriptTarget, ModuleKind } from 'typescript';
+import { expect, it, vi } from 'vitest';
+import { photoVerdict } from '../../supabase/functions/moderate-photo/policy';
+import { selfTestImage } from '../../supabase/functions/moderate-photo/selfTestImage';
+const source=readFileSync('supabase/functions/moderate-photo/index.ts','utf8').replace(/^import[^\n]*\n/gm,'');
+const code=transpileModule(source,{compilerOptions:{target:ScriptTarget.ES2022,module:ModuleKind.None}}).outputText;
+const user='11111111-1111-4111-8111-111111111111';
+const path=user+'/22222222-2222-4222-8222-222222222222.webp';
+const clean={flagged:false,categories:{sexual:false,violence:false,'violence/graphic':false,'self-harm':false,'self-harm/intent':false,'self-harm/instructions':false}};
+function harness(options: {enabled?:boolean;quota?:boolean;record?:boolean;response?:unknown;http?:number}={}) {
+ let handler!: (request:Request)=>Promise<Response>;
+ const rpc=vi.fn(async(name:string)=>({data:name==='reserve_photo_review'?(options.quota===false?null:'object-id'):options.record!==false,error:null}));
+ const download=vi.fn(async()=>({data:new ServerBlob(['test'],{type:'image/webp'}),error:null}));
+ const db={rpc,auth:{getUser:async()=>({data:{user:{id:user}},error:null})},storage:{from:()=>({download})}};
+ const fetch=vi.fn(async(_url:string,_init?:RequestInit)=>new Response(JSON.stringify(options.response??{results:[clean]}),{status:options.http??200}));
+ new Function('Deno','createClient','photoVerdict','selfTestImage','fetch',code)({serve:(fn:typeof handler)=>{handler=fn;},env:{get:(key:string)=>key==='PHOTO_REVIEW_ENABLED'?(options.enabled===false?'false':'true'):key==='SUPABASE_SECRET_KEYS'?JSON.stringify({default:'mock-admin-secret'}):'mock-server-value'}},()=>db,photoVerdict,selfTestImage,fetch);
+ const request=(body:unknown={photoPath:path,reviewConsent:true},auth=true)=>handler(new Request('https://test.invalid',{method:'POST',headers:auth?{Authorization:'Bearer mock-session'}:{},body:JSON.stringify(body)}));
+ const administrativeTest=()=>handler(new Request('https://test.invalid',{method:'POST',headers:{apikey:'mock-admin-secret'},body:JSON.stringify({action:'self-test',image_url:'https://must-not-use.invalid/personal.jpg'})}));
+ return {request,rpc,download,fetch,administrativeTest};
+}
+it('requires a signed-in user before downloading or transmitting images',async()=>{const h=harness();expect((await h.request({},false)).status).toBe(401);expect(h.fetch).not.toHaveBeenCalled();});
+it('requires consent and rejects another owner path before transmission',async()=>{const h=harness();expect((await h.request({photoPath:path})).status).toBe(400);expect((await h.request({photoPath:'other/uuid.webp',reviewConsent:true})).status).toBe(400);expect(h.download).not.toHaveBeenCalled();expect(h.fetch).not.toHaveBeenCalled();});
+it('does not let normal users invoke the administrative synthetic test',async()=>{const h=harness();expect((await h.request({action:'self-test'})).status).toBe(401);expect(h.fetch).not.toHaveBeenCalled();expect(h.download).not.toHaveBeenCalled();});
+it('uses only the built-in harmless fixture for a server-authorized self-test',async()=>{const h=harness();expect((await (await h.administrativeTest()).json()).status).toBe('accepted');expect(h.download).not.toHaveBeenCalled();expect(h.rpc).not.toHaveBeenCalled();const sent=JSON.parse(String(h.fetch.mock.calls[0][1]?.body));expect(sent.input[0].image_url.url).toBe(selfTestImage);});
+it('does not transmit photos when the feature or quota is unavailable',async()=>{for(const options of [{enabled:false},{quota:false}]){const h=harness(options);expect((await h.request()).status).not.toBe(200);expect(h.fetch).not.toHaveBeenCalled();}});
+it('requires a recorded immutable object receipt before accepting',async()=>{const h=harness();expect((await (await h.request()).json()).status).toBe('accepted');expect(h.rpc).toHaveBeenCalledWith('record_photo_review',expect.objectContaining({target_object_id:'object-id',target_verdict:'accepted'}));});
+it('rejects unsafe images and does not publish profile data',async()=>{const h=harness({response:{results:[{...clean,flagged:true}]}});expect((await (await h.request()).json()).status).toBe('rejected');expect(h.rpc).toHaveBeenCalledTimes(2);});
+it('never accepts provider errors, incomplete results or receipt failures',async()=>{for(const options of [{http:429},{response:{results:[{}]}},{record:false}]){const h=harness(options);expect((await h.request()).status).toBe(503);}});

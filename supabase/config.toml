@@ -6,6 +6,10 @@ verify_jwt = true
 [functions.nearby-cafes]
 verify_jwt = false
 
+# The function validates user Bearer tokens with auth.getUser; publishable keys are not JWTs.
+[functions.moderate-photo]
+verify_jwt = false
+
 [functions.verify-google-purchase]
 verify_jwt = true
 
