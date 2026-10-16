@@ -1,15 +1,16 @@
-import { render, screen, cleanup } from '@testing-library/react';
-import { afterEach, it, expect } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { VerificationRequest } from './VerificationRequest';
-afterEach(cleanup);
-it('does not offer an unsupported selfie upload', () => {
-  const view = render(<VerificationRequest verificationStatus="none" />);
-  expect(screen.getByText(/Selfie ile doğrulama henüz/)).toBeInTheDocument();
-  expect(view.container.querySelector('input[type=file]')).toBeNull();
-  expect(screen.queryByRole('button')).toBeNull();
-});
-it('preserves existing pending status without an invented processing deadline', () => {
-  render(<VerificationRequest verificationStatus="pending" />);
-  expect(screen.getByText('Başvurun bekliyor')).toBeInTheDocument();
-  expect(screen.queryByText(/24 saat/)).toBeNull();
-});
+const m=vi.hoisted(()=>({rpc:vi.fn(),upload:vi.fn(),remove:vi.fn(),list:vi.fn(),prepare:vi.fn(),success:vi.fn(),error:vi.fn()}));
+vi.mock('@/contexts/AuthContext',()=>({useAuth:()=>({user:{id:'caller'}})}));
+vi.mock('@/integrations/supabase/client',()=>({supabase:{rpc:m.rpc,storage:{from:()=>({upload:m.upload,remove:m.remove,list:m.list})}}}));
+vi.mock('@/lib/privatePhotos',()=>({prepareProfilePhoto:m.prepare}));
+vi.mock('sonner',()=>({toast:{success:m.success,error:m.error}}));
+beforeEach(()=>{vi.stubEnv('VITE_ACCOUNT_VERIFICATION_ENABLED','true');m.rpc.mockResolvedValue({data:null,error:null});m.list.mockResolvedValue({data:[],error:null});m.upload.mockResolvedValue({error:null});m.remove.mockResolvedValue({error:null});m.prepare.mockResolvedValue(new Blob(['image']));});
+afterEach(()=>{cleanup();vi.resetAllMocks();vi.unstubAllEnvs();});
+it('keeps unsupported deployment closed',()=>{vi.stubEnv('VITE_ACCOUNT_VERIFICATION_ENABLED','false');render(<VerificationRequest verificationStatus="none"/>);expect(screen.getByText(/henüz kullanılamıyor/)).toBeInTheDocument();expect(screen.queryByRole('button')).toBeNull();expect(m.rpc).not.toHaveBeenCalled();});
+it('requires consent before sending a selfie',async()=>{const view=render(<VerificationRequest verificationStatus="none"/>);await screen.findByRole('checkbox');expect(screen.getByRole('button',{name:'Selfie seç ve başvur'})).toBeDisabled();fireEvent.change(view.container.querySelector('input[type=file]')!,{target:{files:[new File(['x'],'selfie.jpg',{type:'image/jpeg'})]}});expect(m.upload).not.toHaveBeenCalled();});
+it('cleans only newly uploaded file and never claims success on rejected submission',async()=>{m.rpc.mockResolvedValueOnce({data:null,error:null}).mockResolvedValueOnce({error:{message:'reviewed main'}});const view=render(<VerificationRequest verificationStatus="none"/>);fireEvent.click(await screen.findByRole('checkbox'));fireEvent.change(view.container.querySelector('input[type=file]')!,{target:{files:[new File(['x'],'selfie.jpg',{type:'image/jpeg'})]}});await waitFor(()=>expect(m.remove).toHaveBeenCalledOnce());expect(m.success).not.toHaveBeenCalled();expect(m.rpc).toHaveBeenLastCalledWith('submit_own_account_verification',{selfie_object_path:expect.stringMatching(/^caller\/.+\.webp$/),consent:true});});
+it('preserves pending request and permits withdrawal without another upload',async()=>{m.rpc.mockResolvedValueOnce({data:{id:'r',status:'pending'},error:null}).mockResolvedValue({data:null,error:null});const changed=vi.fn();render(<VerificationRequest verificationStatus="pending" onStatusChange={changed}/>);fireEvent.click(await screen.findByRole('button',{name:'Başvuruyu geri çek'}));await waitFor(()=>expect(changed).toHaveBeenCalledWith('none'));expect(m.upload).not.toHaveBeenCalled();});
+it('shows load failures rather than enabling a duplicate application',async()=>{m.rpc.mockResolvedValue({data:null,error:{message:'denied'}});render(<VerificationRequest verificationStatus="none"/>);expect(await screen.findByRole('alert')).toBeInTheDocument();expect(screen.queryByRole('button',{name:'Selfie seç ve başvur'})).toBeNull();});
+it('records pending only after successful submission',async()=>{const changed=vi.fn();const view=render(<VerificationRequest verificationStatus="none" onStatusChange={changed}/>);fireEvent.click(await screen.findByRole('checkbox'));fireEvent.change(view.container.querySelector('input[type=file]')!,{target:{files:[new File(['x'],'selfie.jpg',{type:'image/jpeg'})]}});await waitFor(()=>expect(changed).toHaveBeenCalledWith('pending'));expect(m.remove).not.toHaveBeenCalled();});

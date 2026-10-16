@@ -961,6 +961,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_own_account_verification: { Args: Record<PropertyKey, never>; Returns: Json }
+      submit_own_account_verification: { Args: { selfie_object_path: string; consent: boolean }; Returns: string }
+      withdraw_own_account_verification: { Args: Record<PropertyKey, never>; Returns: undefined }
+      list_admin_account_verifications: { Args: { status_filter?: string }; Returns: Json }
+      review_account_verification: { Args: { request_id: string; decision: string; rejection_reason?: string | null }; Returns: undefined }
       get_own_admin_role: { Args: Record<PropertyKey, never>; Returns: string | null }
       list_admin_reports: { Args: { report_filter?: string }; Returns: Json }
       review_admin_report: { Args: { target_report_id: string; new_status: string }; Returns: undefined }

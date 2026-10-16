@@ -35,9 +35,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen flex bg-muted/30">
+    <div className="min-h-screen flex flex-col md:flex-row bg-muted/30">
       {/* Sidebar */}
-      <aside className="w-60 bg-card border-r border-border flex flex-col shrink-0">
+      <aside className="w-full md:w-60 bg-card border-b md:border-b-0 md:border-r border-border flex flex-col shrink-0">
         <div className="p-4 border-b border-border">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-primary" />
@@ -46,7 +46,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           <span className="text-xs text-muted-foreground capitalize mt-1 block">{role}</span>
         </div>
 
-        <nav className="flex-1 p-2 space-y-1">
+        <nav className="flex flex-wrap md:block flex-1 p-2 gap-1 md:space-y-1">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -79,8 +79,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-6xl mx-auto p-6">
+      <main className="min-w-0 flex-1 overflow-y-auto">
+        <div className="max-w-6xl mx-auto p-4 sm:p-6">
           {children}
         </div>
       </main>
