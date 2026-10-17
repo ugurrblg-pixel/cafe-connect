@@ -1,0 +1,14 @@
+import {act,cleanup,renderHook,waitFor} from '@testing-library/react';
+import {afterEach,beforeEach,expect,it,vi} from 'vitest';
+import {usePushNotifications} from './usePushNotifications';
+const m=vi.hoisted(()=>({rpc:vi.fn(),user:{id:'viewer'} as any}));
+vi.mock('@/contexts/AuthContext',()=>({useAuth:()=>({user:m.user})}));
+vi.mock('@/integrations/supabase/client',()=>({supabase:{rpc:m.rpc}}));
+vi.mock('sonner',()=>({toast:{info:vi.fn(),error:vi.fn()}}));
+beforeEach(()=>{m.user={id:'viewer'};localStorage.clear();vi.stubEnv('VITE_CAFE_WAVES_ENABLED','true');vi.stubEnv('VITE_SAFE_CHAT_ENABLED','true');m.rpc.mockImplementation(async(name:string)=>({error:null,data:name==='list_own_current_waves'?[{id:'w',to_user_id:'viewer'},{id:'sent',to_user_id:'other'}]:name==='list_own_current_matches'?[{id:'match'}]:[{unread_count:3}]}));});
+afterEach(()=>{cleanup();vi.resetAllMocks();vi.unstubAllEnvs();});
+it('uses only caller-bound projections for unread badges',async()=>{const {result}=renderHook(usePushNotifications);await waitFor(()=>expect(result.current.unreadCounts).toEqual({waves:2,messages:3}));expect(m.rpc.mock.calls.map(c=>c[0]).sort()).toEqual(['list_own_chat_inbox','list_own_current_matches','list_own_current_waves']);});
+it('does not mark messages read merely by visiting the inbox',async()=>{const {result}=renderHook(usePushNotifications);await waitFor(()=>expect(result.current.unreadCounts.messages).toBe(3));await act(async()=>{await result.current.resetUnreadCount('messages');});expect(result.current.unreadCounts.messages).toBe(3);expect(m.rpc.mock.calls.some(c=>c[0]==='reset_unread_count'||c[0]==='mark_own_chat_read')).toBe(false);});
+it('acknowledges received events locally without changing message read state',async()=>{const {result}=renderHook(usePushNotifications);await waitFor(()=>expect(result.current.unreadCounts.waves).toBe(2));await act(async()=>{await result.current.resetUnreadCount('waves');});expect(result.current.unreadCounts).toEqual({waves:0,messages:3});});
+it('clears previous-user counts on logout and honors per-device preferences',async()=>{localStorage.setItem('notif_prefs_viewer',JSON.stringify({new_messages:false,new_matches:false}));const {result,rerender}=renderHook(usePushNotifications);await waitFor(()=>expect(m.rpc).toHaveBeenCalledTimes(3));expect(result.current.unreadCounts).toEqual({waves:0,messages:0});m.user=null;rerender();expect(result.current.unreadCounts).toEqual({waves:0,messages:0});});
+it('does not claim push subscription success when delivery is not configured',async()=>{const {result}=renderHook(usePushNotifications);await waitFor(()=>expect(m.rpc).toHaveBeenCalledTimes(3));expect(await result.current.subscribe()).toBe(false);expect(result.current.isSupported).toBe(false);});

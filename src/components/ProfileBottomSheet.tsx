@@ -39,6 +39,7 @@ interface ProfileUser {
   userId?: string;
   cafeId?: string;
   hobbies?: string[];
+  age?: number | null;
 }
 
 interface ProfileBottomSheetProps {
@@ -125,15 +126,15 @@ export function ProfileBottomSheet({ user, open, onOpenChange, cafeId }: Profile
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent side="bottom" className="rounded-t-3xl pb-safe">
           <SheetHeader className="sr-only">
-            <SheetTitle>{user.name}'s Profile</SheetTitle>
+            <SheetTitle>{user.name} profili</SheetTitle>
           </SheetHeader>
           
           {/* Action Menu */}
           {currentUser && currentUser.id !== targetUserId && (
-            <div className="absolute top-4 right-4">
+            <div className="absolute top-4 left-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="p-2 rounded-full hover:bg-secondary transition-colors">
+                  <button type="button" aria-label="Profil işlemleri" className="p-2 rounded-full hover:bg-secondary transition-colors">
                     <MoreVertical className="w-5 h-5 text-muted-foreground" />
                   </button>
                 </DropdownMenuTrigger>
@@ -165,11 +166,13 @@ export function ProfileBottomSheet({ user, open, onOpenChange, cafeId }: Profile
                 avatarUrl={user.photoUrl}
                 name={user.name}
                 size="md"
+                enableFullscreen={false}
               />
             </div>
 
             {/* Name and Purpose */}
-            <h2 className="text-xl font-bold text-foreground mb-2">{user.name}</h2>
+            <h2 className="text-xl font-bold text-foreground mb-2">{user.name}{user.age ? `, ${user.age}` : ''}</h2>
+            <p className="mb-3 text-center text-xs text-muted-foreground">Aynı mekânda olduğunuz sürece görünen sınırlı profil</p>
             <PurposeBadge purpose={user.purpose} />
 
             {/* Bio */}

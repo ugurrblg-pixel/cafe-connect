@@ -57,7 +57,8 @@ export default function Notifications() {
   const [showMatchActionSheet, setShowMatchActionSheet] = useState(false);
   const [deletedMatches, setDeletedMatches] = useState<Set<string>>(new Set());
 
-  const loading = wavesLoading || matchesLoading || sparksLoading;
+  const paidFeatures = import.meta.env.VITE_PAYMENTS_ENABLED === 'true';
+  const loading = wavesLoading || matchesLoading || (paidFeatures && sparksLoading);
 
   const getCafeName = (cafeId: string) => {
     return cafes.find(c => c.id === cafeId)?.name || 'bir kafe';
@@ -134,9 +135,9 @@ export default function Notifications() {
         <Header title="Bildirimler" />
 
         <main className="pt-16">
-          <Tabs defaultValue="sparks" className="w-full">
-            <TabsList className="w-full grid grid-cols-3 mx-4 mt-2" style={{ width: 'calc(100% - 2rem)' }}>
-              <TabsTrigger value="sparks" className="flex items-center gap-2">
+          <Tabs defaultValue="waves" className="w-full">
+            <TabsList className={cn('w-full grid mx-4 mt-2', paidFeatures ? 'grid-cols-3' : 'grid-cols-2')} style={{ width: 'calc(100% - 2rem)' }}>
+              {paidFeatures && <TabsTrigger value="sparks" className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4" />
                 İlgiler
                 {incomingSparks.length > 0 && (
@@ -144,7 +145,7 @@ export default function Notifications() {
                     {incomingSparks.length}
                   </span>
                 )}
-              </TabsTrigger>
+              </TabsTrigger>}
               <TabsTrigger value="waves" className="flex items-center gap-2">
                 <Hand className="w-4 h-4" />
                 Selam
@@ -500,6 +501,7 @@ function MatchesEmptyState({ onDiscoverClick }: { onDiscoverClick: () => void })
 
 // Subtle Premium tease component
 function PremiumTease() {
+  if (import.meta.env.VITE_PAYMENTS_ENABLED !== 'true') return null;
   const navigate = useNavigate();
 
   return (

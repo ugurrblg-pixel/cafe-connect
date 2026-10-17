@@ -35,14 +35,12 @@ export const UserCard = memo(function UserCard({ user, onMessage, onInteraction,
     <div
       className={cn(
         'card-elevated p-4 flex items-start gap-4 animate-slide-up',
-        onTap && 'cursor-pointer active:scale-[0.98] transition-transform',
         className
       )}
       style={style}
-      onClick={onTap}
     >
       {/* Avatar */}
-      <div className="relative flex-shrink-0">
+      <button type="button" onClick={onTap} disabled={!onTap} aria-label={`${displayName} profilini görüntüle`} className="relative flex-shrink-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         {user.photoUrl ? (
           <PrivateProfileImage
             src={user.photoUrl}
@@ -62,13 +60,13 @@ export const UserCard = memo(function UserCard({ user, onMessage, onInteraction,
             activity.urgency === 'stale' && 'bg-muted-foreground/50'
           )} 
         />
-      </div>
+      </button>
 
       {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <h3 className="font-semibold text-foreground truncate">
-            {displayName}{user.age ? `, ${user.age}` : ''}
+            <button type="button" onClick={onTap} disabled={!onTap} className="rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{displayName}{user.age ? `, ${user.age}` : ''}</button>
           </h3>
           {user.isVerified && <VerifiedBadge size="sm" />}
           <PurposeBadge purpose={user.purpose} size="sm" />
@@ -87,7 +85,7 @@ export const UserCard = memo(function UserCard({ user, onMessage, onInteraction,
             {activityText}
           </span>
           <span className="opacity-50">·</span>
-          <span>Here for {timeAgo}m</span>
+          <span>{timeAgo} dk burada</span>
         </div>
       </div>
 
@@ -98,7 +96,7 @@ export const UserCard = memo(function UserCard({ user, onMessage, onInteraction,
           <button
             onClick={onMessage}
             className="interaction-btn text-primary"
-            aria-label="Send message"
+            aria-label="Mesaj gönder"
           >
             <MessageCircle className="w-5 h-5" />
           </button>
@@ -119,10 +117,10 @@ export const UserCard = memo(function UserCard({ user, onMessage, onInteraction,
             waveState === 'none' && 'hover:bg-secondary'
           )}
           aria-label={
-            waveState === 'matched' ? 'Matched' :
-            waveState === 'waved' ? 'Wave sent' :
-            waveState === 'received' ? 'Wave back' :
-            'Wave'
+            waveState === 'matched' ? 'Eşleştiniz' :
+            waveState === 'waved' ? 'Selam gönderildi' :
+            waveState === 'received' ? 'Selamı yanıtla' :
+            'Selam ver'
           }
         >
           {isWaving ? (
@@ -130,22 +128,22 @@ export const UserCard = memo(function UserCard({ user, onMessage, onInteraction,
           ) : waveState === 'matched' ? (
             <>
               <Heart className="w-4 h-4" />
-              <span className="text-xs font-medium">Matched</span>
+              <span className="text-xs font-medium">Eşleştiniz</span>
             </>
           ) : waveState === 'waved' ? (
             <>
               <Check className="w-4 h-4" />
-              <span className="text-xs font-medium">Waved</span>
+              <span className="text-xs font-medium">Gönderildi</span>
             </>
           ) : waveState === 'received' ? (
             <>
               <Hand className="w-4 h-4" />
-              <span className="text-xs font-medium">Wave back</span>
+              <span className="text-xs font-medium">Yanıtla</span>
             </>
           ) : (
             <>
               <Hand className="w-4 h-4" />
-              <span className="text-xs font-medium">Wave</span>
+              <span className="text-xs font-medium">Selam ver</span>
             </>
           )}
         </button>

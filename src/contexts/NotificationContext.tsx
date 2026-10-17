@@ -1,6 +1,5 @@
 import { useEffect, createContext, useContext, ReactNode } from 'react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface NotificationContextValue {
   isSubscribed: boolean;
@@ -15,7 +14,6 @@ interface NotificationContextValue {
 const NotificationContext = createContext<NotificationContextValue | null>(null);
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
   const pushNotifications = usePushNotifications();
 
   // Register service worker on mount
@@ -30,13 +28,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         });
     }
   }, []);
-
-  // Auto-prompt for notifications after user logs in (once)
-  useEffect(() => {
-    if (user && pushNotifications.isSupported && pushNotifications.permission === 'default') {
-      // Don't auto-prompt, let user opt-in from profile settings
-    }
-  }, [user, pushNotifications.isSupported, pushNotifications.permission]);
 
   return (
     <NotificationContext.Provider value={pushNotifications}>

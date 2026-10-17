@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { invalidateVisibleProfiles } from '@/lib/visibilityEvents';
 
 type ReportReason = 'spam' | 'harassment' | 'inappropriate';
 interface BlockedUser { id: string; blockedId: string; createdAt: Date }
@@ -46,6 +47,7 @@ export function useBlocking() {
       const { error } = await supabase.rpc('set_own_block', { target_user_id: targetUserId, blocked });
       if (scope !== generation.current) return false;
       if (error) throw error;
+      invalidateVisibleProfiles();
       try { await refreshBlocks(); } catch {
         toast.warning('İşlem kaydedildi, engel listesi yenilenemedi. Sayfayı yenileyin.');
         return true;

@@ -28,6 +28,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Purpose } from '@/types';
 import { getCafeStatus, getStatusColors } from '@/lib/openingHours';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface SelectedUser {
   id: string;
@@ -52,7 +53,7 @@ export default function CafeRoom() {
   const { isCheckedIn, loading: checkInLoading, verifyingLocation, checkIn, checkOut } = useCheckIn(id || '');
   
   // Load only server-authorized records without public profile broadcasts.
-  const { users: activeUsers, loading: usersLoading, connectionStatus } = useCafeUsers(id || '', {
+  const { users: activeUsers, loading: usersLoading, connectionStatus, refetch: refetchUsers } = useCafeUsers(id || '', {
     isCheckedIn,
   });
   
@@ -62,7 +63,8 @@ export default function CafeRoom() {
   const { canStartChat, incrementChatCount, isPremium } = usePremium();
   const { isComplete: isProfileComplete } = useProfileCompletion();
   
-  const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const selectedUser = activeUsers.find(member => member.userId === selectedUserId) || null;
   const [sheetOpen, setSheetOpen] = useState(false);
   const [intentFilter, setIntentFilter] = useState<FilterOption>('all');
   const [wavingAt, setWavingAt] = useState<string | null>(null);
@@ -123,8 +125,8 @@ export default function CafeRoom() {
 
     const success = await checkIn();
     if (success) {
-      toast.success("You're now visible at " + cafe.name, {
-        description: 'Your presence will expire in 60 minutes',
+      toast.success(cafe.name + ' mekânına katıldın', {
+        description: 'Onaylı fotoğrafların ve sınırlı profilin aynı mekândaki katılımcılara görünür. Girişin 60 dakika geçerli.',
       });
     }
   };
@@ -132,7 +134,8 @@ export default function CafeRoom() {
   const handleCheckOut = async () => {
     const success = await checkOut();
     if (success) {
-      toast.info("You've left " + cafe.name);
+      setSelectedUserId(null); setSheetOpen(false);
+      toast.info(cafe.name + ' mekânından ayrıldın');
     }
   };
 
@@ -214,19 +217,7 @@ export default function CafeRoom() {
   };
 
   const handleUserTap = (activeUser: typeof activeUsers[0]) => {
-    setSelectedUser({
-      id: activeUser.id,
-      userId: activeUser.userId,
-      name: activeUser.displayName || activeUser.name,
-      photoUrl: activeUser.photoUrl,
-      photoUrls: activeUser.photoUrls,
-      bio: activeUser.bio,
-      purpose: activeUser.purpose,
-      allowDMs: activeUser.allowDMs,
-      checkedInAt: activeUser.checkedInAt,
-      cafeId: id,
-      hobbies: activeUser.hobbies,
-    });
+    setSelectedUserId(activeUser.userId);
     setSheetOpen(true);
   };
 
@@ -273,7 +264,7 @@ export default function CafeRoom() {
                 'w-4 h-4',
                 cafeStatus?.status === 'closing-soon' && 'animate-pulse'
               )} />
-              <span>{cafeStatus?.label || 'Açılış bilgisi doğrulanmadı'}</span>
+              <span>{cafeStatus ? ({open:'Açık','closing-soon':'Yakında kapanıyor',closed:'Kapalı',unknown:'Açılış bilgisi doğrulanmadı'}[cafeStatus.status]) : 'Açılış bilgisi doğrulanmadı'}</span>
             </div>
           </div>
         </div>
@@ -285,7 +276,7 @@ export default function CafeRoom() {
             onChange={setIntentFilter}
             className="flex-1"
           />
-          {!isPremium && isCheckedIn && (
+          {import.meta.env.VITE_PAYMENTS_ENABLED === 'true' && !isPremium && isCheckedIn && (
             <ChatLimitIndicator onUpgradeClick={() => setShowPaywall(true)} />
           )}
         </div>
@@ -304,11 +295,22 @@ export default function CafeRoom() {
             <ConnectionIndicator status={connectionStatus} className="ml-auto" />
           </h2>
 
-          {usersLoading ? (
+          {!isCheckedIn ? (
+            <div className="card-elevated p-6 text-center">
+              <ShieldCheck className="mx-auto mb-3 h-7 w-7 text-accent" aria-hidden="true" />
+              <p className="font-medium">Katılımcıları görmek için Buradayım de</p>
+              <p className="mt-2 text-sm text-muted-foreground">Katılınca aynı mekândaki kişilerle sınırlı profilini paylaşırsın. İletişim bilgilerin gizli kalır.</p>
+            </div>
+          ) : usersLoading ? (
             <div className="space-y-3">
               {[1, 2].map((i) => (
                 <Skeleton key={i} className="h-24 w-full rounded-2xl" />
               ))}
+            </div>
+          ) : connectionStatus === 'disconnected' ? (
+            <div role="alert" className="card-elevated p-6 text-center">
+              <p>Katılımcılar yüklenemedi. Bağlantını kontrol edip tekrar dene.</p>
+              <Button className="mt-3" variant="outline" onClick={() => void refetchUsers()}>Tekrar dene</Button>
             </div>
           ) : filteredUsers.length > 0 ? (
             <div className="space-y-3">
@@ -341,12 +343,14 @@ export default function CafeRoom() {
                   onTap={() => handleUserTap(activeUser)}
                   style={{ animationDelay: `${index * 100}ms` } as React.CSSProperties}
                   sparkButton={
+                    import.meta.env.VITE_PAYMENTS_ENABLED === 'true' ?
                     <SparkButton
                       onSend={() => handleSendSpark(activeUser.userId, activeUser.displayName || activeUser.name)}
                       hasSent={hasSentSparkTo(activeUser.userId, id || '')}
                       isSending={sparkingAt === activeUser.userId}
                       disabled={!isCheckedIn}
                     />
+                    : undefined
                   }
                 />
               ))}
@@ -396,7 +400,7 @@ export default function CafeRoom() {
       {/* Profile Bottom Sheet */}
       <ProfileBottomSheet
         user={selectedUser}
-        open={sheetOpen}
+        open={sheetOpen && !!selectedUser && isCheckedIn}
         onOpenChange={setSheetOpen}
         cafeId={id}
       />

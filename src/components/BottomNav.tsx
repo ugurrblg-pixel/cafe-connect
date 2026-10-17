@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 import { MapPin, MessageSquare, User, Bell } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useNotifications } from '@/contexts/NotificationContext';
 import { useI18n } from '@/contexts/I18nContext';
 
 type NavKey = 'discover' | 'notifications' | 'messages' | 'profile';
@@ -22,7 +22,7 @@ export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useI18n();
-  const { unreadCounts, resetUnreadCount } = usePushNotifications();
+  const { unreadCounts, resetUnreadCount } = useNotifications();
 
   // Don't show on cafe room or chat pages
   if (location.pathname.startsWith('/cafe/') || location.pathname.startsWith('/chat/')) {

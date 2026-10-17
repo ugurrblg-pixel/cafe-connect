@@ -11,7 +11,7 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
 } }));
 beforeEach(() => {
   mock.user = { id: 'viewer' }; mock.pending = []; mock.channel.mockClear(); mock.from.mockReset();
-  mock.rpc.mockReset(); vi.stubEnv('VITE_CAFE_MEMBER_LIST_ENABLED', 'false');
+  mock.rpc.mockReset();mock.rpc.mockImplementation(()=>new Promise(resolve=>mock.pending.push(resolve))); vi.stubEnv('VITE_CAFE_MEMBER_LIST_ENABLED', 'true');vi.stubEnv('VITE_CAFE_PHOTOS_ENABLED','false');
   mock.from.mockImplementation((table: string) => ({ select: () => table === 'check_ins'
     ? { eq: () => ({ gt: () => new Promise(resolve => mock.pending.push(resolve)) }) }
     : { in: () => Promise.resolve({ data: [], error: null }) },
@@ -58,7 +58,7 @@ describe('server-authorized cafe list', () => {
     await act(async () => mock.pending[1]({ data: [], error: null }));
     await act(async () => mock.pending[0]({ data: [{ user_id: 'old' }], error: null }));
     expect(result.current.users).toEqual([]);
-    expect(mock.from).toHaveBeenCalledTimes(2);
+    expect(mock.rpc).toHaveBeenCalledTimes(2);expect(mock.from).not.toHaveBeenCalled();
   });
   it('clears the list and connection state on a failed request', async () => {
     const { result } = renderHook(() => useCafeUsers('cafe', { isCheckedIn: true }));

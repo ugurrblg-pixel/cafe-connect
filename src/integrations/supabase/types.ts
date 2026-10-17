@@ -961,6 +961,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      list_current_cafe_profiles: { Args: { target_cafe_id: string }; Returns: Json }
       get_own_account_verification: { Args: Record<PropertyKey, never>; Returns: Json }
       submit_own_account_verification: { Args: { selfie_object_path: string; consent: boolean }; Returns: string }
       withdraw_own_account_verification: { Args: Record<PropertyKey, never>; Returns: undefined }

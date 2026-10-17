@@ -34,6 +34,7 @@ export function Header({
       <div className="flex items-center justify-between h-14 px-4">
         {showBack ? (
           <button
+            aria-label="Geri dön"
             onClick={() => navigate(-1)}
             className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-secondary transition-colors"
           >
@@ -47,6 +48,8 @@ export function Header({
 
         {showMenu ? (
           <button
+            aria-label="Menüyü aç"
+            disabled={!onMenuClick}
             onClick={onMenuClick}
             className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-secondary transition-colors"
           >

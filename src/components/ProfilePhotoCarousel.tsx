@@ -126,6 +126,8 @@ export function ProfilePhotoCarousel({
         {hasMultiple && (
           <>
             <button
+              aria-label="Önceki fotoğraf"
+              disabled={safeIndex === 0}
               onClick={(e) => { e.stopPropagation(); handleNavClick('prev'); }}
               className={cn(
                 'absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center transition-opacity',
@@ -135,6 +137,8 @@ export function ProfilePhotoCarousel({
               <ChevronLeft className="w-5 h-5 text-white" />
             </button>
             <button
+              aria-label="Sonraki fotoğraf"
+              disabled={safeIndex === displayPhotos.length - 1}
               onClick={(e) => { e.stopPropagation(); handleNavClick('next'); }}
               className={cn(
                 'absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center transition-opacity',

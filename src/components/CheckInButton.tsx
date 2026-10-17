@@ -65,7 +65,7 @@ export function CheckInButton({
     </button>
     <div className="flex items-center justify-center gap-1.5 mt-2 text-xs text-muted-foreground">
       <ShieldCheck className="w-3.5 h-3.5" />
-      <span>Tam konumun asla paylaşılmaz</span>
+      <span>{import.meta.env.VITE_CAFE_PHOTOS_ENABLED === 'true' ? 'Katılınca onaylı fotoğrafların ve sınırlı profilin bu mekândaki kişilere görünür.' : 'Tam konumun paylaşılmaz.'}</span>
     </div>
     </>
   );

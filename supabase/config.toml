@@ -10,6 +10,10 @@ verify_jwt = false
 [functions.moderate-photo]
 verify_jwt = false
 
+# New endpoint authenticates every request with auth.getUser before checking shared attendance.
+[functions.cafe-photo]
+verify_jwt = false
+
 [functions.verify-google-purchase]
 verify_jwt = true
 
