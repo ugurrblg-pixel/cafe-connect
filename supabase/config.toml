@@ -14,6 +14,10 @@ verify_jwt = false
 [functions.cafe-photo]
 verify_jwt = false
 
+# Disabled by ACCOUNT_DELETION_ENABLED until reviewed activation; authenticates with auth.getUser.
+[functions.delete-account]
+verify_jwt = false
+
 [functions.verify-google-purchase]
 verify_jwt = true
 
