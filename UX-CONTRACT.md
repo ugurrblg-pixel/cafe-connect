@@ -20,4 +20,10 @@ In-app badges use the existing caller-bound waves, matches and chat inbox RPCs. 
 
 ## Deferred work
 
-The owner selected free features first; payment stays closed until a provider account is supplied. Account deletion requires a separately tested, caller-bound backend flow. The owner selected deletion of the departing user's own sent messages as well as their profile/photos; preserve the peer's messages. Do not claim completion before the backend exists. Browser push additionally requires user permission and a configured delivery service. App-owned destructive dialogs must describe actual deletion/retention behavior.
+The owner selected free features first; payment stays closed until a provider account is supplied. Browser push additionally requires user permission and a configured delivery service.
+
+## Account deletion
+
+`AccountDeletionSection` owns initiation, inline failure/pending/reauth state and success-only local logout. `DeleteAccountDialog` reuses shared AlertDialog, Button and Input owners. The least destructive action initially receives focus. Exact `SİL` confirmation is required for this rare permanent action. Busy state prevents duplicate submission and dismissal. Opening or reauthenticating never starts deletion automatically. Recent sign-in and caller identity are checked by the server, not only UI.
+
+Profile, photos, verification selfies, own-sent messages and social activity are removed. Peer messages remain stored in inactive, restricted conversations; no new history view is opened. Restricted reports, bans/warnings and admin audit history are retained. Do not promise all records/backups are erased or a 30-day recovery window. Partial failures keep the profile closed and explain manual retry; no background completion is claimed. See `supabase/ACCOUNT_DELETION.md` for the staged storage/Auth boundary. Feature flags remain off until activation checks pass.

@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { VerificationRequest } from '@/components/VerificationRequest';
 import { useProfileCompletion } from '@/hooks/useProfileCompletion';
+import { AccountDeletionSection } from '@/components/AccountDeletionSection';
 
 interface Profile {
   id: string;
@@ -292,7 +293,7 @@ export default function Profile() {
               <LogOut className="w-5 h-5 text-destructive" />
               <span className="font-medium text-destructive text-sm">{t.profile.signOutLink}</span>
             </button>
-            <div className="px-4 py-4 border-t border-border/40"><p className="text-sm font-medium text-muted-foreground">Hesap silme</p><p className="text-xs text-muted-foreground mt-1">Kalıcı hesap silme henüz kullanılamıyor. Buradan verilerin silindiği bildirilmeyecek.</p></div>
+            <AccountDeletionSection key={user?.id}/>
           </div>
 
 

@@ -176,8 +176,8 @@ export type Database = {
           id: string
           is_active: boolean
           updated_at: string
-          user1_id: string
-          user2_id: string
+          user1_id: string | null
+          user2_id: string | null
         }
         Insert: {
           cafe_id: string
@@ -185,8 +185,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           updated_at?: string
-          user1_id: string
-          user2_id: string
+          user1_id: string | null
+          user2_id: string | null
         }
         Update: {
           cafe_id?: string
@@ -194,8 +194,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           updated_at?: string
-          user1_id?: string
-          user2_id?: string
+          user1_id?: string | null
+          user2_id?: string | null
         }
         Relationships: [
           {
@@ -962,6 +962,7 @@ export type Database = {
     }
     Functions: {
       list_current_cafe_profiles: { Args: { target_cafe_id: string }; Returns: Json }
+      get_own_account_deletion: { Args: Record<PropertyKey, never>; Returns: boolean }
       get_own_account_verification: { Args: Record<PropertyKey, never>; Returns: Json }
       submit_own_account_verification: { Args: { selfie_object_path: string; consent: boolean }; Returns: string }
       withdraw_own_account_verification: { Args: Record<PropertyKey, never>; Returns: undefined }
