@@ -24,6 +24,10 @@ Profile links to notification preferences and Safety & Privacy. `useProfileVisib
 
 Search reuses the real Discover page and its nearby cache instead of demo venues. Typing filters the loaded venue list without a new Places lookup. Random matching stays gated off until a reviewed caller-bound server flow exists; the legacy direct-table/opposite-gender client path must not be enabled by merely changing a flag. Venue waves and mutual chat remain available. The temporary conversation-list action is named hide, never delete: no messages are removed, the peer is unaffected and reloading restores the row.
 
+## Message removal
+
+Message actions have a keyboard-accessible options button in addition to long press/context menu. The actual caller-bound `remove_own_chat_message` RPC removes the sender's content for both participants; the UI only offers “Herkes için sil” with explicit confirmation. There is no local-only removal implementation, so do not wire that label to the everyone RPC. Existing server ownership/chat-availability checks remain authoritative; no premium/time rule is invented solely in the client. The confirmation stays open with an inline failure and suppresses duplicate submission/dismissal while waiting. Account/conversation changes ignore old mutation responses.
+
 ## Deferred work
 
 The owner selected free features first; payment stays closed until a provider account is supplied. Browser push additionally requires user permission and a configured delivery service.

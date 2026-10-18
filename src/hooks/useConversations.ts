@@ -52,7 +52,9 @@ export function useChat(conversationId:string) {
  },[enabled,user?.id,chat,scope,conversationId,refetch]);
  const softDeleteMessage=async(id:string)=>{
   if(!enabled||!user)return false;
+  const removalScope=scope;
   const {data,error}=await supabase.rpc('remove_own_chat_message',{target_conversation_id:conversationId,target_message_id:id});
+  if(currentScope.current!==removalScope)return false;
   if(error||!data){toast.error('Mesaj kaldırılamadı.');return false;}await refetch();return true;
  };
  return {messages:chat?messages:[],loading,chat,error,sendMessage,retryMessage:(id:string,content:string)=>{void sendMessage(content,id);},softDeleteMessage,refetch};

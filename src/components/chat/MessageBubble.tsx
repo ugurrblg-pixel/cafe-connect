@@ -20,8 +20,7 @@ interface MessageBubbleProps {
   isPremiumSender?: boolean;
   isPremiumViewer?: boolean;
   onRetry?: () => void;
-  onDeleteForMe?: () => void;
-  onDeleteForEveryone?: () => void;
+  onDeleteForEveryone?: () => Promise<boolean>;
 }
 
 // Check if message is emoji-only (1-3 emojis, no other text)
@@ -50,7 +49,6 @@ export function MessageBubble({
   isPremiumSender = false,
   isPremiumViewer = false,
   onRetry,
-  onDeleteForMe,
   onDeleteForEveryone,
 }: MessageBubbleProps) {
   const { t, locale } = useI18n();
@@ -279,7 +277,6 @@ export function MessageBubble({
         content={content} 
         isOwn={isOwn}
         messageTimestamp={timestamp}
-        onDeleteForMe={isOwn ? onDeleteForMe : undefined}
         onDeleteForEveryone={isOwn ? onDeleteForEveryone : undefined}
       >
         {bubbleContent}

@@ -381,7 +381,6 @@ export default function ChatRoom() {
                     isPremiumSender={!isOwn && otherUser?.isPremium}
                     isPremiumViewer={isPremium}
                     onRetry={message.status === 'failed' && message.clientId ? () => retryMessage(message.clientId!, message.content) : undefined}
-                    onDeleteForMe={isOwn && !message.deletedAt ? () => softDeleteMessage(message.id) : undefined}
                     onDeleteForEveryone={isOwn && !message.deletedAt ? () => softDeleteMessage(message.id) : undefined}
                   />
                 </div>
