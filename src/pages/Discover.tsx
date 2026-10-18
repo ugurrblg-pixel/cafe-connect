@@ -115,7 +115,7 @@ export default function Discover() {
           <ProfileCompletionBanner />
 
           {/* Random Match Mini Game */}
-          <RandomMatchCard />
+          {import.meta.env.VITE_RANDOM_MATCH_ENABLED === 'true' && <RandomMatchCard />}
 
           {/* Location Banner */}
           <div

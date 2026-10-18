@@ -57,7 +57,7 @@ export function ConversationActionSheet({
               )}
             >
               <Trash2 className="w-5 h-5 text-destructive" />
-              <span className="text-destructive font-medium">Sohbeti Sil</span>
+              <span className="text-destructive font-medium">Sohbeti bu listede gizle</span>
             </button>
 
             {/* Cancel Action */}
@@ -80,9 +80,9 @@ export function ConversationActionSheet({
       <DeleteConfirmationDialog
         open={showConfirmation}
         onOpenChange={setShowConfirmation}
-        title="Bu sohbet silinsin mi?"
-        description="Bu işlem geri alınamaz. Tüm mesajlar silinecek."
-        confirmText="Sohbeti Sil"
+        title="Sohbet bu listede gizlensin mi?"
+        description="Mesajlar silinmez ve karşı tarafın listesi değişmez. Sayfayı yenilediğinde sohbet yeniden görünür."
+        confirmText="Bu listede gizle"
         onConfirm={handleConfirmDelete}
       />
     </>

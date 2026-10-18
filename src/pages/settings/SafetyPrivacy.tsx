@@ -1,16 +1,12 @@
 import { PrivateProfileImage } from '@/components/PrivateProfileImage';
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { PageLayout } from '@/components/PageLayout';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBlocking } from '@/hooks/useBlocking';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { invalidateVisibleProfiles } from '@/lib/visibilityEvents';
 import { MapPin, EyeOff, ShieldAlert, UserX, Loader2 } from 'lucide-react';
+import { useProfileVisibility } from '@/hooks/useProfileVisibility';
 
 interface BlockedProfile {
   blockedId: string;
@@ -19,48 +15,11 @@ interface BlockedProfile {
 }
 
 export default function SafetyPrivacy() {
-  const navigate = useNavigate();
-  const { user, refreshProfile } = useAuth();
+  const { user } = useAuth();
   const { blockedUsers, unblockUser, loading: blockLoading, listLoading: profilesLoading, listError } = useBlocking();
-  const [isVisible, setIsVisible] = useState(true);
-  const [visibilityLoading, setVisibilityLoading] = useState(false);
+  const visibility = useProfileVisibility();
   const blockedProfiles: BlockedProfile[] = blockedUsers.map((block, index) => ({ blockedId: block.blockedId, name: `Kullanıcı ${index + 1} · ${block.createdAt.toLocaleDateString('tr-TR')}`, photoUrl: '' }));
 
-
-  // Fetch current visibility
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from('profiles')
-      .select('is_visible')
-      .eq('user_id', user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) setIsVisible(data.is_visible ?? true);
-      });
-  }, [user]);
-
-  const handleVisibilityToggle = async (hidden: boolean) => {
-    if (!user) return;
-    setVisibilityLoading(true);
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({ is_visible: !hidden })
-      .eq('user_id', user.id);
-
-    setVisibilityLoading(false);
-
-    if (error) {
-      toast.error('Ayar güncellenemedi');
-      return;
-    }
-
-    setIsVisible(!hidden);
-    invalidateVisibleProfiles();
-    await refreshProfile();
-    toast.success(hidden ? 'Profiliniz gizlendi' : 'Profiliniz görünür');
-  };
 
   const handleUnblock = async (blockedId: string) => {
     await unblockUser(blockedId);
@@ -75,6 +34,20 @@ export default function SafetyPrivacy() {
         <Header title="Güvenlik & Gizlilik" showBack />
 
         <main className="pt-16 px-4 space-y-4">
+          <section className="card-elevated p-4" aria-labelledby="profile-visibility-title">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <EyeOff aria-hidden="true" className="h-5 w-5 shrink-0 text-accent mt-1"/>
+                <div><h3 id="profile-visibility-title" className="font-semibold">Profil görünürlüğü</h3>
+                <label htmlFor="hide-profile" className="block mt-2 text-sm font-medium">Profilimi gizle</label>
+                <p id="hide-profile-help" className="mt-1 text-sm text-muted-foreground">Açtığında mekân katılımcılarından ve yeni tanışmalardan gizlenirsin. Mesajlaşman da kapanır. Mevcut check-in süren devam eder; tekrar görünür olmak için bu ayarı kapatabilirsin.</p></div>
+              </div>
+              <Switch id="hide-profile" className="shrink-0 mt-2" checked={visibility.visible===false} disabled={visibility.loading||visibility.saving||visibility.error||!user} onCheckedChange={hidden=>void visibility.save(!hidden)} aria-describedby="hide-profile-help"/>
+            </div>
+            {visibility.loading&&<p role="status" className="mt-3 text-xs text-muted-foreground">Görünürlük ayarın yükleniyor…</p>}
+            {visibility.saving&&<p role="status" className="mt-3 text-xs text-muted-foreground">Kaydediliyor…</p>}
+            {visibility.error&&<div role="alert" className="mt-3 text-sm"><p>Görünürlük ayarın yüklenemedi.</p><Button variant="outline" size="sm" className="mt-2" onClick={()=>void visibility.reload()}>Tekrar dene</Button></div>}
+          </section>
           {/* Location Info Card */}
           <section className="card-elevated p-4">
             <div className="flex items-start gap-3">

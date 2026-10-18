@@ -1,0 +1,19 @@
+import {fireEvent,render,screen,waitFor} from '@testing-library/react';
+import {MemoryRouter} from 'react-router-dom';
+import {expect,it,vi} from 'vitest';
+const mocks=vi.hoisted(()=>({fetch:vi.fn()}));
+vi.mock('@/hooks/useNearbyCafes',()=>({useNearbyCafes:()=>({cafes:[{id:'real-a',name:'İncir Kahve',category:'cafe',activeUsers:0,distanceMeters:100},{id:'real-b',name:'Sahil Kahve',category:'cafe',activeUsers:3,distanceMeters:200}],loading:false,error:null,source:'cache',fetchNearbyCafes:mocks.fetch})}));
+vi.mock('@/contexts/LocationContext',()=>({useLocation:()=>({position:null,loading:false,error:null,getPosition:vi.fn(),isStale:false})}));
+vi.mock('@/contexts/I18nContext',()=>({useI18n:()=>({t:{discover:{title:'Keşfet'},common:{}},formatString:(text:string)=>text})}));
+vi.mock('@/components/PageLayout',()=>({PageLayout:({children}:any)=><>{children}</>}));
+vi.mock('@/components/Header',()=>({Header:()=>null}));
+vi.mock('@/components/ProfileCompletionBanner',()=>({ProfileCompletionBanner:()=>null}));
+vi.mock('@/components/CafeImage',()=>({CafeImage:({alt}:any)=><img alt={alt}/>}));
+vi.mock('@/components/RandomMatchCard',()=>({RandomMatchCard:()=>{throw new Error('Unsupported random lookup mounted');}}));
+import Search from './Search';
+it('uses real nearby venues in search, supports Turkish search and does not call Places on keystrokes',async()=>{
+ vi.stubEnv('VITE_RANDOM_MATCH_ENABLED','false');render(<MemoryRouter><Search/></MemoryRouter>);
+ expect(screen.getByRole('heading',{name:'İncir Kahve'})).toBeInTheDocument();expect(screen.getByRole('heading',{name:'Sahil Kahve'})).toBeInTheDocument();
+ fireEvent.change(screen.getByRole('textbox',{name:'Mekan ara'}),{target:{value:'İNCİR'}});
+ await waitFor(()=>expect(screen.queryByRole('heading',{name:'Sahil Kahve'})).not.toBeInTheDocument());expect(mocks.fetch).not.toHaveBeenCalled();
+});

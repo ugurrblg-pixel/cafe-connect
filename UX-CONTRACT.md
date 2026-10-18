@@ -18,6 +18,12 @@ Loading does not imply an empty cafe. Failed member/photo authorization clears s
 
 In-app badges use the existing caller-bound waves, matches and chat inbox RPCs. Opening the inbox does not mark messages read. Seen wave/match identifiers and two badge preferences are stored per account on this browser only. Logout clears displayed counts. No notification permission is requested and no phone-push delivery is claimed.
 
+## Free-feature navigation and availability
+
+Profile links to notification preferences and Safety & Privacy. `useProfileVisibility` owns the authenticated user's own profile visibility: unresolved/error state disables toggling, saves are pessimistic and require a returned row, failures retain the previous switch state, and account changes ignore old requests. Successful changes invalidate visible profiles/photos. The hidden state closes messaging and suppresses venue-profile discovery under existing server rules; it does not end the active check-in.
+
+Search reuses the real Discover page and its nearby cache instead of demo venues. Typing filters the loaded venue list without a new Places lookup. Random matching stays gated off until a reviewed caller-bound server flow exists; the legacy direct-table/opposite-gender client path must not be enabled by merely changing a flag. Venue waves and mutual chat remain available. The temporary conversation-list action is named hide, never delete: no messages are removed, the peer is unaffected and reloading restores the row.
+
 ## Deferred work
 
 The owner selected free features first; payment stays closed until a provider account is supplied. Browser push additionally requires user permission and a configured delivery service.

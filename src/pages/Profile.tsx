@@ -10,7 +10,7 @@ import { usePremium } from '@/hooks/usePremium';
 import { useI18n } from '@/contexts/I18nContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Purpose } from '@/types';
-import { Edit2, Shield, HelpCircle, LogOut, MessageCircle, Users, Heart, Crown, ChevronRight, Mail, Phone, User as UserIcon, CalendarDays } from 'lucide-react';
+import { Edit2, Shield, HelpCircle, LogOut, MessageCircle, Users, Heart, Crown, ChevronRight, Mail, Phone, User as UserIcon, CalendarDays, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { VerificationRequest } from '@/components/VerificationRequest';
@@ -272,7 +272,7 @@ export default function Profile() {
           <div className="bg-card rounded-3xl overflow-hidden mb-4 border border-border/60" style={cardShadow}>
             {[
               { icon: Shield, label: t.profile.safetyPrivacy, color: 'text-accent', onClick: () => navigate('/settings/safety') },
-              
+              { icon: Bell, label: 'Bildirim ayarları', color: 'text-primary', onClick: () => navigate('/settings/notifications') },
               { icon: HelpCircle, label: t.profile.helpSupport, color: 'text-muted-foreground', onClick: () => navigate('/settings/help') },
             ].map(({ icon: Icon, label, color, onClick }) => (
               <button key={label} onClick={onClick} className="w-full px-4 py-3.5 flex items-center gap-3 hover:bg-secondary/40 transition-colors border-b border-border/40 last:border-b-0">
