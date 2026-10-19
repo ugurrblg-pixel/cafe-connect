@@ -8,7 +8,9 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json && tsc -p tsconfig.places.json",
+    "places:prepare": "node scripts/places/prepare.ts",
+    "places:validate": "node scripts/places/stage.ts",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest"

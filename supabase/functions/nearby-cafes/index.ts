@@ -128,6 +128,33 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Opt-in, fail-closed cutover. No external request or paid quota reservation in this mode.
+    // Activate only after the directory migration and regional coverage review.
+    if (Deno.env.get('INDEPENDENT_PLACES_ENABLED') === 'true') {
+      const { data: owned, error: directoryError } = await supabase.rpc('search_independent_places', {
+        p_lat: lat, p_lng: lng, p_radius: SEARCH_RADIUS,
+      });
+      if (directoryError || !Array.isArray(owned)) {
+        return new Response(JSON.stringify({ error: 'Independent venue directory temporarily unavailable' }), {
+          status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+        });
+      }
+      const counts: Record<string, number> = {};
+      if (owned.length) {
+        const { data: attendance, error: attendanceError } = await supabase.from('check_ins').select('cafe_id')
+          .in('cafe_id', owned.map(v => v.id)).gt('expiry_time', new Date().toISOString());
+        if (attendanceError) return new Response(JSON.stringify({ error: 'Venue attendance temporarily unavailable' }), {
+          status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+        });
+        for (const row of attendance || []) counts[row.cafe_id] = (counts[row.cafe_id] || 0) + 1;
+      }
+      // Keep license/attribution alongside every record; the enabled UI must render these.
+      return new Response(JSON.stringify({ cafes: owned.map(v => ({ ...v, activeUsers: counts[v.id] || 0 })),
+        source: 'independent', count: owned.length, radius: SEARCH_RADIUS }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      });
+    }
+
     const areaLat = Math.round(lat * 100);
     const areaLng = Math.round(lng * 100);
     const areaKey = `${areaLat}:${areaLng}`;
