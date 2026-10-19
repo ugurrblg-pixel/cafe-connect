@@ -1,0 +1,60 @@
+import { act, renderHook, cleanup } from '@testing-library/react';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { LocationProvider, useLocation } from './LocationContext';
+import { getCurrentPosition } from '@/lib/geolocation';
+vi.mock('@/lib/geolocation', () => ({ getCurrentPosition: vi.fn() }));
+const read = vi.mocked(getCurrentPosition);
+const first = { coords: { latitude: 41, longitude: 29 }, accuracy: 12, timestamp: 100 };
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(1000000);
+  Object.defineProperty(navigator, 'geolocation', { configurable: true, value: {} });
+  read.mockReset();
+});
+afterEach(() => { cleanup(); vi.useRealTimers(); });
+it('shares a pending location result between concurrent callers', async () => {
+  let finish!: (value: typeof first) => void;
+  read.mockReturnValue(new Promise(resolve => { finish = resolve; }));
+  const { result } = renderHook(useLocation, { wrapper: LocationProvider });
+  let one!: ReturnType<typeof result.current.getPosition>;
+  let two!: typeof one;
+  act(() => { one = result.current.getPosition(); two = result.current.getPosition(true); });
+  expect(read).toHaveBeenCalledTimes(1);
+  expect(one).toBe(two);
+  await act(async () => { finish(first); expect(await one).toEqual(first); expect(await two).toEqual(first); });
+  expect(result.current.position).toEqual(first.coords);
+});
+it('expires the cached location and requests a fresh fix after ten minutes', async () => {
+  read.mockResolvedValue(first);
+  const { result } = renderHook(useLocation, { wrapper: LocationProvider });
+  await act(async () => { await Promise.resolve(); });
+  await act(async () => { expect(await result.current.getPosition()).toEqual(first); });
+  expect(read).toHaveBeenCalledTimes(1);
+  act(() => { vi.advanceTimersByTime(600000); });
+  expect(result.current.isStale).toBe(true);
+  const fresh = { ...first, coords: { latitude: 42, longitude: 30 } };
+  read.mockResolvedValue(fresh);
+  await act(async () => { expect(await result.current.getPosition()).toEqual(fresh); });
+  expect(read).toHaveBeenCalledTimes(2);
+  expect(result.current.isStale).toBe(false);
+});
+it('does not repeatedly request after denial and allows an explicit retry', async () => {
+  read.mockRejectedValue({ code: 1, message: 'Konum izni reddedildi' });
+  const { result } = renderHook(useLocation, { wrapper: LocationProvider });
+  await act(async () => { await Promise.resolve(); });
+  expect(read).toHaveBeenCalledTimes(1);
+  expect(result.current.loading).toBe(false);
+  expect(result.current.error?.code).toBe(1);
+  read.mockResolvedValue(first);
+  await act(async () => { expect(await result.current.getPosition(true)).toEqual(first); });
+  expect(result.current.error).toBeNull();
+  expect(read).toHaveBeenCalledTimes(2);
+});
+it('checks cache age at request time even if the expiration timer has not fired', async () => {
+  read.mockResolvedValue(first);
+  const { result } = renderHook(useLocation, { wrapper: LocationProvider });
+  await act(async () => { await Promise.resolve(); });
+  vi.setSystemTime(1600001);
+  await act(async () => { await result.current.getPosition(); });
+  expect(read).toHaveBeenCalledTimes(2);
+});

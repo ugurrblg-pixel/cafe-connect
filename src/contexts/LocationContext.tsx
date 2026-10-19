@@ -43,94 +43,57 @@ export function LocationProvider({ children }: LocationProviderProps) {
     lastFetchedAt: null,
   });
 
-  // Track if we've already requested location this session
   const hasRequestedRef = useRef(false);
-  const isRequestingRef = useRef(false);
-
-  // Check if geolocation is supported
+  const requestRef = useRef<Promise<{ coords: Coordinates; accuracy: number; timestamp: number } | null> | null>(null);
+  const cacheRef = useRef<{ coords: Coordinates; accuracy: number; timestamp: number; fetchedAt: number } | null>(null);
+  const mountedRef = useRef(true);
+  const [isStale, setIsStale] = useState(true);
   const isSupported = typeof navigator !== 'undefined' && 'geolocation' in navigator;
 
-  // Check if cached position is stale
-  const isStale = useMemo(() => {
-    if (!state.lastFetchedAt) return true;
-    return Date.now() - state.lastFetchedAt > CACHE_DURATION_MS;
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  useEffect(() => {
+    if (state.lastFetchedAt === null) return;
+    const timer = setTimeout(() => setIsStale(true), Math.max(0, CACHE_DURATION_MS - (Date.now() - state.lastFetchedAt)));
+    return () => clearTimeout(timer);
   }, [state.lastFetchedAt]);
 
-  // Get position with caching
-  const getPosition = useCallback(async (forceRefresh = false): Promise<{ coords: Coordinates; accuracy: number; timestamp: number } | null> => {
-    // Return cached position if available and not stale (unless force refresh)
-    if (!forceRefresh && state.position && !isStale) {
-      return {
-        coords: state.position,
-        accuracy: state.accuracy || 0,
-        timestamp: state.timestamp || Date.now(),
-      };
+  const getPosition = useCallback((forceRefresh = false): Promise<{ coords: Coordinates; accuracy: number; timestamp: number } | null> => {
+    // All callers share the actual result, including a forced refresh already in progress.
+    if (requestRef.current) return requestRef.current;
+    const cached = cacheRef.current;
+    if (!forceRefresh && cached && Date.now() - cached.fetchedAt < CACHE_DURATION_MS) {
+      return Promise.resolve({ coords: cached.coords, accuracy: cached.accuracy, timestamp: cached.timestamp });
     }
-
-    // Prevent concurrent requests
-    if (isRequestingRef.current) {
-      // Wait for the current request to complete
-      return new Promise((resolve) => {
-        const checkInterval = setInterval(() => {
-          if (!isRequestingRef.current) {
-            clearInterval(checkInterval);
-            if (state.position) {
-              resolve({
-                coords: state.position,
-                accuracy: state.accuracy || 0,
-                timestamp: state.timestamp || Date.now(),
-              });
-            } else {
-              resolve(null);
-            }
-          }
-        }, 100);
-      });
-    }
-
     if (!isSupported) {
-      setState(prev => ({
-        ...prev,
-        error: { code: 0, message: 'Geolocation is not supported' },
-      }));
-      return null;
+      setState(prev => ({ ...prev, error: { code: 0, message: 'Tarayıcınız konum özelliğini desteklemiyor' } }));
+      return Promise.resolve(null);
     }
-
-    isRequestingRef.current = true;
+    hasRequestedRef.current = true;
     setState(prev => ({ ...prev, loading: true, error: null }));
-
-    try {
-      const result = await getCurrentPosition(POSITION_OPTIONS);
-      
-      const newState = {
-        position: result.coords,
-        accuracy: result.accuracy,
-        loading: false,
-        error: null,
-        timestamp: result.timestamp,
-        lastFetchedAt: Date.now(),
-      };
-      
-      setState(newState);
-      hasRequestedRef.current = true;
-      isRequestingRef.current = false;
-      
-      return {
-        coords: result.coords,
-        accuracy: result.accuracy,
-        timestamp: result.timestamp,
-      };
-    } catch (err) {
-      const error = err as GeolocationError;
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error,
-      }));
-      isRequestingRef.current = false;
-      return null;
-    }
-  }, [state.position, state.accuracy, state.timestamp, isStale, isSupported]);
+    const request = (async () => {
+      try {
+        const result = await getCurrentPosition(POSITION_OPTIONS);
+        if (mountedRef.current) {
+          const fetchedAt = Date.now();
+          cacheRef.current = { ...result, fetchedAt };
+          setIsStale(false);
+          setState({ position: result.coords, accuracy: result.accuracy, loading: false, error: null, timestamp: result.timestamp, lastFetchedAt: fetchedAt });
+        }
+        return result;
+      } catch (err) {
+        if (mountedRef.current) setState(prev => ({ ...prev, loading: false, error: err as GeolocationError }));
+        return null;
+      } finally {
+        requestRef.current = null;
+      }
+    })();
+    requestRef.current = request;
+    return request;
+  }, [isSupported]);
 
   // Clear error
   const clearError = useCallback(() => {
