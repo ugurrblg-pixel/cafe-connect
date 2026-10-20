@@ -101,3 +101,16 @@ Resmi şemalar/lisans bilgileri:
 - https://docs.foursquare.com/data-products/docs/fsq-places-open-source
 - https://github.com/alltheplaces/alltheplaces/blob/master/DATA_FORMAT.md
 - https://github.com/alltheplaces/alltheplaces#license
+
+
+## OpenStreetMap pilotu — 20 Ekim 2026
+
+OpenStreetMap Overpass üzerinden aynı pilot kutusunda 90 kayıt alındı. 31 isimsiz ve 3 uygunsuz isimli kayıt reddedildi; 56 kayıt `private.osm_place_candidates` tablosunda bekliyor. Diğer 468 açık kaynak adayına göre 2 güçlü bağlama önerisi, 37 yakınlık/belirsizlik incelemesi, 17 yeni kayıt önerisi var. Bunlar ayrı mekan sayısı veya otomatik birleştirme sonucu değildir.
+
+Güncel Google önbelleğindeki 109 uygun kayıtla karşılaştırmada 1 eşleşme ve örneklemde eşleşmeyen 55 OSM kaydı bulundu. Eşleşmeyen kayıtlar Google'da yok demek değildir. Eşleşen bir kimlik yenileme kuyruğundan çıkarıldı; bilinmeyen 55 kayıt için ücretli keşif başlatılmadı. Önceki kaynakların eşleşmeleri OSM örnekleminde bulunmadıkları için yeniden sorguya alınmaz.
+
+OSM kimlikleri `node/`, `way/`, `relation/` olarak ayrılır. Way/relation merkezleri giriş noktası değildir ve inceleme gerektirir. Ülke etiketi yoksa yalnız sabit Türkiye pilot kutusunda TR kabul edilir. Kayıt sürümü Overpass `timestamp_osm_base` değeridir; kişi/editör verileri ve iletişim alanları tutulmaz.
+
+OSM verileri ODbL-1.0 lisanslıdır; CC0/CDLA olarak etiketlenmez. Ayrı inceleme tablosu ve `stage_osm_place` kullanılır. Mevcut bağımsız yayın RPC'si OSM adaylarını kabul etmez. Kullanıcıya sunum/dağıtım öncesinde OSM atfı ve türetilmiş veritabanı paylaşım yükümlülükleri değerlendirilmelidir. Karşılaştırma Google içeriğini OSM kaydına taşımaz. Kaynak: https://www.openstreetmap.org/copyright
+
+`node scripts/places/download_osm.ts new-pilot.jsonl` yalnız operatörün başlattığı küçük pilot indirmesidir; her konum isteğinde çalışmaz. Ücretsiz Overpass hizmeti kesilebilir; hatalı/kısmi yanıt içe aktarılmaz. Sonraki adım `prepare.ts` ve `stage.ts` araçlarıdır. OSM SQL migration'ları `20261020020000_osm_place_review.sql`, `20261020030000_osm_google_review.sql`; uygulama kullanıcılarına erişim açmaz. Test: `supabase/tests/osm_place_review.sql`.

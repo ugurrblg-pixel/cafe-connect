@@ -44,6 +44,19 @@ export function adaptPlace(raw: ObjectValue, manifest: PlaceManifest): PlaceReco
     country = p['addr:country'];
     address = [p['addr:street_address'] || [p['addr:street'], p['addr:housenumber']].filter(Boolean).join(' '), p['addr:city']].filter(Boolean).join(' ');
     closed = p['disused:amenity'] != null || p['abandoned:amenity'] != null;
+  } else if (manifest.provider === 'openstreetmap') {
+    const p = raw.tags || {};
+    if (!['node', 'way', 'relation'].includes(raw.type) || !Number.isSafeInteger(raw.id) || raw.id <= 0) throw new Error('Invalid OSM identity');
+    name = p['name:tr'] || p.name;
+    sourceId = `${raw.type}/${raw.id}`;
+    // Ways/relations use Overpass bounding-box centers, not verified entrances.
+    latitude = raw.type === 'node' ? raw.lat : raw.center?.lat;
+    longitude = raw.type === 'node' ? raw.lon : raw.center?.lon;
+    if (latitude < 40.64 || latitude > 40.85 || longitude < 29.28 || longitude > 29.47) throw new Error('Outside OSM pilot region');
+    labels = [p.amenity, p.leisure].filter(Boolean);
+    country = p['addr:country'] || 'TR'; // Downloader is restricted to the Turkey pilot box.
+    address = [p['addr:street'], p['addr:housenumber'], p['addr:city']].filter(Boolean).join(' ');
+    closed = Boolean(p['disused:amenity'] || p['abandoned:amenity']);
   } else if (manifest.provider === 'foursquare_os') {
     if (raw.unresolved_flags?.length) throw new Error('Unresolved source quality flags require review');
     name = raw.name; sourceId = raw.fsq_place_id;

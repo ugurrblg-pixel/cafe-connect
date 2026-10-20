@@ -1,5 +1,5 @@
 // Pure import/matching policy. No network, credentials, or writes.
-export type PlaceProvider = 'overture' | 'foursquare_os' | 'alltheplaces';
+export type PlaceProvider = 'overture' | 'foursquare_os' | 'alltheplaces' | 'openstreetmap';
 export type PlaceCategory = 'cafe' | 'bar' | 'night_club' | 'gym';
 export interface PlaceRecord {
   provider: PlaceProvider;
@@ -40,6 +40,7 @@ const licenses: Record<PlaceProvider, string[]> = {
   overture: ['CDLA-Permissive-2.0', 'Apache-2.0', 'CC0-1.0'],
   foursquare_os: ['Apache-2.0'],
   alltheplaces: ['CC0-1.0'],
+  openstreetmap: ['ODbL-1.0'],
 };
 export function validatePlace(record: PlaceRecord): string | null {
   if (!Object.prototype.hasOwnProperty.call(licenses, record.provider) || !licenses[record.provider]?.includes(record.license)) return 'unsupported_source_or_license';

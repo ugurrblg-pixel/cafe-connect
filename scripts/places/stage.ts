@@ -21,7 +21,7 @@ for await (const line of createInterface({ input: createReadStream(file), crlfDe
   if (invalid) throw new Error(`Invalid proposal at record ${accepted + skipped + 1}: ${invalid}`);
   if (++accepted > 1000) throw new Error('Split imports into reviewed batches of at most 1000 records');
   if (write) {
-    const response = await fetch(`${url}/rest/v1/rpc/stage_independent_place`, {
+    const response = await fetch(`${url}/rest/v1/rpc/${record.provider === 'openstreetmap' ? 'stage_osm_place' : 'stage_independent_place'}`, {
       method: 'POST', signal: AbortSignal.timeout(15000),
       headers: { apikey: key!, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ p_record: record }),
