@@ -8,10 +8,11 @@ const compiled = transpileModule(source, { compilerOptions: { target: ScriptTarg
 const cafe = { id: 'saved', name: 'Pizza Coffee', latitude: 41, longitude: 29, category: 'cafe', is_open: true };
 afterEach(() => vi.restoreAllMocks());
 
-function harness(state = 'cache', cached: any[] = [cafe], googleStatus = 'OK', upsertError: any = null, owned?: { rows: any[]; error?: unknown; anonymous?: boolean }) {
+function harness(state = 'cache', cached: any[] = [cafe], googleStatus = 'OK', upsertError: any = null, owned?: { rows: any[]; error?: unknown; anonymous?: boolean }, targeted?: {jobs:any[];error?:unknown;bounds?:string}) {
   let handler!: (req: Request) => Promise<Response>;
   const rpc = vi.fn(async (name: string) => name === 'search_independent_places'
     ? { data: owned?.rows, error: owned?.error || null }
+    : name === 'claim_targeted_place_refresh' ? {data:targeted?.jobs,error:targeted?.error||null}
     : ({ data: name === 'claim_places_search_area' ? { state, lease_token: 'lease' } : true, error: null }));
   const upsert = vi.fn(async (_rows: unknown[]) => ({ error: upsertError }));
   const db = { auth: { getUser: async () => ({ data: { user: owned?.anonymous ? null : { id: 'user' } }, error: null }) }, rpc,
@@ -21,11 +22,13 @@ function harness(state = 'cache', cached: any[] = [cafe], googleStatus = 'OK', u
       for (const method of ['select', 'gte', 'lte', 'gt', 'in']) chain[method] = () => chain;
       return chain;
     } };
-  const fetch = vi.fn(async (_url: string) => new Response(JSON.stringify({ status: googleStatus, results: [
+  const fetch = vi.fn(async (_url: string) => new Response(JSON.stringify(_url.includes('/details/') ? {
+    status:googleStatus,result:{place_id:'scheduled-id',name:'Fixture Coffee',geometry:{location:{lat:41,lng:29}},types:['cafe']},
+  } : { status: googleStatus, results: [
     { place_id: 'pizza-cafe', name: 'Pizza Coffee', types: ['cafe','restaurant','food'], geometry: { location: { lat: 41, lng: 29 } } },
     { place_id: 'restaurant', name: 'Restaurant', types: ['restaurant','food'], geometry: { location: { lat: 41, lng: 29 } } },
   ] })));
-  new Function('Deno','createClient','fetch',compiled)({ serve: (fn: typeof handler) => { handler=fn; }, env: { get: (key: string) => key === 'INDEPENDENT_PLACES_ENABLED' ? owned ? 'true' : 'false' : 'test-only' } }, () => db, fetch);
+  new Function('Deno','createClient','fetch',compiled)({ serve: (fn: typeof handler) => { handler=fn; }, env: { get: (key: string) => key === 'INDEPENDENT_PLACES_ENABLED' ? owned ? 'true' : 'false' : key === 'GOOGLE_PLACES_TARGETED_ONLY' ? targeted ? 'true' : 'false' : key === 'GOOGLE_PLACES_TARGETED_BOUNDS' ? targeted?.bounds : 'test-only' } }, () => db, fetch);
   const request = (lat=41.001, lng=29.001) => handler(new Request('https://test.invalid', { method: 'POST', headers: { Authorization: 'Bearer test-only' }, body: JSON.stringify({ latitude: lat, longitude: lng }) }));
   return { request, rpc, fetch, upsert };
 }
@@ -77,4 +80,27 @@ it('fails closed instead of billing Google if the independent database fails', a
 it('authenticates before reading the independent directory', async () => {
   const h = harness('reserved', [], 'OK', null, { rows: [], anonymous: true });
   expect((await h.request()).status).toBe(401); expect(h.rpc).not.toHaveBeenCalled(); expect(h.fetch).not.toHaveBeenCalled();
+});
+it('requests only the scheduled Google ID and never broad nearby search in targeted mode',async()=>{
+ const h=harness('reserved',[cafe],'OK',null,undefined,{jobs:[{place_id:'scheduled-id',lease_token:'lease'}]});
+ expect((await h.request()).status).toBe(200);expect(h.fetch).toHaveBeenCalledTimes(1);
+ const url=new URL(h.fetch.mock.calls[0][0]);expect(url.pathname).toBe('/maps/api/place/details/json');expect(url.searchParams.get('place_id')).toBe('scheduled-id');
+ expect(url.searchParams.get('fields')).toBe('place_id,name,geometry,type,business_status');
+ expect(h.rpc).toHaveBeenCalledWith('finish_targeted_place_refresh',expect.objectContaining({p_place_id:'scheduled-id',p_payload:expect.objectContaining({name:'Fixture Coffee'})}));
+ expect(h.upsert).not.toHaveBeenCalled();expect(h.rpc).not.toHaveBeenCalledWith('claim_places_search_area',expect.anything());
+});
+it('makes zero Google calls for empty targeted queues and database failures',async()=>{
+ for(const options of [{jobs:[]},{jobs:[],error:{message:'unavailable'}}]){
+  const h=harness('reserved',[],'OK',null,undefined,options);expect((await h.request()).status).toBe(200);expect(h.fetch).not.toHaveBeenCalled();
+ }
+});
+it('backs off provider failures without switching to broad searches',async()=>{
+ const h=harness('reserved',[cafe],'REQUEST_DENIED',null,undefined,{jobs:[{place_id:'scheduled-id',lease_token:'lease'}]});
+ await h.request();expect(h.fetch).toHaveBeenCalledTimes(1);expect(h.rpc).toHaveBeenCalledWith('finish_targeted_place_refresh',expect.objectContaining({p_payload:null,p_retired:false}));
+});
+it('limits the cutover to the configured pilot while preserving existing discovery elsewhere',async()=>{
+ const options={jobs:[],bounds:'29.28,40.64,29.47,40.85'};
+ const local=harness('reserved',[],'OK',null,undefined,options);await local.request(40.77,29.40);expect(local.fetch).not.toHaveBeenCalled();
+ const elsewhere=harness('reserved',[],'OK',null,undefined,options);await elsewhere.request(41.01,29.01);expect(elsewhere.fetch).toHaveBeenCalledTimes(4);
+ const invalid=harness('reserved',[],'OK',null,undefined,{jobs:[],bounds:'invalid'});await invalid.request();expect(invalid.fetch).not.toHaveBeenCalled();
 });

@@ -4,7 +4,31 @@
 
 Bu altyapı açık mekan verilerini hazırlamak, inceleme kuyruğuna almak ve onaylananları kendi veritabanımızdan aramak içindir. İlk sürüm Türkiye sınır kutusu ve `TR` ülke koduyla sınırlıdır. Kapsam, fotoğraf ve güncellik garantisi vermez.
 
-**Canlı Google araması henüz kapatılmaz.** Kodun sunucudaki `INDEPENDENT_PLACES_ENABLED` anahtarı varsayılan olarak kapalıdır. Gerçek mekanlar canlıya aktarılmadı; bu migration canlıya uygulanmış sayılmaz. Kaynak/lisans gösterimi için istemci entegrasyonu ve pilot kapsam incelemesi tamamlanmadan anahtar açılmaz. UI'da mevcut Google kaynak açıklaması bağımsız veriye uygulanmamalıdır.
+**Tam bağımsız arama henüz açılmadı.** `INDEPENDENT_PLACES_ENABLED` kapalı kalır. 20 Ekim 2026'da dizin ve hedefli yenileme migration'ları Supabase'e ayrı uygulandı; 809 açık veri kaydı özel inceleme kuyruğuna yazıldı. Hiçbiri otomatik yayınlanmadı. Kaynak/lisans gösterimi için istemci entegrasyonu ve pilot kapsam incelemesi tamamlanmadan bağımsız arama açılmaz. UI'da mevcut Google kaynak açıklaması bağımsız veriye uygulanmamalıdır.
+
+## İlk gerçek karşılaştırma ve hedefli Google sorguları
+
+Pilot kutusu 29.28–29.47 boylam, 40.64–40.85 enlem: Darıca/Gebze ve Yalova taraflarını kapsar. Overture `2026-09-23.1` sürümünden 18.579 ham mekan alındı; uygun kategoriler/lisans/güven eşiği/isim filtresinden 466 kayıt geçti. All the Places'in 343 geçerli zincir kaydıyla toplam **809 aday** kaydedildi; bunların **468'i pilot kutusunda**. Foursquare'in doğrudan güncel veri indirme yolu Places Portal hesabı ve token istiyor; doğrudan indirilmedi. Overture'daki Foursquare kaynaklı 33 aday güven eşiğinden geçmedi. Bu nedenle üç bağımsız sağlayıcının tamamı aktarıldı iddiası yoktur.
+
+Mevcut Google önbelleğinde 126 kayıt okundu. İsim filtresine takılan 17 kayıt karşılaştırma/sorgu kuyruğundan ayrıldı; kalan 109 kayıt üzerinde 18 yakın eşleşme, 1 kategori farkı, açık veri örnekleminde eşleşmeyen 90 Google kimliği bulundu. Pilot açık verideki 449 aday Google önbellek örnekleminde eşleşmedi. Bu, Google'ın bu mekanları içermediğini göstermez; Google Nearby Search örneklemi bütün bölgenin envanteri değildir. Karşılaştırma hiçbir kaydı otomatik birleştirmez veya Google verisiyle açık kaydı düzeltmez.
+
+`private.place_google_review` aday kaydını Google place ID ile ilişkilendirir veya `needs_id` durumunda tutar. `private.targeted_place_refresh` yalnız mevcut Google cafe kimliği/place ID ve iş zamanlaması taşır; Google adı, koordinatı, fotoğrafı burada tutulmaz. 18 eşleşme yenileme dışıdır; 1 fark + 90 Google-only kimlik hedefli kontrol listesinde. Google kimliği olmayan 449 kayıt otomatik ücretli keşif döngüsüne sokulmaz. Kimlik bulma ayrı, bütçeli bir aşamadır; kaynak kimliği Google place ID yerine kullanılamaz.
+
+`GOOGLE_PLACES_TARGETED_ONLY=true` modunda geniş Nearby Search yerine yalnız izin listesindeki, zamanı gelmiş ve kullanıcının arama noktasına 1500m içindeki Google kimliklerine Details çağrısı yapılır. Sunucu kodu ve ayarları 20 Ekim 2026'da güncellendi. `GOOGLE_PLACES_TARGETED_BOUNDS=29.28,40.64,29.47,40.85` geçişi karşılaştırılan pilotla sınırlar; diğer bölgeler mevcut alan önbelleği/kota akışını sürdürür. Sınır ayarı yoksa veya geçersizse geniş sorguya geri dönmek yerine kimlik modu global uygulanır.
+
+Arama başına en çok **2**, hedefli kontrol kuyruğu için proje genelinde UTC takvim günü başına en çok **20** çağrı ayrılır. Bu sınır pilot dışındaki eski arama çağrılarını kapsayan toplam Google faturası garantisi değildir. Lease ve kota rezervasyonu transaction içindedir; tekrar istekler aynı işi alamaz. Başarılı kontrol 7 gün, hata 6 saat ertelenir. Pilot içindeki kota/DB hatası boş kuyruk gibi ele alınır; geniş ücretli aramaya geri dönülmez. Sağlayıcı URL'si/anahtarı yanıt veya hata loglarına yazılmaz.
+
+Google sonucu yalnız mevcut sınırlı önbellek alanlarını yeniler; alınmayan adres/fotoğraf/saat/puan alanları yeni zaman damgasıyla uzatılmaz. Kapanmış/uygunsuz/NOT_FOUND kaydın betimleyici önbelleği boşaltılır, tarihsel cafeId korunur. Kimlik değişimi/redirect otomatik kabul edilmez. Açık veri adaylarının isim/konumları bu işlemle değiştirilmez.
+
+Bu mod **pilot içinde henüz önbelleği olmayan noktalarda boş liste döndürebilir**; pilot dışındaki mevcut keşif korunur. İnceleme kuyruğundaki 809 kayıt otomatik canlı listeye eklenmiş değildir; yerel kapsam, kaynak gösterimi ve geçmiş kimlik devamlılığı incelenmeden tüm Türkiye için tamamlandı denemez.
+
+Tekrarlanabilir araçlar:
+```text
+python scripts/places/download_overture.py min_lng min_lat max_lng max_lat new-region.jsonl
+node scripts/places/compare.ts normalized-open.jsonl temporary-google-cache.json new-report.json
+node scripts/places/schedule.ts new-report.json new-schedule.sql
+```
+İndirme için `duckdb` gerekir; anahtar gerektirmez, en çok bir kare derecelik Türkiye bölgesi kabul eder. Kaynak lisansına göre hazırlama manifestleri ayrılır. Karşılaştırma raporu 24 saat geçerlidir, kimlik ve iş durumu dışında Google içeriği taşımaz. Schedule aracı yalnız operatör SQL'i üretir; kendisi DB'ye yazmaz. Google geçici dışa aktarımı repoya eklenmez ve iş bitiminde kaldırılır; kalıcı envanter yalnız açık kaynak kayıtlarıdır. Detay testi `supabase/tests/targeted_place_refresh.sql` ile lease, istemci yetkisi, tekrar bitirme ve günlük kota sınırını doğrular.
 
 20 Ekim 2026 kontrolünde All the Places'in `2026-10-10-13-32-41` sürümündeki `kahve_dunyasi` örneği indirildi: 355 kayıt, 343 geçerli Point kaydı, 12 Point olmayan/konumsuz kayıt reddi. Hazırlama ve kuru çalışma doğrulandı; canlı yayın sayısı sıfır. Bu tek zincir örneği Türkiye kapsamı veya konum doğruluğu kanıtı değildir. Ham dosya/kişisel iletişim alanları repoya eklenmez. Kaynak: https://alltheplaces-data.openaddresses.io/runs/2026-10-10-13-32-41/output/kahve_dunyasi.geojson
 
@@ -44,7 +68,7 @@ Sunucu ortamında `SUPABASE_URL` ve `SUPABASE_SERVICE_ROLE_KEY` güvenli biçimd
 
 ## Veritabanı kurulumu ve yayın
 
-Yalnız `20261019010000_independent_place_directory.sql` migration'ı ayrı incelenip uygulanmalıdır. Bu projenin eski migration geçmişi henüz uzlaştırılmadığından **toplu db push yapılmaz**. RLS tabloları ve RPC'ler anonim/giriş yapan uygulama kullanıcılarına kapalı; RPC yürütmesi yalnız service_role içindir. Yeni bir kullanıcıya veya moderatöre servis anahtarı verilmez. İlk yönetim güvenilir sunucu/SQL operatör akışıdır; admin inceleme ekranı bu sürüme dahil değildir.
+`20261019010000_independent_place_directory.sql` ve `20261020010000_targeted_place_refresh.sql` migration'ları ayrı incelenip uygulanır. Bu projenin eski migration geçmişi henüz uzlaştırılmadığından **toplu db push yapılmaz**. RLS tabloları ve RPC'ler anonim/giriş yapan uygulama kullanıcılarına kapalı; RPC yürütmesi yalnız service_role içindir. Yeni bir kullanıcıya veya moderatöre servis anahtarı verilmez. İlk yönetim güvenilir sunucu/SQL operatör akışıdır; admin inceleme ekranı bu sürüme dahil değildir.
 
 `stage_independent_place` aday kimliği/parmak izini döndürür. Güvenilir operatör `publish_independent_place` ile aday/parmak izi/inceleyen bilgilerini verir. Yeni kayıt için hedef boş; bağlama/güncelleme için hedef mevcut bağımsız dizin cafeId'si ve beklenen sürüm olmalıdır. Google-only veya rastgele cafeId'ye bağlama reddedilir. `p_replace_canonical` seçili alanların değişmesini, `p_accept_material_change` ciddi değişikliğin ayrıca kabulünü sağlar. Aynı adayın tekrar yayını yeni cafe yaratmaz. Ayrı komşu şube oluşturmak da açık inceleme ister.
 

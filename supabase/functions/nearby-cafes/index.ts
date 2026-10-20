@@ -199,6 +199,54 @@ Deno.serve(async (req) => {
       return true;
     });
 
+    // After comparison, only explicitly scheduled place IDs may spend Google quota.
+    // Empty regions do not silently trigger the four broad Nearby Search requests.
+    const targetedBounds = Deno.env.get('GOOGLE_PLACES_TARGETED_BOUNDS');
+    const bounds = targetedBounds?.split(',').map(Number);
+    const validBounds = bounds?.length === 4 && bounds.every(Number.isFinite)
+      && bounds[0] >= -180 && bounds[2] <= 180 && bounds[1] >= -85 && bounds[3] <= 85
+      && bounds[0] < bounds[2] && bounds[1] < bounds[3];
+    // No/invalid bounds fail closed to ID-only globally; valid bounds allow a controlled pilot.
+    const inTargetedRegion = !validBounds || (lng >= bounds![0] && lng <= bounds![2] && lat >= bounds![1] && lat <= bounds![3]);
+    if (Deno.env.get('GOOGLE_PLACES_TARGETED_ONLY') === 'true' && inTargetedRegion) {
+      if (GOOGLE_PLACES_KEY) {
+        const { data: jobs, error: jobError } = await supabase.rpc('claim_targeted_place_refresh', { p_lat: lat, p_lng: lng });
+        if (!jobError && Array.isArray(jobs)) {
+          for (const job of jobs.slice(0, 2)) {
+            let payload = null;
+            let retired = false;
+            try {
+              const url = new URL('https://maps.googleapis.com/maps/api/place/details/json');
+              url.searchParams.set('place_id', job.place_id);
+              url.searchParams.set('fields', 'place_id,name,geometry,type,business_status');
+              url.searchParams.set('key', GOOGLE_PLACES_KEY);
+              const response = await fetch(url.toString(), { signal: AbortSignal.timeout(5000) });
+              if (response.ok) {
+                const result = await response.json();
+                const place = result.result;
+                if (result.status === 'NOT_FOUND') retired = true;
+                else if (result.status === 'OK' && place?.place_id === job.place_id && typeof place.name === 'string'
+                  && Number.isFinite(place.geometry?.location?.lat) && Number.isFinite(place.geometry?.location?.lng)
+                  && Array.isArray(place.types)) {
+                  const normalized = place.name.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ı/g, 'i');
+                  const excluded = /\b(?:cay\s*(?:evi|evleri|ocagi|ocaklari|bahcesi)|kirathane|kiraathane|kahvehane)(?:si|leri)?\b/.test(normalized)
+                    || /\b(?:kokorec\w*|izgara\w*)\b/.test(normalized);
+                  retired = excluded || !isAcceptedVenue(place);
+                  if (!retired) payload = { place_id: job.place_id, name: place.name, latitude: place.geometry.location.lat,
+                    longitude: place.geometry.location.lng, category: mapCategory(place.types) };
+                }
+              }
+            } catch { /* Never log a keyed Google request URL or response payload. */ }
+            await supabase.rpc('finish_targeted_place_refresh', { p_place_id: job.place_id, p_lease: job.lease_token, p_payload: payload, p_retired: retired });
+          }
+        }
+      }
+      const { data: refreshed, error: refreshReadError } = await readCache();
+      const available = refreshReadError ? validVenues : (refreshed || []).filter(v => v.latitude != null && v.longitude != null
+        && haversineDistance(lat, lng, v.latitude, v.longitude) <= SEARCH_RADIUS && VENUE_TYPES.includes(v.category));
+      return respond(available, userCounts, 'cache');
+    }
+
     // --- Step 2: Call Google Places API ---
     if (!GOOGLE_PLACES_KEY) {
       console.warn('GOOGLE_PLACES_API_KEY not set, returning cache only');
