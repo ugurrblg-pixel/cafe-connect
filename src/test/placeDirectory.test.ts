@@ -76,3 +76,7 @@ it('adapts Foursquare accents and refuses unresolved private/duplicate/closed fl
   }
   expect(adaptPlace({ ...raw, date_closed: '2026-01-01' }, fsq).status).toBe('closed');
 });
+
+it.each(['Dostlar Kraathanesi', 'Çay Baçhesi', 'Dostlar Krathanesi'])('hides known tea-house spelling variants: %s', name => {
+ expect(isExcludedTeaVenue(name)).toBe(true);expect(excludedPlaceName(name)).toBe(true);
+});

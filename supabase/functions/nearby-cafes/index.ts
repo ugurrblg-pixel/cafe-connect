@@ -51,8 +51,15 @@ function mapCategory(types: string[]): string {
   return 'cafe';
 }
 
+function isExcludedVenueName(name: string): boolean {
+  const normalized = name.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ı/g, 'i').replace(/[^a-z0-9]+/g, ' ').trim();
+  return /\b(?:cay\s*(?:evi|evleri|ocagi|ocaklari|bahcesi|bachesi)|kirathane|kiraathane|krathane|kraathane|kahvehane)(?:si|leri)?\b/.test(normalized)
+    || /\b(?:kokorec\w*|izgara\w*)\b/.test(normalized);
+}
+
 /** Returns true if the place passes strict acceptance rules */
 function isAcceptedVenue(place: GooglePlace): boolean {
+  if (isExcludedVenueName(place.name)) return false;
   const types = place.types || [];
 
   // Rule 1: Must have at least one venue type
@@ -228,10 +235,7 @@ Deno.serve(async (req) => {
                 else if (result.status === 'OK' && place?.place_id === job.place_id && typeof place.name === 'string'
                   && Number.isFinite(place.geometry?.location?.lat) && Number.isFinite(place.geometry?.location?.lng)
                   && Array.isArray(place.types)) {
-                  const normalized = place.name.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ı/g, 'i');
-                  const excluded = /\b(?:cay\s*(?:evi|evleri|ocagi|ocaklari|bahcesi)|kirathane|kiraathane|kahvehane)(?:si|leri)?\b/.test(normalized)
-                    || /\b(?:kokorec\w*|izgara\w*)\b/.test(normalized);
-                  retired = excluded || !isAcceptedVenue(place);
+                  retired = !isAcceptedVenue(place);
                   if (!retired) payload = { place_id: job.place_id, name: place.name, latitude: place.geometry.location.lat,
                     longitude: place.geometry.location.lng, category: mapCategory(place.types) };
                 }
@@ -386,7 +390,7 @@ function respond(
   userCounts: Record<string, number>,
   source: string
 ) {
-  const cafes = venues.map((v) => ({
+  const cafes = venues.filter(v => typeof v.name === 'string' && !isExcludedVenueName(v.name)).map((v) => ({
     id: v.id,
     place_id: v.google_place_id,
     name: v.name,

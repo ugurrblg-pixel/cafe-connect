@@ -25,7 +25,7 @@ export function normalizePlaceName(value: string): string {
 
 export function excludedPlaceName(value: string): boolean {
   const name = normalizePlaceName(value);
-  return /\b(?:cay\s*(?:evi|evleri|ocagi|ocaklari|bahcesi)|kirathane|kiraathane|kahvehane)(?:si|leri)?\b/.test(name)
+  return /\b(?:cay\s*(?:evi|evleri|ocagi|ocaklari|bahcesi|bachesi)|kirathane|kiraathane|krathane|kraathane|kahvehane)(?:si|leri)?\b/.test(name)
     || /\b(?:kokorec\w*|izgara\w*)\b/.test(name);
 }
 

@@ -111,3 +111,8 @@ it('preserves reviewed source credits without inventing live opening status',asy
  expect(body.cafes[0]).toMatchObject({id:'independent',data_source:'overture',attribution:'Fixture credit',license:'CC0-1.0',is_open:null});
  expect(h.fetch).not.toHaveBeenCalled();
 });
+
+it('filters cached tea-house spelling variants before returning venue results',async()=>{
+ const h=harness('cache',[{...cafe,name:'Dostlar Kraathanesi'},{...cafe,id:'tea',name:'Çay Baçhesi'},{...cafe,id:'allowed',name:'Çaykur Cafe'}]);
+ const body=await(await h.request()).json();expect(body.cafes.map((c:any)=>c.id)).toEqual(['allowed']);
+});
