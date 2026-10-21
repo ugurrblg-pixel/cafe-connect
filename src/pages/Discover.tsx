@@ -1,3 +1,4 @@
+import { VenueSources, venueSourceName } from '@/components/VenueSources';
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
@@ -59,6 +60,7 @@ function VenueCard({ cafe, onClick, style }: { cafe: any; onClick: () => void; s
             </div>
           )}
         </div>
+        <p className="mt-2 text-[11px] text-muted-foreground">Kaynak: {venueSourceName(cafe.dataSource)}</p>
         <span className="mt-3 flex items-center gap-1 text-xs font-medium text-primary">Mekanı keşfet <ArrowUpRight className="w-3 h-3" /></span>
       </div>
     </button>
@@ -195,11 +197,7 @@ export default function Discover() {
               )}
             </>
           )}
-          {cafes.length > 0 && (
-            <p className="mb-4 text-[12px] font-normal text-muted-foreground">
-              Mekan bilgileri: <span translate="no">Google Maps</span>
-            </p>
-          )}
+          <VenueSources venues={cafes} />
         </main>
       </div>
     </PageLayout>

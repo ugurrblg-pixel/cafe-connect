@@ -19,7 +19,7 @@ function harness(state = 'cache', cached: any[] = [cafe], googleStatus = 'OK', u
     from: (table: string) => {
       const result = { data: table === 'cafes' ? cached : [], error: null };
       const chain: any = { then: (ok: any, fail: any) => Promise.resolve(result).then(ok, fail), upsert };
-      for (const method of ['select', 'gte', 'lte', 'gt', 'in']) chain[method] = () => chain;
+      for (const method of ['select', 'gte', 'lte', 'gt', 'in', 'or']) chain[method] = () => chain;
       return chain;
     } };
   const fetch = vi.fn(async (_url: string) => new Response(JSON.stringify(_url.includes('/details/') ? {
@@ -103,4 +103,11 @@ it('limits the cutover to the configured pilot while preserving existing discove
  const local=harness('reserved',[],'OK',null,undefined,options);await local.request(40.77,29.40);expect(local.fetch).not.toHaveBeenCalled();
  const elsewhere=harness('reserved',[],'OK',null,undefined,options);await elsewhere.request(41.01,29.01);expect(elsewhere.fetch).toHaveBeenCalledTimes(4);
  const invalid=harness('reserved',[],'OK',null,undefined,{jobs:[],bounds:'invalid'});await invalid.request();expect(invalid.fetch).not.toHaveBeenCalled();
+});
+
+it('preserves reviewed source credits without inventing live opening status',async()=>{
+ const owned={...cafe,id:'independent',data_source:'overture',independent_approved:true,source_attribution:'Fixture credit',source_license:'CC0-1.0'};
+ const h=harness('cache',[owned]);const body=await(await h.request()).json();
+ expect(body.cafes[0]).toMatchObject({id:'independent',data_source:'overture',attribution:'Fixture credit',license:'CC0-1.0',is_open:null});
+ expect(h.fetch).not.toHaveBeenCalled();
 });

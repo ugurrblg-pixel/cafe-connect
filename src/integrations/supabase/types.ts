@@ -76,6 +76,10 @@ export type Database = {
       }
       cafes: {
         Row: {
+          data_source: string | null
+          source_attribution: string | null
+          source_license: string | null
+          independent_approved: boolean
           address: string
           category: string
           created_at: string
@@ -92,6 +96,10 @@ export type Database = {
           rating: number | null
         }
         Insert: {
+          data_source?: string | null
+          source_attribution?: string | null
+          source_license?: string | null
+          independent_approved?: boolean
           address?: string
           category?: string
           created_at?: string
@@ -108,6 +116,10 @@ export type Database = {
           rating?: number | null
         }
         Update: {
+          data_source?: string | null
+          source_attribution?: string | null
+          source_license?: string | null
+          independent_approved?: boolean
           address?: string
           category?: string
           created_at?: string

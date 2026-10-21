@@ -12,7 +12,10 @@ interface Cafe {
   distanceMeters: number | null;
   imageUrl: string;
   activeUsers: number;
-  isOpen: boolean;
+  isOpen: boolean | null;
+  dataSource?: string | null;
+  attribution?: string | null;
+  license?: string | null;
   openingHours: string | null;
   latitude: number | null;
   longitude: number | null;
@@ -24,7 +27,7 @@ interface UseNearbyCafesResult {
   cafes: Cafe[];
   loading: boolean;
   error: string | null;
-  source: 'cache' | 'google_places' | 'openstreetmap' | 'cache_fallback' | null;
+  source: 'cache' | 'google_places' | 'openstreetmap' | 'cache_fallback' | 'independent' | null;
   radius: number | null;
   fetchNearbyCafes: (coords: Coordinates) => Promise<void>;
 }
@@ -42,7 +45,7 @@ export function useNearbyCafes(): UseNearbyCafesResult {
   const [cafes, setCafes] = useState<Cafe[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [source, setSource] = useState<'cache' | 'google_places' | 'openstreetmap' | 'cache_fallback' | null>(null);
+  const [source, setSource] = useState<'cache' | 'google_places' | 'openstreetmap' | 'cache_fallback' | 'independent' | null>(null);
   const [radius, setRadius] = useState<number | null>(null);
 
   useEffect(() => {
@@ -99,16 +102,16 @@ export function useNearbyCafes(): UseNearbyCafesResult {
           // Already authorized cafe reads do not call Google or spend lookup quota.
           const lngDelta = 0.014 / Math.max(Math.cos(coords.latitude * Math.PI / 180), 0.01);
           const { data: saved, error: savedError } = await supabase.from('cafes')
-            .select('id,name,address,image_url,is_open,opening_hours,latitude,longitude,google_place_id,category')
+            .select('id,name,address,image_url,is_open,opening_hours,latitude,longitude,google_place_id,category,data_source,source_attribution,source_license,independent_approved')
             .gte('latitude', coords.latitude - 0.014).lte('latitude', coords.latitude + 0.014)
             .gte('longitude', coords.longitude - lngDelta).lte('longitude', coords.longitude + lngDelta).limit(200);
           if (owner.current !== userId) return;
-          const fallback: Cafe[] = (savedError ? [] : saved || []).map(row => {
+          const fallback: Cafe[] = (savedError ? [] : saved || []).filter(row => !row.data_source || row.independent_approved).map(row => {
             const distanceMeters = calculateDistance(coords, { latitude: row.latitude, longitude: row.longitude });
             return { id: row.id, name: row.name, address: row.address || '', distance: formatDistance(distanceMeters),
               distanceMeters, imageUrl: row.image_url || '', activeUsers: 0, isOpen: row.is_open,
               openingHours: row.opening_hours || null, latitude: row.latitude, longitude: row.longitude,
-              googlePlaceId: row.google_place_id, category: row.category || 'cafe' };
+              googlePlaceId: row.google_place_id, category: row.category || 'cafe', dataSource: row.data_source || 'google', attribution: row.source_attribution, license: row.source_license };
           }).filter(cafe => cafe.distanceMeters <= 1500 && !isExcludedTeaVenue(cafe.name)).sort((a, b) => a.distanceMeters - b.distanceMeters);
           if (fallback.length) {
             setCafes(fallback); setSource('cache_fallback'); setRadius(1500); setError(null);
@@ -155,6 +158,9 @@ export function useNearbyCafes(): UseNearbyCafesResult {
           longitude: cafe.longitude,
           googlePlaceId: cafe.place_id || cafe.google_place_id,
           category: cafe.category || 'cafe',
+          dataSource: cafe.data_source || 'google',
+          attribution: cafe.attribution || null,
+          license: cafe.license || null,
         };
       });
 

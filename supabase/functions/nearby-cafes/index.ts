@@ -170,7 +170,7 @@ Deno.serve(async (req) => {
       .lte('latitude', lat + latDelta)
       .gte('longitude', lng - lngDelta)
       .lte('longitude', lng + lngDelta)
-      .gte('last_synced_at', cacheThreshold);
+      .or(`independent_approved.eq.true,and(data_source.is.null,last_synced_at.gte.${cacheThreshold})`);
 
     const { data: cachedVenues, error: cacheErr } = await readCache();
 
@@ -361,7 +361,7 @@ Deno.serve(async (req) => {
       .lte('latitude', lat + latDelta)
       .gte('longitude', lng - lngDelta)
       .lte('longitude', lng + lngDelta)
-      .gte('last_synced_at', cacheThreshold);
+      .or(`independent_approved.eq.true,and(data_source.is.null,last_synced_at.gte.${cacheThreshold})`);
 
     const filteredFinal = (finalVenues || []).filter(
       (v) => v.latitude != null && v.longitude != null && haversineDistance(lat, lng, v.latitude, v.longitude) <= SEARCH_RADIUS
@@ -394,7 +394,10 @@ function respond(
     latitude: v.latitude,
     longitude: v.longitude,
     category: v.category || 'cafe',
-    is_open: source === 'google_places' ? v.is_open ?? null : null,
+    is_open: !v.data_source && source === 'google_places' ? v.is_open ?? null : null,
+    data_source: v.data_source || 'google',
+    attribution: v.source_attribution || null,
+    license: v.source_license || null,
     image_url: v.image_url || '',
     opening_hours: v.opening_hours || null,
     activeUsers: userCounts[v.id] || 0,

@@ -11,7 +11,10 @@ interface Cafe {
   distanceMeters: number | null;
   imageUrl: string;
   activeUsers: number;
-  isOpen: boolean;
+  isOpen: boolean | null;
+  dataSource?: string | null;
+  attribution?: string | null;
+  license?: string | null;
   openingHours: string | null;
   latitude: number | null;
   longitude: number | null;
@@ -80,7 +83,7 @@ export function useCafes(initialCafes?: Cafe[]) {
       activeUserCounts[checkIn.cafe_id] = (activeUserCounts[checkIn.cafe_id] || 0) + 1;
     });
 
-    const formattedCafes: Cafe[] = (cafesData || []).filter(cafe => !isExcludedTeaVenue(cafe.name)).map((cafe) => {
+    const formattedCafes: Cafe[] = (cafesData || []).filter(cafe => !isExcludedTeaVenue(cafe.name) && (!cafe.data_source || cafe.independent_approved)).map((cafe) => {
       let distanceMeters: number | null = null;
       let distanceText = cafe.distance || '';
 
@@ -101,6 +104,9 @@ export function useCafes(initialCafes?: Cafe[]) {
         distanceMeters,
         imageUrl: cafe.image_url || '',
         category: cafe.category || 'cafe',
+        dataSource: cafe.data_source || 'google',
+        attribution: cafe.source_attribution,
+        license: cafe.source_license,
         activeUsers: activeUserCounts[cafe.id] || 0,
         isOpen: cafe.is_open,
         openingHours: (cafe as { opening_hours?: string | null }).opening_hours || null,

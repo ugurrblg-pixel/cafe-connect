@@ -24,3 +24,7 @@ Use Turkish labels and explicit operation names. Loading, unavailable/denied, em
 ## Scope boundaries
 
 A cafe profile includes display name, age, bio, purpose, interests, verification badge and accepted photos only. Never infer public access to email, phone, birthday, selfie or exact coordinates. Content screening and manual account verification remain separate. Follow `UX-CONTRACT.md` for visibility lifetime and recovery.
+
+## Venue source disclosure
+
+`VenueSources` owns source/license disclosure across discovery and venue details. Card captions name the actual provider; expanded credits preserve the source attribution text and link only to maintained provider/license URLs. Use inherited muted typography and native keyboard-accessible disclosure. Unknown opening status stays unknown; a source match is not an account or business verification badge.

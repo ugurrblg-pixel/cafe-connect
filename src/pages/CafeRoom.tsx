@@ -1,3 +1,4 @@
+import { VenueSources } from '@/components/VenueSources';
 import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
@@ -102,7 +103,7 @@ export default function CafeRoom() {
   if (!cafe) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Cafe not found</p>
+        <p className="text-muted-foreground">Mekan bulunamadı</p>
       </div>
     );
   }
@@ -244,6 +245,7 @@ export default function CafeRoom() {
         <div className="card-elevated p-5 mb-6">
           <div className="mb-3">
             <h1 className="text-xl font-bold text-foreground mb-1">{cafe.name}</h1>
+            <VenueSources venues={[cafe]} />
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <MapPin className="w-4 h-4" />
               <span>{cafe.address}</span>
