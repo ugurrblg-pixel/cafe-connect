@@ -28,3 +28,7 @@ A cafe profile includes display name, age, bio, purpose, interests, verification
 ## Venue source disclosure
 
 `VenueSources` owns source/license disclosure across discovery and venue details. Card captions name the actual provider; expanded credits preserve the source attribution text and link only to maintained provider/license URLs. Use inherited muted typography and native keyboard-accessible disclosure. Unknown opening status stays unknown; a source match is not an account or business verification badge.
+
+## Discovery list
+
+Discovery uses compact horizontal photo rows, strong venue names, distance and real attendance counts. Coral emphasis appears only for actual activity. The chosen layout has no map. Representative image labels and provider credits remain visible; decorative attendee portraits must not imply access to private photos.

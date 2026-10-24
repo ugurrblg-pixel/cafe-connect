@@ -41,3 +41,7 @@ Profile, photos, verification selfies, own-sent messages and social activity are
 ## Venue directory sources
 
 `VenueSources` owns provider/license disclosure in Discover and CafeRoom. Discovery sorting keeps its existing native select: operating-system popup geometry is accepted for this compact ordering control. Approved independent records retain their own source credits across memory cache, quota fallback and venue details. Google identities are not replaced during the initial additive pilot. Unknown opening status is not displayed as open.
+
+## Discovery list ownership
+
+VenueListCard owns the keyboard-accessible venue navigation row. Search filters loaded results and its clear action restores input focus. Select/Listbox: native ownership is retained for discovery sorting, with its existing accessible label and real sort behavior. No map or additional location request is introduced by this layout.

@@ -1,5 +1,5 @@
-import { VenueSources, venueSourceName } from '@/components/VenueSources';
-import { useEffect, useState, useMemo } from 'react';
+import { VenueSources } from '@/components/VenueSources';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { PageLayout } from '@/components/PageLayout';
@@ -7,72 +7,19 @@ import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
 import { useNearbyCafes } from '@/hooks/useNearbyCafes';
 import { useLocation } from '@/contexts/LocationContext';
 import { useI18n } from '@/contexts/I18nContext';
-import { MapPin, Loader2, AlertCircle, RefreshCw, Coffee, Users, Search, ArrowUpRight } from 'lucide-react';
+import { MapPin, Loader2, AlertCircle, RefreshCw, Coffee, Search, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { CafeImage } from '@/components/CafeImage';
-import { formatActiveUserCount } from '@/lib/photoAccess';
+import { VenueListCard } from '@/components/VenueListCard';
 import { RandomMatchCard } from '@/components/RandomMatchCard';
-import { VenueActivity, venueHeat } from '@/components/VenueActivity';
-
-function VenueCard({ cafe, onClick, style }: { cafe: any; onClick: () => void; style?: React.CSSProperties }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`group w-full bg-card rounded-3xl border border-border/60 overflow-hidden text-left transition-all duration-200 hover:border-primary/40 active:scale-[0.99] animate-slide-up ${venueHeat(cafe.activeUsers) === 'hot' ? 'venue-heat-hot' : venueHeat(cafe.activeUsers) ? 'venue-heat-warm' : ''}`}
-      style={{ boxShadow: '0 2px 16px -4px rgba(0,0,0,0.08)', ...style }}
-    >
-      <div className="relative w-full overflow-hidden">
-        <CafeImage
-          cafeId={cafe.id}
-          imageUrl={cafe.imageUrl}
-          alt={cafe.name}
-          category={cafe.category}
-          className="!h-48 sm:!h-52 transition-transform duration-500 motion-safe:group-hover:scale-105"
-          aspectRatio="hero"
-        />
-
-        {/* Popular badge */}
-        {cafe.activeUsers > 0 && <div className="absolute top-2 left-2 bg-card/95 px-2 py-1 rounded-full text-[10px] font-semibold text-primary">Şu an hareketli</div>}
-      </div>
-
-      <div className="p-5 min-w-0 flex flex-col justify-center">
-        <VenueActivity count={cafe.activeUsers} />
-        <p className="text-[10px] uppercase tracking-widest text-primary mb-2 font-semibold">{cafe.category === 'gym' ? 'Spor salonu' : cafe.category === 'bar' ? 'Bar' : cafe.category === 'night_club' ? 'Gece kulübü' : 'Kafe'}</p>
-        <div className="flex items-end justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <h3 className="font-bold text-foreground text-[16px] leading-snug line-clamp-2">
-              {cafe.name}
-            </h3>
-            {cafe.distance && (
-              <div className="flex items-center gap-1 mt-1 text-muted-foreground">
-                <MapPin className="w-3 h-3" />
-                <span className="text-[12px]">{cafe.distance}</span>
-              </div>
-            )}
-            {typeof cafe.distanceMeters === 'number' && <p className="text-[11px] text-muted-foreground mt-1">Yaklaşık {Math.max(1, Math.round(cafe.distanceMeters / 80))} dk yürüyüş · tahmini</p>}
-          </div>
-
-          {cafe.activeUsers > 0 && (
-            <div className="flex items-center gap-1.5 text-muted-foreground bg-muted/60 px-2.5 py-1 rounded-full flex-shrink-0">
-              <Users className="w-3.5 h-3.5" />
-              <span className="text-[12px] font-semibold">{formatActiveUserCount(cafe.activeUsers)}</span>
-            </div>
-          )}
-        </div>
-        <p className="mt-2 text-[11px] text-muted-foreground">Kaynak: {venueSourceName(cafe.dataSource)}</p>
-        <span className="mt-3 flex items-center gap-1 text-xs font-medium text-primary">Mekanı keşfet <ArrowUpRight className="w-3 h-3" /></span>
-      </div>
-    </button>
-  );
-}
 
 export default function Discover() {
   const navigate = useNavigate();
-  const { t, formatString } = useI18n();
-  const { cafes, loading, error, source, fetchNearbyCafes } = useNearbyCafes();
+  const { t } = useI18n();
+  const { cafes, loading, error, fetchNearbyCafes } = useNearbyCafes();
   const { position, loading: locationLoading, error: locationError, getPosition, isStale } = useLocation();
   const [query, setQuery] = useState('');
+  const searchInput = useRef<HTMLInputElement>(null);
   const [filter, setFilter] = useState('all');
   const [sort, setSort] = useState('nearby');
   const visibleCafes = useMemo(() => cafes.filter(c =>
@@ -111,8 +58,12 @@ export default function Discover() {
         <Header title={t.discover.title} />
 
         <main className="pt-20 px-4 max-w-3xl mx-auto">
-          <div className="mb-6"><p className="text-xs uppercase tracking-[0.2em] text-primary font-semibold mb-2">Bir kahve, yeni bir hikaye</p><h1 className="text-3xl font-bold tracking-tight">Yakınında keşfet</h1><p className="mt-2 text-sm text-muted-foreground">Bir mekan seç, ortamı gör, sohbete katıl.</p></div>
-          <label className="mb-4 flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3"><Search className="w-4 h-4 text-muted-foreground" /><input aria-label="Mekan ara" value={query} onChange={e => setQuery(e.target.value)} placeholder="Aklındaki mekanı bul…" className="w-full bg-transparent text-sm outline-none" /></label>
+          <div className="mb-6"><h1 className="text-3xl font-bold tracking-tight">Yakınında keşfet</h1><p className="mt-2 text-sm text-muted-foreground">Bir mekan seç, ortamı gör, sohbete katıl.</p></div>
+          <div className="mb-4 flex items-center gap-3 rounded-3xl bg-secondary/60 px-4 py-4">
+            <Search className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <input ref={searchInput} aria-label="Mekan ara" value={query} onChange={e => setQuery(e.target.value)} placeholder="Mekan ara" className="min-w-0 w-full bg-transparent text-base outline-none placeholder:text-muted-foreground" />
+            {query && <button type="button" aria-label="Aramayı temizle" onClick={()=>{setQuery('');searchInput.current?.focus();}} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"><X className="h-4 w-4" /></button>}
+          </div>
           <div className="flex gap-2 overflow-x-auto pb-3 mb-3">{[['all','Hepsi'],['cafe','Kafeler'],['active','Şu an hareketli'],['bar','Barlar'],['gym','Spor']].map(([value,label]) => <button key={value} onClick={() => setFilter(value)} aria-pressed={filter === value} className={`whitespace-nowrap rounded-full px-4 py-2 text-xs font-semibold ${filter === value ? 'bg-primary text-primary-foreground' : 'bg-card border border-border text-muted-foreground'}`}>{label}</button>)}</div>
           <ProfileCompletionBanner />
 
@@ -145,7 +96,7 @@ export default function Discover() {
               )}
             </div>
             {position && !loading && (
-              <Button size="icon" variant="ghost" onClick={handleRefresh} className="shrink-0 rounded-full">
+              <Button size="icon" variant="ghost" aria-label="Mekanları yenile" onClick={handleRefresh} className="shrink-0 rounded-full">
                 <RefreshCw className="w-4 h-4" />
               </Button>
             )}
@@ -174,16 +125,16 @@ export default function Discover() {
           {loading ? (
             <div className="space-y-4">
               <Skeleton className="h-6 w-48 rounded-lg" />
-              <div className="flex gap-4 overflow-hidden">
-                {[1, 2].map(i => <Skeleton key={i} className="h-[240px] w-[280px] rounded-[20px] flex-shrink-0" />)}
+              <div className="space-y-3">
+                {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 w-full rounded-3xl" />)}
               </div>
             </div>
           ) : (
             <>
-              <section className="mb-8">
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-4"><div><h2 className="font-semibold text-lg">Sana yakın mekanlar</h2><span className="text-xs text-muted-foreground">{visibleCafes.length} mekan</span></div><select aria-label="Mekan sıralaması" value={sort} onChange={e => setSort(e.target.value)} className="text-xs bg-card border border-border rounded-full px-3 py-2"><option value="nearby">En yakın</option><option value="active">En hareketli</option></select></div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {visibleCafes.map((cafe, i) => <VenueCard key={cafe.id} cafe={cafe} onClick={() => navigate(`/cafe/${cafe.id}`)} style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }} />)}
+              <section className="mb-6 rounded-[28px] bg-card/60 p-3 sm:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4"><div><h2 className="font-bold text-xl sm:text-2xl">Yakındaki mekanlar</h2><span className="text-xs text-muted-foreground">{visibleCafes.length} mekan</span></div><select aria-label="Mekan sıralaması" value={sort} onChange={e => setSort(e.target.value)} className="text-xs bg-card border border-border rounded-full px-3 py-2"><option value="nearby">En yakın</option><option value="active">En hareketli</option></select></div>
+                <div className="space-y-3">
+                  {visibleCafes.map((cafe, i) => <VenueListCard key={cafe.id} cafe={cafe} onClick={() => navigate(`/cafe/${cafe.id}`)} style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }} />)}
                 </div>
                 {cafes.length > 0 && visibleCafes.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">Bu seçimle eşleşen mekan yok. Başka bir filtre deneyebilirsin.</p>}
               </section>
