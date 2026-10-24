@@ -162,6 +162,10 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Match only imported independent evidence; never copy Google fields into it.
+    const { error: adoptionError } = await supabase.rpc('adopt_matching_open_sources', { p_lat: lat, p_lng: lng });
+    if (adoptionError) console.warn('Source adoption unavailable; keeping existing source');
+
     const areaLat = Math.round(lat * 100);
     const areaLng = Math.round(lng * 100);
     const areaKey = `${areaLat}:${areaLng}`;

@@ -124,3 +124,11 @@ Mevcut Google kayıtlarından 200m uzaklık ve açık adaylardan 120m ayrılık 
 `20261021010000_reviewed_venue_projection.sql` kaynak, atıf, lisans ve onay durumunu mevcut cafes tablosuna yansıtır. Listede bu onaylı kayıtlar sınırlı Google cache ile birlikte döner; tam bağımsız mod kapalı kalır. Google önbelleği 28 gün sınırını sürdürür; onaylı açık kayıtların varlığı Google cache süresini uzatmaz. Gizlenen/kapanan dizin kaydının yansıtılan onayı kaldırılır; arama ve arayüzden ayrılır. Yeni bir kişiye erişim/rol verilmez. OSM kayıtları ayrı inceleme tablolarında bekler ve bu partiye dahil değildir.
 
 `VenueSources` kaynak/lisans açıklamasını Discover ve CafeRoom üzerinde paylaşır. Kart kaynak adı ve açılır ayrıntılar gerçek sağlayıcıya göre gösterilir; Google açıklaması bağımsız kayda uygulanmaz. İstemci bellek önbelleği ve kota fallback bu alanları korur. Açık/kapalı, puan, gerçek mekan fotoğrafı veya işletme doğrulaması uydurulmaz. Mevcut temsili görseller gerçek mekan fotoğrafı olarak doğrulanmış değildir.
+
+## Otomatik kaynak eşleştirme bağlantısı — 24 Ekim 2026
+
+`adopt_matching_open_sources` sunucu oturum kontrolünden sonra çalışmak üzere hazırlandı. Pilot içinde içe aktarılmış Overture/All the Places kayıtlarıyla aynı normalize isim, aynı kategori, en çok25m ve her iki yönde tekil kimlik ister; en çok10 kayıt işler. OSM/ODbL kayıtları ayrı yayın incelemesinde kalır. Her aramada dış sağlayıcılardan tekrar veri indirmez; mevcut kaynak havuzunu kullanır. Yeni bölge kaynaklarının aktarımı ayrı operatör işidir.
+
+Açık kaynağın kendi adı/adresi/koordinatları kaydedilir. Mevcut cafeId ve Google place ID korunur; eski Google açıklama/fotoğraf/puan alanları taşınmaz. Google kimliği yalnız kimlik devamlılığı içindir. Kaynak atfı ve lisansı korunur, hedefli Google yenileme işi iptal edilir. Daha önce başlamış bir Google güncellemesine karşı projection trigger bağımsız alanları korur. Bu kayıtlar eski place_directory yerine private.google_source_adoptions üzerinden bağlıdır; tam bağımsız RPC moduna ileride ayrıca dahil edilmelidir. İptal/kapama yönetimi operatör incelemesi gerektirir.
+
+Canlıya geçiş henüz doğrulanmadı: tarayıcı bağlantısı kapalıyken migration veya işlev deploy edildiği iddia edilmez. Yeni SQL testi yalnız izole test veritabanında çalıştırılır.
