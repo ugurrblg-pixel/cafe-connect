@@ -26,7 +26,7 @@ export function normalizePlaceName(value: string): string {
 export function excludedPlaceName(value: string): boolean {
   const name = normalizePlaceName(value);
   return /\b(?:cay\s*(?:evi|evleri|ocagi|ocaklari|bahcesi|bachesi)|kirathane|kiraathane|krathane|kraathane|kahvehane)(?:si|leri)?\b/.test(name)
-    || /\b(?:kokorec\w*|izgara\w*)\b/.test(name);
+    || /\b(?:kokorec\w*|izgara\w*|firin\w*|market\w*|supermarket\w*|cig\s*kofte\w*)\b/.test(name);
 }
 
 export function placeDistance(a: Pick<PlaceRecord, 'latitude' | 'longitude'>, b: Pick<PlaceRecord, 'latitude' | 'longitude'>): number {
