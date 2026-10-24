@@ -57,6 +57,14 @@ BEGIN
   PERFORM 1 FROM private.targeted_place_refresh WHERE google_place_id=pair.google_place_id FOR UPDATE;
   PERFORM 1 FROM public.cafes WHERE id=pair.cafe_id AND data_source IS NULL FOR UPDATE;
   IF NOT FOUND THEN CONTINUE; END IF;
+  -- A Google refresh may have completed while waiting for its lease lock.
+  PERFORM 1 FROM public.cafes g JOIN private.place_candidates c ON c.id=pair.candidate_id
+   WHERE g.id=pair.cafe_id AND g.google_place_id=pair.google_place_id AND g.data_source IS NULL
+    AND c.status='pending' AND c.record->>'status'='unknown'
+    AND c.record->>'category'=g.category
+    AND private.source_match_name(c.record->>'name')=private.source_match_name(g.name)
+    AND private.place_distance(g.latitude,g.longitude,(c.record->>'latitude')::float8,(c.record->>'longitude')::float8)<=25;
+  IF NOT FOUND THEN CONTINUE; END IF;
   INSERT INTO private.google_source_adoptions(cafe_id,candidate_id,google_place_id) VALUES(pair.cafe_id,pair.candidate_id,pair.google_place_id);
   UPDATE public.cafes SET independent_approved=true WHERE id=pair.cafe_id;
   UPDATE private.targeted_place_refresh SET needs_refresh=false,lease_token=NULL,lease_until=NULL WHERE google_place_id=pair.google_place_id;

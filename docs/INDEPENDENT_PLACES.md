@@ -131,4 +131,4 @@ Mevcut Google kayıtlarından 200m uzaklık ve açık adaylardan 120m ayrılık 
 
 Açık kaynağın kendi adı/adresi/koordinatları kaydedilir. Mevcut cafeId ve Google place ID korunur; eski Google açıklama/fotoğraf/puan alanları taşınmaz. Google kimliği yalnız kimlik devamlılığı içindir. Kaynak atfı ve lisansı korunur, hedefli Google yenileme işi iptal edilir. Daha önce başlamış bir Google güncellemesine karşı projection trigger bağımsız alanları korur. Bu kayıtlar eski place_directory yerine private.google_source_adoptions üzerinden bağlıdır; tam bağımsız RPC moduna ileride ayrıca dahil edilmelidir. İptal/kapama yönetimi operatör incelemesi gerektirir.
 
-Canlıya geçiş henüz doğrulanmadı: tarayıcı bağlantısı kapalıyken migration veya işlev deploy edildiği iddia edilmez. Yeni SQL testi yalnız izole test veritabanında çalıştırılır.
+24 Ekim 2026 tarihinde bağlantı düzeldikten sonra migration tek başına uygulandı ve nearby-cafes dağıtıldı. Gerçek oturumla aramada Overture kaynaklı eşleşmelerin döndüğü doğrulandı. Yeni SQL testi yalnız izole test veritabanında çalıştırılır.
