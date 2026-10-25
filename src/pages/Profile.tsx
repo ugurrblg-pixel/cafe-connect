@@ -155,7 +155,7 @@ export default function Profile() {
             </h1>
 
             <PurposeBadge purpose={profile.purpose} size="sm" />
-            
+
 
             <div className="grid grid-cols-2 gap-3 mt-5 border-t border-border pt-4"><div><p className="text-lg font-bold">{new Set([profile.photo_url,...profile.photo_urls].filter(Boolean)).size}</p><p className="text-xs text-muted-foreground">Fotoğrafın</p></div><div><p className="text-lg font-bold">{profile.hobbies.length}</p><p className="text-xs text-muted-foreground">İlgi alanın</p></div></div>
           </div>
