@@ -13,6 +13,7 @@ import { Purpose } from '@/types';
 import { Edit2, Shield, HelpCircle, LogOut, MessageCircle, Users, Heart, Crown, ChevronRight, Mail, Phone, User as UserIcon, CalendarDays, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { VerificationRequest } from '@/components/VerificationRequest';
 import { useProfileCompletion } from '@/hooks/useProfileCompletion';
 import { AccountDeletionSection } from '@/components/AccountDeletionSection';
@@ -46,13 +47,16 @@ export default function Profile() {
   const completion = useProfileCompletion();
 
   useEffect(() => {
+    let cancelled = false;
     const fetchProfile = async () => {
-      if (!user) return;
+      if (!user) { setProfile(null); setLoading(false); return; }
+      setProfile(null); setLoading(true);
       const { data, error } = await supabase.from('profiles').select('*').eq('user_id', user.id).maybeSingle();
+      if (cancelled) return;
       if (error) { console.error('Error fetching profile:', error); }
       else if (data) {
         setProfile({
-          id: data.id, name: data.name || user.user_metadata?.name || 'Anonymous',
+          id: data.id, name: data.name || user.user_metadata?.name || 'Riyo kullanıcısı',
           display_name: data.display_name || '', age: data.age, bio: data.bio || '',
           photo_url: data.photo_url || '', photo_urls: (data.photo_urls as string[]) || [],
           purpose: data.purpose as Purpose, allow_dms: data.allow_dms,
@@ -65,6 +69,7 @@ export default function Profile() {
       setLoading(false);
     };
     fetchProfile();
+    return () => { cancelled = true; };
   }, [user]);
 
   const purposes: { value: Purpose; label: string; icon: React.ReactNode }[] = [
@@ -91,7 +96,7 @@ export default function Profile() {
     catch { toast.error('Çıkış yapılamadı. Tekrar deneyebilirsin.'); }
   };
 
-  const displayName = profile?.display_name || profile?.name || 'Anonymous';
+  const displayName = profile?.display_name || profile?.name || 'Riyo kullanıcısı';
 
   if (loading) {
     return (
@@ -111,9 +116,7 @@ export default function Profile() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center px-6"><p className="text-muted-foreground">Profil bilgilerin yüklenemedi.</p><button onClick={() => window.location.reload()} className="mt-3 text-sm font-semibold text-primary">Tekrar dene</button></div>
-      </div>
+      <PageLayout><main className="flex min-h-[70vh] items-center justify-center px-6"><div className="max-w-sm text-center"><UserIcon className="mx-auto mb-4 h-10 w-10 text-muted-foreground" aria-hidden="true" /><h1 className="text-xl font-bold">Profil yüklenemedi</h1><p className="mt-2 text-sm text-muted-foreground">Bağlantını kontrol edip tekrar deneyebilirsin.</p><Button variant="outline" onClick={()=>window.location.reload()} className="mt-5 rounded-full">Tekrar dene</Button></div></main></PageLayout>
     );
   }
 
@@ -128,7 +131,7 @@ export default function Profile() {
 
           {/* Profile Hero */}
           <div className="relative p-6 mb-6 rounded-[32px] border border-primary/10 bg-card overflow-hidden animate-scale-in">
-            <div className="absolute top-0 inset-x-0 h-24 bg-gradient-to-r from-primary/20 via-rose-100 to-amber-100" aria-hidden="true" />
+            <div className="absolute top-0 inset-x-0 h-24 bg-primary/10" aria-hidden="true" />
             <div className="relative flex items-end justify-between gap-4 pt-6 mb-5">
             <div className="relative ring-4 ring-card rounded-2xl">
               <ProfilePhotoCarousel
@@ -146,19 +149,19 @@ export default function Profile() {
 
             <button onClick={() => navigate('/profile/edit')} className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold"><Edit2 className="w-3.5 h-3.5" />{t.profile.editProfile}</button>
             </div>
-            <p className="text-[10px] font-semibold tracking-[0.18em] uppercase text-primary mb-2">Burası senin köşen</p>
+            <p className="text-[10px] font-semibold tracking-[0.18em] uppercase text-primary mb-2">Profilin</p>
             <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">
               {displayName}{profile.age ? `, ${profile.age}` : ''}
             </h1>
 
             <PurposeBadge purpose={profile.purpose} size="sm" />
-            {profile.bio && <p className="mt-3 text-sm leading-relaxed text-muted-foreground max-w-md">{profile.bio}</p>}
+            
 
-            <div className="grid grid-cols-2 gap-3 mt-5 border-t border-border pt-4"><div><p className="text-lg font-bold">{profile.photo_urls.filter(Boolean).length}</p><p className="text-xs text-muted-foreground">Fotoğrafın</p></div><div><p className="text-lg font-bold">{profile.hobbies.length}</p><p className="text-xs text-muted-foreground">İlgi alanın</p></div></div>
+            <div className="grid grid-cols-2 gap-3 mt-5 border-t border-border pt-4"><div><p className="text-lg font-bold">{new Set([profile.photo_url,...profile.photo_urls].filter(Boolean)).size}</p><p className="text-xs text-muted-foreground">Fotoğrafın</p></div><div><p className="text-lg font-bold">{profile.hobbies.length}</p><p className="text-xs text-muted-foreground">İlgi alanın</p></div></div>
           </div>
 
           <section className={cardClass} style={cardShadow}>
-            <div className="flex items-center justify-between mb-3"><h2 className="font-semibold">Profilini tamamla</h2><span className="text-sm font-bold text-primary">%{completion.percentage}</span></div>
+            <div className="flex items-center justify-between mb-3"><h2 className="font-semibold">{completion.missingFields.length ? 'Profilini tamamla' : 'Profilin hazır'}</h2><span className="text-sm font-bold text-primary">%{completion.percentage}</span></div>
             <div role="progressbar" aria-label="Profil tamamlama" aria-valuenow={completion.percentage} aria-valuemin={0} aria-valuemax={100} className="h-2 rounded-full bg-secondary overflow-hidden"><div className="h-full bg-primary rounded-full" style={{width: `${completion.percentage}%`}} /></div>
             <p className="text-xs text-muted-foreground mt-3">{completion.missingFields.length ? `${completion.missingFields.join(', ')} ekleyerek kendini daha iyi anlatabilirsin.` : 'Temel profil bilgilerin tamam. Yeni bir sohbete hazırsın.'}</p>
             <button onClick={() => navigate('/profile/edit')} className="mt-3 text-sm text-primary font-semibold">Profil bilgilerimi düzenle →</button>

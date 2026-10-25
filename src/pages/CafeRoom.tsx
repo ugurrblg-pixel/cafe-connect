@@ -103,7 +103,7 @@ export default function CafeRoom() {
   if (!cafe) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Mekan bulunamadı</p>
+        <div className="max-w-sm px-6 text-center"><MapPin className="mx-auto mb-4 h-10 w-10 text-muted-foreground" aria-hidden="true" /><h1 className="text-xl font-bold">Mekan yüklenemedi</h1><p className="mt-2 text-sm text-muted-foreground">Bağlantı kesilmiş veya mekan artık listede olmayabilir.</p><div className="mt-5 flex flex-wrap justify-center gap-2"><Button variant="outline" className="rounded-full" onClick={()=>window.location.reload()}>Tekrar dene</Button><Button className="rounded-full" onClick={()=>navigate('/')}>Mekanlara dön</Button></div></div>
       </div>
     );
   }

@@ -37,21 +37,23 @@ export function BottomNav() {
   };
 
   return (
-    <nav
+    <nav aria-label="Ana gezinme"
       className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-xl border-t border-border/40 safe-bottom z-50"
     >
-      <div className="flex items-center justify-around px-2 py-1">
+      <div className="mx-auto flex max-w-3xl items-center justify-around px-2 py-1">
         {navItems.map(({ path, icon: Icon, labelKey, countKey }) => {
-          const isActive = location.pathname === path;
+          const isActive = location.pathname === path || (path !== '/' && location.pathname.startsWith(`${path}/`));
           const count = countKey ? unreadCounts[countKey] : 0;
           const label = t.nav[labelKey];
           
           return (
             <button
               key={path}
+              type="button"
+              aria-current={isActive ? 'page' : undefined}
               onClick={() => handleNavClick(path, countKey)}
               className={cn(
-                'nav-item flex-1 relative',
+                'nav-item flex-1 relative rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
                 isActive ? 'nav-item-active' : 'nav-item-inactive'
               )}
             >

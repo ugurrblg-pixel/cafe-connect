@@ -45,3 +45,7 @@ Profile, photos, verification selfies, own-sent messages and social activity are
 ## Discovery list ownership
 
 VenueListCard owns the keyboard-accessible venue navigation row. Search filters loaded results and its clear action restores input focus. Select/Listbox: native ownership is retained for discovery sorting, with its existing accessible label and real sort behavior. No map or additional location request is introduced by this layout.
+
+## Navigation and recovery polish
+
+BottomNav stays within the shared content width and marks nested profile routes as the current destination. Discover filters wrap on narrow screens, preserve loaded-data-only search, and provide one reset action for empty filtered results. The location summary states the existing 2 km scope. Failed profile loading keeps navigation available and ignores responses after account/screen changes. Missing venue details provide retry and a return to discovery. No access rules change.
