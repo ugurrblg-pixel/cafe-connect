@@ -36,7 +36,7 @@ function harness(state = 'cache', cached: any[] = [cafe], googleStatus = 'OK', u
 it('serves a sparse saved region without any Google calls', async () => {
   const h=harness(); const response=await h.request(); const body=await response.json();
   expect(response.status).toBe(200); expect(body.cafes[0].name).toBe('Pizza Coffee');
-  expect(body.source).toBe('cache'); expect(body.radius).toBe(1500); expect(body.cafes[0].is_open).toBeNull();
+  expect(body.source).toBe('cache'); expect(body.radius).toBe(2000); expect(body.cafes[0].is_open).toBeNull();
   expect(h.fetch).not.toHaveBeenCalled(); expect(h.rpc).not.toHaveBeenCalledWith('reserve_places_lookup',expect.anything());
 });
 it('does not repeat Google requests for an already searched empty region', async () => {
@@ -47,7 +47,7 @@ it('returns saved results while another user fills the same region', async () =>
 });
 it('uses a shared rounded search center and retains mixed cafe/food businesses', async () => {
   const h=harness('reserved'); await h.request(); expect(h.fetch).toHaveBeenCalledTimes(4);
-  for(const call of h.fetch.mock.calls as any[]) { const url=new URL(call[0]); expect(url.searchParams.get('location')).toBe('41,29'); expect(url.searchParams.get('radius')).toBe('2300'); expect(url.searchParams.has('keyword')).toBe(false); }
+  for(const call of h.fetch.mock.calls as any[]) { const url=new URL(call[0]); expect(url.searchParams.get('location')).toBe('41,29'); expect(url.searchParams.get('radius')).toBe('2800'); expect(url.searchParams.has('keyword')).toBe(false); }
   expect(h.upsert.mock.calls[0][0]).toHaveLength(1);
   expect(h.rpc).toHaveBeenCalledWith('finish_places_search_area',expect.objectContaining({ completed:true }));
 });
@@ -67,7 +67,7 @@ it('serves the independent directory without spending any Google quota', async (
   const body = await (await h.request()).json();
   expect(body.source).toBe('independent'); expect(body.cafes[0].attribution).toBe('Fixture credit');
   expect(h.fetch).not.toHaveBeenCalled(); expect(h.upsert).not.toHaveBeenCalled();
-  expect(h.rpc).toHaveBeenCalledExactlyOnceWith('search_independent_places', { p_lat: 41.001, p_lng: 29.001, p_radius: 1500 });
+  expect(h.rpc).toHaveBeenCalledExactlyOnceWith('search_independent_places', { p_lat: 41.001, p_lng: 29.001, p_radius: 2000 });
 });
 it('does not call Google in an empty independent region', async () => {
   const h = harness('reserved', [], 'OK', null, { rows: [] });
@@ -81,28 +81,24 @@ it('authenticates before reading the independent directory', async () => {
   const h = harness('reserved', [], 'OK', null, { rows: [], anonymous: true });
   expect((await h.request()).status).toBe(401); expect(h.rpc).not.toHaveBeenCalled(); expect(h.fetch).not.toHaveBeenCalled();
 });
-it('requests only the scheduled Google ID and never broad nearby search in targeted mode',async()=>{
+it('discovers missing pilot venues even when the database and targeted queue contain entries',async()=>{
  const h=harness('reserved',[cafe],'OK',null,undefined,{jobs:[{place_id:'scheduled-id',lease_token:'lease'}]});
- expect((await h.request()).status).toBe(200);expect(h.fetch).toHaveBeenCalledTimes(1);
- const url=new URL(h.fetch.mock.calls[0][0]);expect(url.pathname).toBe('/maps/api/place/details/json');expect(url.searchParams.get('place_id')).toBe('scheduled-id');
- expect(url.searchParams.get('fields')).toBe('place_id,name,geometry,type,business_status');
- expect(h.rpc).toHaveBeenCalledWith('finish_targeted_place_refresh',expect.objectContaining({p_place_id:'scheduled-id',p_payload:expect.objectContaining({name:'Fixture Coffee'})}));
- expect(h.upsert).not.toHaveBeenCalled();expect(h.rpc).not.toHaveBeenCalledWith('claim_places_search_area',expect.anything());
+ expect((await h.request()).status).toBe(200);
+ expect(h.fetch).toHaveBeenCalledTimes(5);
+ expect(h.rpc).toHaveBeenCalledWith('claim_places_search_area',expect.objectContaining({target_area_key:'4100:2900'}));
+ expect(h.upsert).toHaveBeenCalled();
 });
-it('makes zero Google calls for empty targeted queues and database failures',async()=>{
- for(const options of [{jobs:[]},{jobs:[],error:{message:'unavailable'}}]){
-  const h=harness('reserved',[],'OK',null,undefined,options);expect((await h.request()).status).toBe(200);expect(h.fetch).not.toHaveBeenCalled();
- }
+it('does not spend discovery quota again for an already completed pilot area',async()=>{
+ const h=harness('cache',[cafe],'OK',null,undefined,{jobs:[]});
+ expect((await h.request()).status).toBe(200);expect(h.fetch).not.toHaveBeenCalled();
 });
-it('backs off provider failures without switching to broad searches',async()=>{
- const h=harness('reserved',[cafe],'REQUEST_DENIED',null,undefined,{jobs:[{place_id:'scheduled-id',lease_token:'lease'}]});
- await h.request();expect(h.fetch).toHaveBeenCalledTimes(1);expect(h.rpc).toHaveBeenCalledWith('finish_targeted_place_refresh',expect.objectContaining({p_payload:null,p_retired:false}));
+it('discovers missing venues for empty targeted queues, including pilot locations',async()=>{
+ const h=harness('reserved',[],'OK',null,undefined,{jobs:[],bounds:'29.28,40.64,29.47,40.85'});
+ await h.request(40.77,29.40);expect(h.fetch).toHaveBeenCalledTimes(4);
 });
-it('limits the cutover to the configured pilot while preserving existing discovery elsewhere',async()=>{
- const options={jobs:[],bounds:'29.28,40.64,29.47,40.85'};
- const local=harness('reserved',[],'OK',null,undefined,options);await local.request(40.77,29.40);expect(local.fetch).not.toHaveBeenCalled();
- const elsewhere=harness('reserved',[],'OK',null,undefined,options);await elsewhere.request(41.01,29.01);expect(elsewhere.fetch).toHaveBeenCalledTimes(4);
- const invalid=harness('reserved',[],'OK',null,undefined,{jobs:[],bounds:'invalid'});await invalid.request();expect(invalid.fetch).not.toHaveBeenCalled();
+it('keeps saved results when the discovery quota is unavailable',async()=>{
+ const h=harness('wait',[cafe],'OK',null,undefined,{jobs:[]});
+ const body=await(await h.request()).json();expect(body.cafes[0].id).toBe('saved');expect(h.fetch).not.toHaveBeenCalled();
 });
 
 it('preserves reviewed source credits without inventing live opening status',async()=>{

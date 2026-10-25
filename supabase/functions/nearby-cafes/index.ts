@@ -8,7 +8,7 @@ const corsHeaders = {
 
 // This is a bounded cache, not a permanent replacement for Google Places.
 const CACHE_FRESHNESS_MS = 28 * 24 * 60 * 60 * 1000;
-const SEARCH_RADIUS = 1500;
+const SEARCH_RADIUS = 2000;
 // A 0.01 degree bucket's furthest corner is <800m from its center.
 const GOOGLE_SEARCH_RADIUS = SEARCH_RADIUS + 800;
 
@@ -249,10 +249,7 @@ Deno.serve(async (req) => {
           }
         }
       }
-      const { data: refreshed, error: refreshReadError } = await readCache();
-      const available = refreshReadError ? validVenues : (refreshed || []).filter(v => v.latitude != null && v.longitude != null
-        && haversineDistance(lat, lng, v.latitude, v.longitude) <= SEARCH_RADIUS && VENUE_TYPES.includes(v.category));
-      return respond(available, userCounts, 'cache');
+      // Continue to the shared area cache: scheduled IDs cannot discover missing venues.
     }
 
     // --- Step 2: Call Google Places API ---

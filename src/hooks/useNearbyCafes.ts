@@ -71,7 +71,7 @@ export function useNearbyCafes(): UseNearbyCafesResult {
     setError(null);
 
     try {
-      // Call the edge function - dynamic radius is handled server-side
+      // The edge function applies the 2 km search radius server-side
       const { data, error: fnError } = await supabase.functions.invoke('nearby-cafes', {
         body: {
           latitude: coords.latitude,
@@ -100,10 +100,10 @@ export function useNearbyCafes(): UseNearbyCafesResult {
           const wait = Number(response.headers.get('Retry-After'));
           retryAt.current = Date.now() + Math.max(60, Number.isFinite(wait) ? wait : 60) * 1000;
           // Already authorized cafe reads do not call Google or spend lookup quota.
-          const lngDelta = 0.014 / Math.max(Math.cos(coords.latitude * Math.PI / 180), 0.01);
+          const lngDelta = (2000 / 111000) / Math.max(Math.cos(coords.latitude * Math.PI / 180), 0.01);
           const { data: saved, error: savedError } = await supabase.from('cafes')
             .select('id,name,address,image_url,is_open,opening_hours,latitude,longitude,google_place_id,category,data_source,source_attribution,source_license,independent_approved')
-            .gte('latitude', coords.latitude - 0.014).lte('latitude', coords.latitude + 0.014)
+            .gte('latitude', coords.latitude - (2000 / 111000)).lte('latitude', coords.latitude + (2000 / 111000))
             .gte('longitude', coords.longitude - lngDelta).lte('longitude', coords.longitude + lngDelta).limit(200);
           if (owner.current !== userId) return;
           const fallback: Cafe[] = (savedError ? [] : saved || []).filter(row => !row.data_source || row.independent_approved).map(row => {
@@ -112,11 +112,11 @@ export function useNearbyCafes(): UseNearbyCafesResult {
               distanceMeters, imageUrl: row.image_url || '', activeUsers: 0, isOpen: row.is_open,
               openingHours: row.opening_hours || null, latitude: row.latitude, longitude: row.longitude,
               googlePlaceId: row.google_place_id, category: row.category || 'cafe', dataSource: row.data_source || 'google', attribution: row.source_attribution, license: row.source_license };
-          }).filter(cafe => cafe.distanceMeters <= 1500 && !isExcludedTeaVenue(cafe.name)).sort((a, b) => a.distanceMeters - b.distanceMeters);
+          }).filter(cafe => cafe.distanceMeters <= 2000 && !isExcludedTeaVenue(cafe.name)).sort((a, b) => a.distanceMeters - b.distanceMeters);
           if (fallback.length) {
-            setCafes(fallback); setSource('cache_fallback'); setRadius(1500); setError(null);
+            setCafes(fallback); setSource('cache_fallback'); setRadius(2000); setError(null);
             if (nearbyCache.size >= 10) nearbyCache.clear();
-            nearbyCache.set(userId, { at: Date.now(), coords: { ...coords }, cafes: fallback, radius: 1500 });
+            nearbyCache.set(userId, { at: Date.now(), coords: { ...coords }, cafes: fallback, radius: 2000 });
             return;
           }
           throw new Error('Arama sınırına ulaşıldı. Bir dakika bekleyin; günlük sınır dolduysa yarın tekrar deneyin.');
