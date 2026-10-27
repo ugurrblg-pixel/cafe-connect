@@ -17,6 +17,7 @@ import { OfflineBanner } from "./components/OfflineBanner";
 
 // Lazy-load all page components for faster initial load
 const Discover = lazy(() => import("./pages/Discover"));
+const Activities = lazy(() => import("./pages/Activities"));
 const CafeRoom = lazy(() => import("./pages/CafeRoom"));
 const Messages = lazy(() => import("./pages/Messages"));
 const ChatRoom = lazy(() => import("./pages/ChatRoom"));
@@ -61,6 +62,7 @@ const AdminAuditLog = lazy(() => import("./pages/admin/AdminAuditLog"));
 const AdminSubscriptions = lazy(() => import("./pages/admin/AdminSubscriptions"));
 const AdminRevenue = lazy(() => import("./pages/admin/AdminRevenue"));
 const AdminVerification = lazy(() => import("./pages/admin/AdminVerification"));
+const AdminActivities = lazy(() => import("./pages/admin/AdminActivities"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -131,6 +133,9 @@ function AppRoutes() {
           element={user ? <Navigate to="/" replace /> : <SuspensePage><Auth /></SuspensePage>} 
         />
         <Route path="/" element={<ProtectedRoute><SuspensePage><Discover /></SuspensePage></ProtectedRoute>} />
+        <Route path="/activities" element={<ProtectedRoute><SuspensePage><Activities /></SuspensePage></ProtectedRoute>} />
+        <Route path="/activities/new" element={<ProtectedRoute><SuspensePage><Activities /></SuspensePage></ProtectedRoute>} />
+        <Route path="/activities/:id" element={<ProtectedRoute><SuspensePage><Activities /></SuspensePage></ProtectedRoute>} />
         <Route path="/cafe/:id" element={<ProtectedRoute><SuspensePage><CafeRoom /></SuspensePage></ProtectedRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><SuspensePage><Notifications /></SuspensePage></ProtectedRoute>} />
         <Route path="/search" element={<ProtectedRoute><SuspensePage><Search /></SuspensePage></ProtectedRoute>} />
@@ -162,6 +167,7 @@ function AppRoutes() {
         <Route path="/admin/revenue" element={<AdminGuard><SuspensePage><AdminRevenue /></SuspensePage></AdminGuard>} />
         <Route path="/admin/audit-log" element={<AdminGuard><SuspensePage><AdminAuditLog /></SuspensePage></AdminGuard>} />
         <Route path="/admin/verification" element={<AdminGuard><SuspensePage><AdminVerification /></SuspensePage></AdminGuard>} />
+        <Route path="/admin/activities" element={<AdminGuard><SuspensePage><AdminActivities /></SuspensePage></AdminGuard>} />
           
           <Route path="*" element={<NotFound />} />
       </Routes>

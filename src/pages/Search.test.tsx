@@ -4,6 +4,8 @@ import {expect,it,vi} from 'vitest';
 const mocks=vi.hoisted(()=>({fetch:vi.fn()}));
 vi.mock('@/hooks/useNearbyCafes',()=>({useNearbyCafes:()=>({cafes:[{id:'real-a',name:'İncir Kahve',category:'cafe',activeUsers:0,distanceMeters:100},{id:'real-b',name:'Sahil Kahve',category:'cafe',activeUsers:3,distanceMeters:200}],loading:false,error:null,source:'cache',fetchNearbyCafes:mocks.fetch})}));
 vi.mock('@/contexts/LocationContext',()=>({useLocation:()=>({position:null,loading:false,error:null,getPosition:vi.fn(),isStale:false})}));
+vi.mock('@/hooks/useActivitiesAvailability',()=>({useActivitiesAvailability:()=>({data:false})}));
+vi.mock('@/contexts/NotificationContext',()=>({useNotifications:()=>({unreadCounts:{waves:0,messages:0}})}));
 vi.mock('@/contexts/I18nContext',()=>({useI18n:()=>({t:{discover:{title:'Keşfet'},common:{}},formatString:(text:string)=>text})}));
 vi.mock('@/components/PageLayout',()=>({PageLayout:({children}:any)=><>{children}</>}));
 vi.mock('@/components/Header',()=>({Header:()=>null}));

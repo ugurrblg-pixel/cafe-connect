@@ -1,4 +1,6 @@
 import { VenueSources } from '@/components/VenueSources';
+import { useActivitiesAvailability } from '@/hooks/useActivitiesAvailability';
+import { useNotifications } from '@/contexts/NotificationContext';
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
@@ -7,7 +9,7 @@ import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
 import { useNearbyCafes } from '@/hooks/useNearbyCafes';
 import { useLocation } from '@/contexts/LocationContext';
 import { useI18n } from '@/contexts/I18nContext';
-import { MapPin, Loader2, AlertCircle, RefreshCw, Coffee, Search, X, Users, Wine, Dumbbell } from 'lucide-react';
+import { MapPin, Loader2, AlertCircle, RefreshCw, Coffee, Search, X, Users, Wine, Dumbbell, Bell, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { VenueListCard } from '@/components/VenueListCard';
@@ -15,6 +17,8 @@ import { RandomMatchCard } from '@/components/RandomMatchCard';
 
 export default function Discover() {
   const navigate = useNavigate();
+  const activities = useActivitiesAvailability();
+  const {unreadCounts} = useNotifications();
   const { t } = useI18n();
   const { cafes, loading, error, fetchNearbyCafes } = useNearbyCafes();
   const { position, loading: locationLoading, error: locationError, getPosition, isStale } = useLocation();
@@ -55,7 +59,7 @@ export default function Discover() {
   return (
     <PageLayout>
       <div className="min-h-screen bg-background pb-24">
-        <Header title={t.discover.title} />
+        <Header title={t.discover.title} rightAction={activities.data === true ? <Button size="icon" variant="ghost" className="relative rounded-full" aria-label="Bildirimler" onClick={()=>navigate('/notifications')}><Bell/>{unreadCounts.waves>0&&<span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary"/>}</Button> : undefined} />
 
         <main className="pt-20 px-4 max-w-3xl mx-auto">
           <div className="mb-6"><h1 className="text-3xl font-bold tracking-tight">Yakınında keşfet</h1><p className="mt-2 text-sm text-muted-foreground">Bir mekan seç, ortamı gör, sohbete katıl.</p></div>
@@ -68,6 +72,7 @@ export default function Discover() {
             {([['all','Hepsi',null],['cafe','Kafeler',Coffee],['active','Hareketli',Users],['bar','Barlar',Wine],['gym','Spor',Dumbbell]] as const).map(([value,label,Icon]) => <Button key={value} variant={filter === value ? 'default' : 'outline'} size="sm" onClick={() => setFilter(value)} aria-pressed={filter === value} className="rounded-full px-4">{Icon && <Icon aria-hidden="true" />}{label}</Button>)}
           </div>
           <ProfileCompletionBanner />
+          {activities.data===true&&<button type="button" onClick={()=>navigate('/activities')} className="mb-5 flex w-full items-center gap-3 rounded-3xl border border-primary/20 bg-primary/5 p-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"><Users className="h-6 w-6 shrink-0 text-primary" aria-hidden="true"/><span className="min-w-0 flex-1"><strong className="block text-sm">Birlikte bir şey yapalım</strong><span className="mt-1 block text-xs text-muted-foreground">Kahve, oyun ve yürüyüş planlarını keşfet.</span></span><ChevronRight className="h-5 w-5 text-primary" aria-hidden="true"/></button>}
 
           {/* Random Match Mini Game */}
           {import.meta.env.VITE_RANDOM_MATCH_ENABLED === 'true' && <RandomMatchCard />}

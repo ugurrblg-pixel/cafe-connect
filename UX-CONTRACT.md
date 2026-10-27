@@ -49,3 +49,8 @@ VenueListCard owns the keyboard-accessible venue navigation row. Search filters 
 ## Navigation and recovery polish
 
 BottomNav stays within the shared content width and marks nested profile routes as the current destination. Discover filters wrap on narrow screens, preserve loaded-data-only search, and provide one reset action for empty filtered results. The location summary states the existing 2 km scope. Failed profile loading keeps navigation available and ignores responses after account/screen changes. Missing venue details provide retry and a return to discovery. No access rules change.
+
+
+## Group activities
+
+The server availability RPC gates navigation and every new operation. See supabase/ACTIVITIES_SETUP.md for explicit activation, live verification and rollback. Activity creation is details → preview/public-location consent → idempotent publish. Native date/time (Türkiye) and number inputs are the intentional canonical owners. The existing Button/Input/Textarea/AlertDialog own controls and destructive confirmations. Membership is request → pending → accepted/declined; accepted users can leave and hosts can remove/cancel. Capacity includes the host and is checked under a server row lock. No location or check-in implies admission. Expiry/cancellation closes group chat. Only accepted participants and the host may read/write group text; membership never grants photo access. Messages are not rendered from cache before renewed authorization. Lists, requests and chats use bounded refresh; exact windows and account-deletion behavior are recorded in ACTIVITIES_SETUP.md. Reports reference the activity in the existing admin inbox and do not automatically penalize an organizer.

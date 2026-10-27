@@ -32,3 +32,8 @@ A cafe profile includes display name, age, bio, purpose, interests, verification
 ## Discovery list
 
 Discovery uses compact horizontal photo rows, strong venue names, distance and real attendance counts. Coral emphasis appears only for actual activity. The chosen layout has no map. Representative image labels and provider credits remain visible; decorative attendee portraits must not imply access to private photos.
+
+
+## Group activities
+
+The owner-approved three-screen activity concept inherits Riyo's coral/neutral Inter design. ActivityMap owns Leaflet and its visible OSM credit, compact count pins and keyboard-accessible location selection. Activities owns the public plan list, detail, preview/consent and private group conversation. This adds an activity map without changing the map-free venue list. See docs/activities-design.md.

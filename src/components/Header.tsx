@@ -9,6 +9,7 @@ interface HeaderProps {
   onMenuClick?: () => void;
   className?: string;
   transparent?: boolean;
+  rightAction?: React.ReactNode;
 }
 
 export function Header({
@@ -18,6 +19,7 @@ export function Header({
   onMenuClick,
   className,
   transparent = false,
+  rightAction,
 }: HeaderProps) {
   const navigate = useNavigate();
 
@@ -46,7 +48,7 @@ export function Header({
 
         <h1 className="font-semibold text-[17px] text-foreground tracking-tight">{title}</h1>
 
-        {showMenu ? (
+        {rightAction || (showMenu ? (
           <button
             aria-label="Menüyü aç"
             disabled={!onMenuClick}
@@ -57,7 +59,7 @@ export function Header({
           </button>
         ) : (
           <div className="w-10" />
-        )}
+        ))}
       </div>
     </header>
   );

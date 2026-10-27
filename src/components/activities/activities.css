@@ -1,0 +1,56 @@
+.activity-map-shell {
+  height: min(48vh, 430px);
+  min-height: 280px;
+  background: hsl(var(--secondary));
+}
+.activity-map {
+  font-family: inherit;
+  background: hsl(var(--secondary));
+}
+.activity-marker {
+  background: none;
+  border: none;
+}
+.activity-map-pin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  min-height: 60px;
+  padding: 5px;
+  border: 3px solid white;
+  border-radius: 22px 22px 22px 5px;
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  box-shadow: 0 4px 12px hsl(var(--foreground) / 0.18);
+}
+.activity-map-pin > span {
+  font-size: 22px;
+  line-height: 26px;
+}
+.activity-map-pin > small {
+  font-size: 11px;
+  font-weight: 700;
+}
+.activity-map-pin.is-selected {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+.activity-chosen-pin {
+  display: block;
+  font-size: 32px;
+  color: hsl(var(--primary));
+  text-shadow: 0 2px 5px hsl(var(--foreground) / 0.3);
+}
+.activity-map .leaflet-control-attribution {
+  font-size: 10px;
+  padding: 3px 6px;
+}
+.activity-map .leaflet-control-zoom a {
+  color: hsl(var(--foreground));
+}
+.activity-map a:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
