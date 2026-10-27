@@ -28,7 +28,7 @@ export function useActivitiesAvailability() {
     staleTime: 60000,
     refetchInterval: 60000,
     queryFn: async () => {
-      const rpc = supabase.rpc as unknown as (
+      const rpc = supabase.rpc.bind(supabase) as unknown as (
         name: string,
       ) => Promise<{ data: unknown; error: unknown }>;
       const { data, error } = await rpc("social_activities_available");
