@@ -17,6 +17,7 @@ import { OfflineBanner } from "./components/OfflineBanner";
 
 // Lazy-load all page components for faster initial load
 const Discover = lazy(() => import("./pages/Discover"));
+const DiscoverPreview = lazy(() => import("./pages/DiscoverPreview"));
 const Activities = lazy(() => import("./pages/Activities"));
 const CafeRoom = lazy(() => import("./pages/CafeRoom"));
 const Messages = lazy(() => import("./pages/Messages"));
@@ -103,10 +104,11 @@ function AppRoutes() {
     location.pathname.startsWith('/cafe/') || 
     location.pathname.startsWith('/chat/') ||
     location.pathname.startsWith('/admin') ||
+    location.pathname === '/deneme/kesfet' ||
     location.pathname === '/auth';
 
   // Hide bottom nav on admin pages
-  const hideBottomNav = location.pathname.startsWith('/admin');
+  const hideBottomNav = location.pathname.startsWith('/admin') || location.pathname === '/deneme/kesfet';
 
   if (loading) {
     return (
@@ -133,6 +135,7 @@ function AppRoutes() {
           element={user ? <Navigate to="/" replace /> : <SuspensePage><Auth /></SuspensePage>} 
         />
         <Route path="/" element={<ProtectedRoute><SuspensePage><Discover /></SuspensePage></ProtectedRoute>} />
+        <Route path="/deneme/kesfet" element={<ProtectedRoute><SuspensePage><DiscoverPreview /></SuspensePage></ProtectedRoute>} />
         <Route path="/activities" element={<ProtectedRoute><SuspensePage><Activities /></SuspensePage></ProtectedRoute>} />
         <Route path="/activities/new" element={<ProtectedRoute><SuspensePage><Activities /></SuspensePage></ProtectedRoute>} />
         <Route path="/activities/:id" element={<ProtectedRoute><SuspensePage><Activities /></SuspensePage></ProtectedRoute>} />
