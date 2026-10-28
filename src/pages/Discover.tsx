@@ -6,15 +6,12 @@ import {
   Dumbbell,
   Loader2,
   MapPin,
-  RefreshCw,
   Search,
   SlidersHorizontal,
-  User,
   Users,
   Wine,
   X,
 } from "lucide-react";
-import { Header } from "@/components/Header";
 import { PageLayout } from "@/components/PageLayout";
 import { ProfileCompletionBanner } from "@/components/ProfileCompletionBanner";
 import { RandomMatchCard } from "@/components/RandomMatchCard";
@@ -104,99 +101,40 @@ export default function Discover() {
   return (
     <PageLayout>
       <div className="min-h-screen bg-background pb-28">
-        <Header
-          brand
-          title="Yakınındaki mekanları keşfet"
-          rightAction={
-            <div className="flex items-center gap-2">
+        <main className="mx-auto max-w-3xl space-y-5 px-5 pt-7 sm:px-8">
+          <header className="mb-6 flex items-center justify-between gap-4">
+            <div>
+              <h1 className="font-display text-5xl font-bold tracking-tight text-primary sm:text-6xl">
+                Riyo
+              </h1>
+              <p className="mt-1 text-lg font-medium text-muted-foreground">
+                Sosyal Radar
+              </p>
+            </div>
+            <div className="flex gap-2">
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
-                className="h-11 w-11 rounded-2xl bg-card"
-                aria-label="Filtrele"
-                onClick={() => setFiltersOpen(true)}
-              >
-                <SlidersHorizontal />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="relative h-9 w-9 rounded-xl bg-background"
+                className="relative h-11 w-11"
                 aria-label="Bildirimler"
                 onClick={() => navigate("/notifications")}
               >
-                <Bell />
+                <Bell className="h-6 w-6" />
                 {unreadCounts.waves > 0 && (
-                  <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />
+                  <span className="absolute right-2 top-1 h-2 w-2 rounded-full bg-primary" />
                 )}
               </Button>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
-                className="h-9 w-9 rounded-xl bg-background"
-                aria-label="Profil"
-                onClick={() => navigate("/profile")}
+                className="h-11 w-11"
+                aria-label="Filtrele"
+                onClick={() => setFiltersOpen(true)}
               >
-                <User />
+                <SlidersHorizontal className="h-6 w-6" />
               </Button>
             </div>
-          }
-        />
-        <main className="mx-auto max-w-3xl space-y-5 px-4 pt-24">
-          <section
-            aria-label="Konum ve arama alanı"
-            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/80 bg-card px-4 py-3.5 shadow-sm"
-          >
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand/20 bg-brand-soft text-primary">
-                {locationLoading ? (
-                  <Loader2
-                    className="h-4 w-4 animate-spin"
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <MapPin className="h-4 w-4" aria-hidden="true" />
-                )}
-              </span>
-              <div className="min-w-0">
-                <p className="text-[11px] font-medium text-muted-foreground">
-                  Konum ve arama alanı
-                </p>
-                <p className="mt-0.5 text-sm font-semibold">
-                  {position
-                    ? `Yakınındaki mekanlar · ${radiusLabel}`
-                    : locationLoading
-                      ? "Konum alınıyor…"
-                      : "Yakınındaki mekanları bul"}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {position && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 rounded-lg"
-                  aria-label="Mekanları yenile"
-                  disabled={loading || locationLoading}
-                  onClick={() => void refresh()}
-                >
-                  <RefreshCw className={loading ? "animate-spin" : ""} />
-                </Button>
-              )}
-              <Button
-                size="sm"
-                variant="outline"
-                className="rounded-lg border-brand/20 bg-brand-soft text-primary"
-                disabled={locationLoading}
-                onClick={() =>
-                  position ? setFiltersOpen(true) : void requestLocation()
-                }
-              >
-                {position ? "Değiştir" : "Konumu al"}
-              </Button>
-            </div>
-          </section>
+          </header>
           {locationError && !locationLoading && (
             <p
               role="alert"
@@ -205,33 +143,64 @@ export default function Discover() {
               {locationError.message}
             </p>
           )}
-          <div className="relative">
-            <Search
-              className="pointer-events-none absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <Input
-              ref={searchInput}
-              aria-label="Mekan ara"
-              placeholder="Mekan ara"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="h-12 rounded-2xl border-border bg-card pl-10 pr-10 text-base shadow-sm focus-visible:ring-primary/30"
-            />
-            {query && (
-              <button
-                type="button"
-                aria-label="Aramayı temizle"
-                onClick={() => {
-                  setQuery("");
-                  searchInput.current?.focus();
-                }}
-                className="absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+          <div className="flex items-center rounded-2xl border border-border bg-card shadow-sm">
+            <div className="relative min-w-0 flex-1">
+              <Search
+                className="pointer-events-none absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <Input
+                ref={searchInput}
+                aria-label="Mekan ara"
+                placeholder="Mekan ara"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="h-14 rounded-2xl border-0 bg-transparent pl-10 pr-10 text-base shadow-none focus-visible:ring-inset focus-visible:ring-primary/30"
+              />
+              {query && (
+                <button
+                  type="button"
+                  aria-label="Aramayı temizle"
+                  onClick={() => {
+                    setQuery("");
+                    searchInput.current?.focus();
+                  }}
+                  className="absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              className="h-10 shrink-0 rounded-none border-l border-border px-4 text-sm"
+              aria-label="Arama alanını değiştir"
+              onClick={() => setFiltersOpen(true)}
+            >
+              <MapPin className="h-4 w-4" />
+              {radiusLabel}
+              <span aria-hidden="true">⌄</span>
+            </Button>
           </div>
+          {(!position || isStale) && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={locationLoading}
+              onClick={() => void requestLocation()}
+            >
+              {locationLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Konum alınıyor…
+                </>
+              ) : position ? (
+                "Konumu güncelle"
+              ) : (
+                "Konumu al"
+              )}
+            </Button>
+          )}
           <div
             className="flex gap-2 overflow-x-auto pb-2"
             role="group"
@@ -244,7 +213,7 @@ export default function Discover() {
                 variant="outline"
                 onClick={() => setFilter(value)}
                 aria-pressed={filter === value}
-                className={`h-10 shrink-0 rounded-xl px-3.5 text-xs ${filter === value ? "border-foreground bg-foreground text-background hover:bg-foreground hover:text-background" : "bg-card"}`}
+                className={`h-10 shrink-0 rounded-full px-5 text-sm ${filter === value ? "border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground" : "bg-card"}`}
               >
                 {Icon && <Icon className="h-3.5 w-3.5" aria-hidden="true" />}
                 {label}
@@ -308,7 +277,7 @@ export default function Discover() {
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <h2
                   id="venue-list-title"
-                  className="text-xl font-bold tracking-tight"
+                  className="text-2xl font-bold tracking-tight sm:text-3xl"
                 >
                   Bir kahve molası ver.
                 </h2>
