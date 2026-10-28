@@ -80,3 +80,7 @@ Activity directory follows the supplied mint concept, Bricolage Grotesque headin
 
 ## Supplied messages showcase
 Messages uses the supplied mint canvas, Riyo/Mesajlar header, exact coffee headline, searchable inbox, shared-state filter/select, match carousel and unread conversation highlight. All names, previews and unread counts come from the owned inbox projection. New waves route to Notifications; activity group conversations remain under Activities. No invented presence, distances, professions, table invitations or static portraits. Profile completion gates and server conversation creation remain; duplicate opening is guarded and failures recover. Temporary hide retains its explicit refresh disclosure.
+
+
+## Supplied profile showcase
+Profile follows the supplied mint/white Plus Jakarta concept: branded header, identity card with own photo carousel, actual active check-in, truthful photo/interest counts, favorites and preferences. Favorites are fetched under the current owner with existing RLS. Visibility uses the canonical useProfileVisibility hook with loading, disabled-save and failure recovery; no separate Wave permission is invented. VerificationRequest, account details, settings, sign-out and AccountDeletionSection remain. Premium remains visibly unavailable to purchase; existing members may inspect subscription details. No fake handle, check-in history, wave statistics, public status or activity history.

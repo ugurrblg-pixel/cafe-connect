@@ -238,3 +238,6 @@
 
 .messages-showcase { --background: 138 62.5% 96.9%; background: hsl(var(--background)); font-family: Karla, "Plus Jakarta Sans", sans-serif; }
 .messages-showcase .message-heading { font-family: "Bricolage Grotesque", "Plus Jakarta Sans", sans-serif; }
+
+.profile-showcase { --background: 138 62.5% 96.9%; background: hsl(var(--background)); }
+.profile-showcase, .profile-showcase h1, .profile-showcase h2, .profile-showcase h3 { font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
