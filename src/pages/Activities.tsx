@@ -66,7 +66,7 @@ import { VISIBILITY_CHANGED } from "@/lib/visibilityEvents";
 const ActivityMap = lazy(() => import("@/components/activities/ActivityMap"));
 const categoryIcons = { coffee: Coffee, games: Gamepad2, walk: Footprints };
 function MapLoading() {
-  return <Skeleton className="h-80 rounded-3xl" />;
+  return <Skeleton className="h-80 rounded-2xl" />;
 }
 function PageTitle({ title }: { title: string }) {
   const navigate = useNavigate();
@@ -139,7 +139,7 @@ function ActivityRow({
       type="button"
       onClick={onSelect}
       aria-pressed={selected}
-      className={`flex w-full items-center gap-3 rounded-3xl border bg-card p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${selected ? "border-primary/60" : "border-border hover:border-primary/30"}`}
+      className={`flex w-full items-center gap-3 rounded-2xl border bg-card p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${selected ? "border-primary/60" : "border-border hover:border-primary/30"}`}
     >
       <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-primary/5 text-primary">
         <Icon className="h-8 w-8" aria-hidden="true" />
@@ -255,7 +255,7 @@ function ActivityExplorer() {
   return (
     <>
       <div className="mb-5 flex items-center justify-between">
-        <span className="text-3xl font-extrabold tracking-tight text-primary">
+        <span className="font-display text-3xl font-extrabold tracking-tight text-foreground">
           RIYO
         </span>
         <Button
@@ -343,7 +343,7 @@ function ActivityExplorer() {
       {query.isPending ? (
         <div className="space-y-3">
           <MapLoading />
-          <Skeleton className="h-28 rounded-3xl" />
+          <Skeleton className="h-28 rounded-2xl" />
         </div>
       ) : query.isError ? (
         <Unavailable loading={false} onRetry={() => query.refetch()} />
@@ -409,7 +409,7 @@ function ActivityExplorer() {
             ))}
           </div>
           {!visible.length && (
-            <div className="rounded-3xl bg-card px-5 py-10 text-center">
+            <div className="rounded-2xl bg-card px-5 py-10 text-center">
               <Coffee
                 className="mx-auto mb-3 h-9 w-9 text-primary"
                 aria-hidden="true"
@@ -561,7 +561,7 @@ function CreateActivity() {
         />
       </div>
       {preview ? (
-        <section className="space-y-5 rounded-3xl border border-border bg-card p-5">
+        <section className="space-y-5 rounded-2xl border border-border bg-card p-5">
           <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
             {activityCategories[draft.category]}
           </span>
@@ -920,10 +920,10 @@ function ActivityDetail({ id }: { id: string }) {
           cafeId={activity.id}
           alt="Kahve buluşması"
           aspectRatio="hero"
-          className="mb-6 rounded-3xl"
+          className="mb-6 rounded-2xl"
         />
       ) : (
-        <div className="mb-6 flex h-44 items-center justify-center rounded-3xl bg-primary/5">
+        <div className="mb-6 flex h-44 items-center justify-center rounded-2xl bg-primary/5">
           <Icon className="h-16 w-16 text-primary" aria-hidden="true" />
         </div>
       )}

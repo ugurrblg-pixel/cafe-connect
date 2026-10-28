@@ -12,6 +12,7 @@ vi.mock('@/components/Header',()=>({Header:()=>null}));
 vi.mock('@/components/ProfileCompletionBanner',()=>({ProfileCompletionBanner:()=>null}));
 vi.mock('@/components/CafeImage',()=>({CafeImage:({alt}:any)=><img alt={alt}/>}));
 vi.mock('@/components/RandomMatchCard',()=>({RandomMatchCard:()=>{throw new Error('Unsupported random lookup mounted');}}));
+vi.mock('@/hooks/useActiveCheckIn',()=>({useActiveCheckIn:()=>({activeCheckIn:null})}));
 import Search from './Search';
 it('uses real nearby venues in search, supports Turkish search and does not call Places on keystrokes',async()=>{
  vi.stubEnv('VITE_RANDOM_MATCH_ENABLED','false');render(<MemoryRouter><Search/></MemoryRouter>);

@@ -1,16 +1,16 @@
 # Riyo interface context
 
-Riyo is a Turkish cafe-based social application. This document records the incumbent product UI, not a rebrand. Product screens prioritize safe venue attendance, clear visibility, consent and honest status. Payment and push permissions must never be implied by decorative controls.
+Riyo is a Turkish cafe-based social application. This document records the owner-approved warm light interface. Product screens prioritize safe venue attendance, clear visibility, consent and honest status. Payment and push permissions must never be implied by decorative controls.
 
 ## Token ownership
 
 Model B: `src/index.css` owns runtime semantic HSL tokens. `tailwind.config.ts` maps those tokens to shared primitives. This document mirrors source roles; it does not generate or override CSS.
 
-- Background: `214 15% 97%`; foreground: `221 39% 11%`.
-- Primary/coral: `359 100% 63%`; primary foreground: white.
-- Accent/teal: `191 91% 53%`; secondary: `214 15% 94%`.
-- Muted foreground: `218 11% 45%`; border: `214 15% 91%`.
-- Font: Inter with system fallbacks; normal product body text, strong headings and restrained captions.
+- Background: #F8F7F4; foreground: #1E293B.
+- Primary: #BF5237 with white labels (4.69:1); decorative brand: #E07A5F, soft brand: #FDF4F0. The supplied light terracotta is darkened for readable small button labels.
+- Accent: #26784F; online: #52B788; secondary: #F1EFEA.
+- Muted foreground: #5D6B80; border: #E2E8F0.
+- Font: Plus Jakarta Sans body, Syne headings, system fallbacks.
 - Existing rounded controls/cards and neutral shadows come from shared CSS/primitive classes. Do not introduce screen-local colors or a second token adapter.
 
 ## Canonical owners
@@ -31,9 +31,9 @@ A cafe profile includes display name, age, bio, purpose, interests, verification
 
 ## Discovery list
 
-Discovery uses compact horizontal photo rows, strong venue names, distance and real attendance counts. Coral emphasis appears only for actual activity. The chosen layout has no map. Representative image labels and provider credits remain visible; decorative attendee portraits must not imply access to private photos.
+Discovery uses full-width vertical photo cards, strong venue names, distance and real attendance counts. Warm terracotta actions and restrained green attendance indicators follow the supplied light concept. The chosen layout has no map. Representative image labels and provider credits remain visible; decorative attendee portraits must not imply access to private photos.
 
 
 ## Group activities
 
-The owner-approved three-screen activity concept inherits Riyo's coral/neutral Inter design. ActivityMap owns Leaflet and its visible OSM credit, compact count pins and keyboard-accessible location selection. Activities owns the public plan list, detail, preview/consent and private group conversation. This adds an activity map without changing the map-free venue list. See docs/activities-design.md.
+The owner-approved three-screen activity concept inherits Riyo's warm neutral, terracotta and Plus Jakarta Sans/Syne design. ActivityMap owns Leaflet and its visible OSM credit, compact count pins and keyboard-accessible location selection. Activities owns the public plan list, detail, preview/consent and private group conversation. This adds an activity map without changing the map-free venue list. See docs/activities-design.md.

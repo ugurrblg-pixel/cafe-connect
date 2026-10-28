@@ -240,7 +240,7 @@ export default function CafeRoom() {
       </div>
 
       {/* Content */}
-      <main className="px-4 -mt-16 relative pb-32">
+      <main className="mx-auto max-w-3xl px-4 -mt-12 relative pb-32">
         {/* Cafe Info Card */}
         <div className="card-elevated p-5 mb-6">
           <div className="mb-3">

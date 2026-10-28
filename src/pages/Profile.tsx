@@ -120,18 +120,18 @@ export default function Profile() {
     );
   }
 
-  const cardClass = "bg-card rounded-3xl p-5 mb-4 border border-border/60";
-  const cardShadow = { boxShadow: '0 2px 16px -2px hsl(18 30% 50% / 0.07)' };
+  const cardClass = "bg-card rounded-2xl p-5 mb-4 border border-border/80";
+  const cardShadow = { boxShadow: 'var(--shadow-card)' };
 
   return (
     <PageLayout>
       <div className="min-h-screen bg-background pb-24">
         {/* No Header — clean profile-first layout */}
-        <main className="pt-6 px-4 max-w-2xl mx-auto">
+        <main className="pt-6 px-4 max-w-2xl mx-auto"><div className="mb-5 flex items-center justify-between gap-3"><p className="font-display text-2xl font-bold">Profilin</p><Button variant="outline" size="icon" className="rounded-xl bg-card" aria-label="Güvenlik ve gizlilik ayarları" onClick={()=>navigate('/settings/safety')}><Shield/></Button></div>
 
           {/* Profile Hero */}
-          <div className="relative p-6 mb-6 rounded-[32px] border border-primary/10 bg-card overflow-hidden animate-scale-in">
-            <div className="absolute top-0 inset-x-0 h-24 bg-primary/10" aria-hidden="true" />
+          <div className="relative p-5 mb-6 rounded-2xl border border-border/80 bg-card overflow-hidden shadow-card">
+            <div className="absolute top-0 inset-x-0 h-20 bg-brand-soft" aria-hidden="true" />
             <div className="relative flex items-end justify-between gap-4 pt-6 mb-5">
             <div className="relative ring-4 ring-card rounded-2xl">
               <ProfilePhotoCarousel

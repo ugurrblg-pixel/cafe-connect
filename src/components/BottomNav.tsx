@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { MapPin, MessageSquare, User, Bell, Users } from 'lucide-react';
+import { MapPin, MessageSquare, User, Bell, Users, Radar } from 'lucide-react';
 import { useActivitiesAvailability } from '@/hooks/useActivitiesAvailability';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useNotifications } from '@/contexts/NotificationContext';
@@ -13,7 +13,7 @@ const navItems: Array<{
   labelKey: NavKey;
   countKey: 'waves' | 'messages' | null;
 }> = [
-  { path: '/', icon: MapPin, labelKey: 'discover', countKey: null },
+  { path: '/', icon: Radar, labelKey: 'discover', countKey: null },
   { path: '/notifications', icon: Bell, labelKey: 'notifications', countKey: 'waves' },
   { path: '/messages', icon: MessageSquare, labelKey: 'messages', countKey: 'messages' },
   { path: '/profile', icon: User, labelKey: 'profile', countKey: null },
@@ -42,13 +42,13 @@ export function BottomNav() {
 
   return (
     <nav aria-label="Ana gezinme"
-      className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-xl border-t border-border/40 safe-bottom z-50"
+      className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-xl border-t border-border/80 shadow-sm safe-bottom z-50"
     >
       <div className="mx-auto flex max-w-3xl items-center justify-around px-2 py-1">
         {items.map(({ path, icon: Icon, labelKey, countKey }) => {
           const isActive = location.pathname === path || (path !== '/' && location.pathname.startsWith(`${path}/`));
           const count = countKey ? unreadCounts[countKey] : 0;
-          const label = labelKey === 'activities' ? 'Aktiviteler' : t.nav[labelKey];
+          const label = labelKey === 'discover' ? 'Radar' : labelKey === 'activities' ? 'Aktiviteler' : t.nav[labelKey];
           
           return (
             <button
@@ -61,7 +61,7 @@ export function BottomNav() {
                 isActive ? 'nav-item-active' : 'nav-item-inactive'
               )}
             >
-              <div className="relative">
+              <div className={cn('relative flex h-8 w-8 items-center justify-center rounded-xl',isActive && 'border border-brand/20 bg-brand-soft')}>
                 <Icon className="w-[22px] h-[22px]" strokeWidth={isActive ? 2.2 : 1.5} />
                 {count > 0 && (
                   <span className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1">

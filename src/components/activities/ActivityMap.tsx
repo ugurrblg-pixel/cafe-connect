@@ -119,7 +119,7 @@ export default function ActivityMap({
       });
   }, [activities, selectedId, point]);
   return (
-    <div className="activity-map-shell relative isolate overflow-hidden rounded-3xl border border-border">
+    <div className="activity-map-shell relative isolate overflow-hidden rounded-2xl border border-border">
       <div
         ref={element}
         className="activity-map h-full w-full"

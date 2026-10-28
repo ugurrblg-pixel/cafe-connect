@@ -1,30 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@600;700;800&display=swap');
 
 @import "tailwindcss";
 @config "../tailwind.config.ts";
 
 @layer base {
   :root {
-    /* Core palette — neutral grey + coral + teal */
-    --background: 214 15% 97%;
-    --foreground: 221 39% 11%;
+    /* Approved warm white / terracotta / green interface. Runtime tokens are canonical. */
+    --background: 45 22.2% 96.5%;
+    --foreground: 217.2 32.6% 17.5%;
 
     --card: 0 0% 100%;
-    --card-foreground: 221 39% 11%;
+    --card-foreground: 217.2 32.6% 17.5%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 221 39% 11%;
+    --popover-foreground: 217.2 32.6% 17.5%;
 
-    --primary: 359 100% 63%;
+    --primary: 11.9 55.3% 48.2%;
+    --brand: 12.6 67.5% 62.5%;
+    --brand-soft: 18.5 76.5% 96.7%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 214 15% 94%;
+    --secondary: 42.9 20% 93.1%;
     --secondary-foreground: 221 20% 28%;
 
-    --muted: 214 12% 92%;
-    --muted-foreground: 218 11% 45%;
+    --muted: 42.9 20% 93.1%;
+    --muted-foreground: 216 15.8% 43.3%;
 
-    --accent: 191 91% 53%;
+    --accent: 150 51.9% 31%;
     --accent-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
@@ -33,17 +35,17 @@
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 15% 91%;
-    --input: 214 15% 89%;
-    --ring: 359 100% 63%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 85%;
+    --ring: 11.9 55.3% 48.2%;
 
-    --radius: 1.25rem;
+    --radius: 0.875rem;
 
     /* Semantic tokens */
-    --online: 191 91% 53%;
-    --online-light: 191 80% 94%;
-    --coral: 359 100% 63%;
-    --coral-light: 359 100% 96%;
+    --online: 152.1 41.2% 52%;
+    --online-light: 150 38.5% 94.9%;
+    --coral: 12.6 67.5% 62.5%;
+    --coral-light: 18.5 76.5% 96.7%;
 
     /* Purpose badge colors */
     --badge-chat: 210 65% 50%;
@@ -79,7 +81,7 @@
     --popover: 220 18% 11%;
     --popover-foreground: 210 15% 95%;
 
-    --primary: 359 90% 60%;
+    --primary: 11.9 55.3% 48.2%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 15% 16%;
@@ -122,10 +124,14 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  h1, h2, h3 { font-family: 'Syne', 'Plus Jakarta Sans', sans-serif; }
+  html { scrollbar-color: hsl(var(--border)) hsl(var(--background)); scrollbar-width: thin; }
+  ::selection { background: hsl(var(--brand) / .25); color: hsl(var(--foreground)); }
 
   html, body, #root {
     @apply h-full;
@@ -134,7 +140,7 @@
 
 @layer components {
   .card-elevated {
-    @apply bg-card rounded-[20px] border-0;
+    @apply bg-card rounded-2xl border border-border/80;
     box-shadow: var(--shadow-card);
   }
 
@@ -154,7 +160,7 @@
   }
 
   .btn-checkin {
-    @apply bg-primary text-primary-foreground font-semibold py-4 px-8 rounded-full;
+    @apply bg-primary text-primary-foreground font-semibold py-4 px-8 rounded-xl;
     box-shadow: 0 4px 14px -2px hsl(var(--primary) / 0.35);
     transition: all 0.2s ease;
   }
@@ -206,3 +212,5 @@
 @keyframes venue-flicker { 0%, 100% { transform: rotate(-5deg) scale(1); } 50% { transform: rotate(5deg) scale(1.15); } }
 @keyframes venue-glow { 0%, 100% { box-shadow: 0 0 0 1px #fb923c30, 0 3px 16px #f9731610; } 50% { box-shadow: 0 0 0 2px #fb923c50, 0 4px 22px #f9731625; } }
 @media (prefers-reduced-motion: reduce) { .venue-heat-hot, .venue-flame-hot .venue-flame { animation: none; } }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }

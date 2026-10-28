@@ -1,162 +1,467 @@
-import { VenueSources } from '@/components/VenueSources';
-import { useActivitiesAvailability } from '@/hooks/useActivitiesAvailability';
-import { useNotifications } from '@/contexts/NotificationContext';
-import { useEffect, useState, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Header } from '@/components/Header';
-import { PageLayout } from '@/components/PageLayout';
-import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
-import { useNearbyCafes } from '@/hooks/useNearbyCafes';
-import { useLocation } from '@/contexts/LocationContext';
-import { useI18n } from '@/contexts/I18nContext';
-import { MapPin, Loader2, AlertCircle, RefreshCw, Coffee, Search, X, Users, Wine, Dumbbell, Bell, ChevronRight } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
-import { VenueListCard } from '@/components/VenueListCard';
-import { RandomMatchCard } from '@/components/RandomMatchCard';
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Bell,
+  Coffee,
+  Dumbbell,
+  Hand,
+  Loader2,
+  MapPin,
+  RefreshCw,
+  Search,
+  SlidersHorizontal,
+  User,
+  Users,
+  Wine,
+  X,
+} from "lucide-react";
+import { Header } from "@/components/Header";
+import { PageLayout } from "@/components/PageLayout";
+import { ProfileCompletionBanner } from "@/components/ProfileCompletionBanner";
+import { RandomMatchCard } from "@/components/RandomMatchCard";
+import { VenueListCard } from "@/components/VenueListCard";
+import { VenueSources } from "@/components/VenueSources";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { useNearbyCafes } from "@/hooks/useNearbyCafes";
+import { useActiveCheckIn } from "@/hooks/useActiveCheckIn";
+import { useActivitiesAvailability } from "@/hooks/useActivitiesAvailability";
+import { useLocation } from "@/contexts/LocationContext";
+import { useNotifications } from "@/contexts/NotificationContext";
+import { filterDiscovery, type VenueFilter } from "@/lib/discovery";
 
+const filters = [
+  ["all", "Tümü", null],
+  ["cafe", "Kafeler", Coffee],
+  ["gym", "Spor & Fitness", Dumbbell],
+  ["bar", "Barlar", Wine],
+  ["active", "Hareketli", Users],
+] as const;
 export default function Discover() {
   const navigate = useNavigate();
   const activities = useActivitiesAvailability();
-  const {unreadCounts} = useNotifications();
-  const { t } = useI18n();
+  const { unreadCounts } = useNotifications();
+  const { activeCheckIn } = useActiveCheckIn();
   const { cafes, loading, error, fetchNearbyCafes } = useNearbyCafes();
-  const { position, loading: locationLoading, error: locationError, getPosition, isStale } = useLocation();
-  const [query, setQuery] = useState('');
+  const {
+    position,
+    loading: locationLoading,
+    error: locationError,
+    getPosition,
+    isStale,
+  } = useLocation();
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<VenueFilter>("all");
+  const [radius, setRadius] = useState(2000);
+  const [sort, setSort] = useState("nearby");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [limit, setLimit] = useState(12);
   const searchInput = useRef<HTMLInputElement>(null);
-  const [filter, setFilter] = useState('all');
-  const [sort, setSort] = useState('nearby');
-  const visibleCafes = useMemo(() => cafes.filter(c =>
-    c.name.toLocaleLowerCase('tr-TR').includes(query.toLocaleLowerCase('tr-TR'))
-    && (filter === 'all' || filter === 'active' ? filter !== 'active' || c.activeUsers > 0 : c.category === filter)
-  ).sort((a, b) => sort === 'active'
-    ? b.activeUsers - a.activeUsers || (a.distanceMeters ?? Infinity) - (b.distanceMeters ?? Infinity)
-    : (a.distanceMeters ?? Infinity) - (b.distanceMeters ?? Infinity)), [cafes, query, filter, sort]);
-
+  const base = useMemo(
+    () => filterDiscovery(cafes, query, "all", radius, sort),
+    [cafes, query, radius, sort],
+  );
+  const visible = useMemo(
+    () => filterDiscovery(cafes, query, filter, radius, sort),
+    [cafes, query, filter, radius, sort],
+  );
   useEffect(() => {
-    if (position) {
-      fetchNearbyCafes(position);
-    }
+    if (position) void fetchNearbyCafes(position);
   }, [position, fetchNearbyCafes]);
-
-  const handleRequestLocation = async () => {
+  useEffect(() => setLimit(12), [query, filter, radius, sort]);
+  async function requestLocation() {
     try {
       await getPosition(true);
-    } catch {}
-  };
-
-  const handleRefresh = async () => {
-    if (position) {
-      if (isStale) {
-        await getPosition(true);
-      } else {
-        fetchNearbyCafes(position);
-      }
+    } catch {
+      /* LocationContext owns the visible error. */
     }
-  };
-
-
+  }
+  async function refresh() {
+    if (position) {
+      if (isStale) await requestLocation();
+      else await fetchNearbyCafes(position);
+    }
+  }
+  function clear() {
+    setQuery("");
+    setFilter("all");
+    setRadius(2000);
+    setSort("nearby");
+    searchInput.current?.focus();
+  }
+  const radiusLabel = radius === 500 ? "500 m" : `${radius / 1000} km`;
+  const counts = (key: VenueFilter) =>
+    filterDiscovery(base, "", key, radius, sort).length;
   return (
     <PageLayout>
-      <div className="min-h-screen bg-background pb-24">
-        <Header title={t.discover.title} rightAction={activities.data === true ? <Button size="icon" variant="ghost" className="relative rounded-full" aria-label="Bildirimler" onClick={()=>navigate('/notifications')}><Bell/>{unreadCounts.waves>0&&<span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary"/>}</Button> : undefined} />
-
-        <main className="pt-20 px-4 max-w-3xl mx-auto">
-          <div className="mb-6"><h1 className="text-3xl font-bold tracking-tight">Yakınında keşfet</h1><p className="mt-2 text-sm text-muted-foreground">Bir mekan seç, ortamı gör, sohbete katıl.</p></div>
-          <div className="mb-4 flex items-center gap-3 rounded-3xl border border-transparent bg-secondary/60 px-4 py-4 transition-colors focus-within:border-primary/40 focus-within:bg-card focus-within:ring-2 focus-within:ring-primary/10">
-            <Search className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
-            <input ref={searchInput} aria-label="Mekan ara" value={query} onChange={e => setQuery(e.target.value)} placeholder="Mekan ara" className="min-w-0 w-full bg-transparent text-base outline-none placeholder:text-muted-foreground" />
-            {query && <button type="button" aria-label="Aramayı temizle" onClick={()=>{setQuery('');searchInput.current?.focus();}} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"><X className="h-4 w-4" /></button>}
+      <div className="min-h-screen bg-background pb-28">
+        <Header
+          brand
+          title="Yakınındaki mekanları keşfet"
+          rightAction={
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 rounded-xl bg-background"
+                aria-label="Filtrele"
+                onClick={() => setFiltersOpen(true)}
+              >
+                <SlidersHorizontal />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="relative h-9 w-9 rounded-xl bg-background"
+                aria-label="Bildirimler"
+                onClick={() => navigate("/notifications")}
+              >
+                <Bell />
+                {unreadCounts.waves > 0 && (
+                  <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 rounded-xl bg-background"
+                aria-label="Profil"
+                onClick={() => navigate("/profile")}
+              >
+                <User />
+              </Button>
+            </div>
+          }
+        />
+        <main className="mx-auto max-w-3xl space-y-4 px-4 pt-20">
+          <section
+            aria-label="Konum ve arama alanı"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/80 bg-card px-4 py-3 shadow-sm"
+          >
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand/20 bg-brand-soft text-primary">
+                {locationLoading ? (
+                  <Loader2
+                    className="h-4 w-4 animate-spin"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <MapPin className="h-4 w-4" aria-hidden="true" />
+                )}
+              </span>
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium text-muted-foreground">
+                  Konum ve arama alanı
+                </p>
+                <p className="mt-0.5 text-sm font-semibold">
+                  {position
+                    ? `Yakınındaki mekanlar · ${radiusLabel}`
+                    : locationLoading
+                      ? "Konum alınıyor…"
+                      : "Yakınındaki mekanları bul"}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {position && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 rounded-lg"
+                  aria-label="Mekanları yenile"
+                  disabled={loading || locationLoading}
+                  onClick={() => void refresh()}
+                >
+                  <RefreshCw className={loading ? "animate-spin" : ""} />
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-lg border-brand/20 bg-brand-soft text-primary"
+                disabled={locationLoading}
+                onClick={() =>
+                  position ? setFiltersOpen(true) : void requestLocation()
+                }
+              >
+                {position ? "Değiştir" : "Konumu al"}
+              </Button>
+            </div>
+          </section>
+          {locationError && !locationLoading && (
+            <p
+              role="alert"
+              className="rounded-xl border border-destructive/20 bg-card p-3 text-sm text-destructive"
+            >
+              {locationError.message}
+            </p>
+          )}
+          <div className="flex items-start gap-3 rounded-xl border border-border/80 bg-card p-3.5 shadow-sm">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-brand/20 bg-brand-soft text-primary">
+              <Hand className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <div>
+              <h2 className="font-display text-sm font-bold">
+                Bir kahve, yeni bir sohbet
+              </h2>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Mekana katıl, el salla; ilgi karşılıklı olunca sohbete başla.
+              </p>
+            </div>
           </div>
-          <div className="mb-5 flex flex-wrap gap-2" role="group" aria-label="Mekan türü">
-            {([['all','Hepsi',null],['cafe','Kafeler',Coffee],['active','Hareketli',Users],['bar','Barlar',Wine],['gym','Spor',Dumbbell]] as const).map(([value,label,Icon]) => <Button key={value} variant={filter === value ? 'default' : 'outline'} size="sm" onClick={() => setFilter(value)} aria-pressed={filter === value} className="rounded-full px-4">{Icon && <Icon aria-hidden="true" />}{label}</Button>)}
+          <div className="relative">
+            <Search
+              className="pointer-events-none absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <Input
+              ref={searchInput}
+              aria-label="Mekan ara"
+              placeholder="Mekan ara"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="h-11 rounded-xl border-border/80 bg-card pl-10 pr-10 text-base shadow-sm"
+            />
+            {query && (
+              <button
+                type="button"
+                aria-label="Aramayı temizle"
+                onClick={() => {
+                  setQuery("");
+                  searchInput.current?.focus();
+                }}
+                className="absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <div
+            className="flex flex-wrap gap-2"
+            role="group"
+            aria-label="Mekan türü"
+          >
+            {filters.map(([value, label, Icon]) => (
+              <Button
+                key={value}
+                size="sm"
+                variant="outline"
+                onClick={() => setFilter(value)}
+                aria-pressed={filter === value}
+                className={`rounded-full px-3.5 text-xs shadow-sm ${filter === value ? "border-foreground bg-foreground text-background hover:bg-foreground hover:text-background" : "bg-card"}`}
+              >
+                {Icon && <Icon className="h-3.5 w-3.5" aria-hidden="true" />}
+                {label}
+                {value === "all"
+                  ? ` (${base.length})`
+                  : counts(value) > 0
+                    ? ` (${counts(value)})`
+                    : ""}
+              </Button>
+            ))}
           </div>
           <ProfileCompletionBanner />
-          {activities.data===true&&<button type="button" onClick={()=>navigate('/activities')} className="mb-5 flex w-full items-center gap-3 rounded-3xl border border-primary/20 bg-primary/5 p-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"><Users className="h-6 w-6 shrink-0 text-primary" aria-hidden="true"/><span className="min-w-0 flex-1"><strong className="block text-sm">Birlikte bir şey yapalım</strong><span className="mt-1 block text-xs text-muted-foreground">Kahve, oyun ve yürüyüş planlarını keşfet.</span></span><ChevronRight className="h-5 w-5 text-primary" aria-hidden="true"/></button>}
-
-          {/* Random Match Mini Game */}
-          {import.meta.env.VITE_RANDOM_MATCH_ENABLED === 'true' && <RandomMatchCard />}
-
-          {/* Location Banner */}
-          <div
-            className="mb-6 p-4 rounded-[20px] bg-card flex items-center gap-3"
-            style={{ boxShadow: '0 2px 12px -4px rgba(0,0,0,0.06)' }}
-          >
-            <div className="w-10 h-10 rounded-full bg-primary/8 flex items-center justify-center">
-              {locationLoading ? (
-                <Loader2 className="w-5 h-5 text-primary animate-spin" />
-              ) : (
-                <MapPin className="w-5 h-5 text-primary" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">{t.discover.yourLocation}</p>
-              {position ? (
-                <p className="font-semibold text-foreground text-sm">{t.discover.nearbyCafes}<span className="mt-0.5 block text-xs font-normal text-muted-foreground">2 km çevrendeki mekanlar</span></p>
-              ) : locationError ? (
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-destructive" />
-                  <p className="text-sm text-destructive">{locationError.message}</p>
-                </div>
-              ) : (
-                <p className="text-muted-foreground text-sm">{t.discover.gettingLocation}</p>
-              )}
-            </div>
-            {position && !loading && (
-              <Button size="icon" variant="ghost" aria-label="Mekanları yenile" onClick={handleRefresh} className="shrink-0 rounded-full">
-                <RefreshCw className="w-4 h-4" />
-              </Button>
-            )}
-            {!position && !locationLoading && (
-              <Button size="sm" variant="outline" onClick={handleRequestLocation} className="rounded-full">
-                {t.discover.getLocation}
-              </Button>
-            )}
-          </div>
-
-          {/* Error */}
+          {activities.data === true && (
+            <Button
+              variant="outline"
+              className="h-auto w-full justify-between whitespace-normal rounded-xl bg-card p-4 text-left shadow-sm"
+              onClick={() => navigate("/activities")}
+            >
+              <span className="flex items-center gap-2">
+                <Users className="text-primary" />
+                <span>
+                  <strong className="block">Birlikte bir şey yapalım</strong>
+                  <span className="mt-1 block text-xs font-normal text-muted-foreground">
+                    Aktiviteleri ve buluşma planlarını keşfet.
+                  </span>
+                </span>
+              </span>
+              <span aria-hidden="true">→</span>
+            </Button>
+          )}
+          {import.meta.env.VITE_RANDOM_MATCH_ENABLED === "true" && (
+            <RandomMatchCard />
+          )}
           {error && (
-            <div className="mb-4 p-4 rounded-[20px] bg-destructive/5">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-destructive" />
-                <p className="text-sm text-destructive">{error}</p>
-              </div>
+            <div
+              role="alert"
+              className="rounded-xl border border-destructive/20 bg-card p-4 text-sm"
+            >
+              <p className="text-destructive">{error}</p>
               {position && (
-                <Button size="sm" variant="outline" onClick={handleRefresh} className="mt-2 rounded-full">
-                  {t.discover.retry}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={loading}
+                  className="mt-3"
+                  onClick={() => void refresh()}
+                >
+                  Tekrar dene
                 </Button>
               )}
             </div>
           )}
-
-          {loading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-6 w-48 rounded-lg" />
-              <div className="space-y-3">
-                {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 w-full rounded-3xl" />)}
-              </div>
+          {loading || locationLoading ? (
+            <div className="space-y-4" aria-label="Mekanlar yükleniyor">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-80 w-full rounded-2xl" />
+              ))}
             </div>
           ) : (
-            <>
-              <section className="mb-6 rounded-[28px] bg-card/60 p-3 sm:p-5">
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-4"><div><h2 className="font-bold text-xl sm:text-2xl">Yakındaki mekanlar</h2><span role="status" aria-live="polite" className="text-xs text-muted-foreground">{visibleCafes.length} mekan{query ? ` · “${query}”` : ''}</span></div><select aria-label="Mekan sıralaması" value={sort} onChange={e => setSort(e.target.value)} className="min-h-10 text-sm bg-card border border-border rounded-full px-3 py-2 focus-visible:outline-primary"><option value="nearby">En yakın</option><option value="active">En hareketli</option></select></div>
-                <div className="space-y-3">
-                  {visibleCafes.map(cafe => <VenueListCard key={cafe.id} cafe={cafe} onClick={() => navigate(`/cafe/${cafe.id}`)} />)}
-                </div>
-                {cafes.length > 0 && visibleCafes.length === 0 && <div className="py-10 text-center"><Search className="mx-auto mb-3 h-7 w-7 text-muted-foreground" aria-hidden="true" /><h3 className="font-semibold">Eşleşen mekan bulunamadı</h3><p className="mx-auto mt-2 max-w-xs text-sm text-muted-foreground">Aramayı veya mekan türünü değiştirerek tekrar bakabilirsin.</p><Button variant="outline" className="mt-4 rounded-full" onClick={()=>{setQuery('');setFilter('all');searchInput.current?.focus();}}>Aramayı ve filtreyi temizle</Button></div>}
-              </section>
-              {/* Empty state */}
-              {cafes.length === 0 && position && !loading && !error && (
-                <div className="text-center py-16">
-                  <Coffee className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <h3 className="font-bold text-lg text-foreground mb-2">{t.discover.noCafesNearby}</h3>
-                  <p className="text-muted-foreground text-sm max-w-[260px] mx-auto">{t.discover.noCafesDesc}</p>
+            <section aria-labelledby="venue-list-title">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h2 id="venue-list-title" className="text-base font-bold">
+                  Yakındaki mekanlar
+                </h2>
+                <p
+                  role="status"
+                  aria-live="polite"
+                  className="text-xs text-muted-foreground"
+                >
+                  {visible.length} mekan ·{" "}
+                  {sort === "active" ? "En hareketli" : "En yakın"}
+                </p>
+              </div>
+              <div className="space-y-4">
+                {visible.slice(0, limit).map((cafe, index) => (
+                  <VenueListCard
+                    key={cafe.id}
+                    cafe={cafe}
+                    priority={index === 0}
+                    onClick={() => navigate(`/cafe/${cafe.id}`)}
+                  />
+                ))}
+              </div>
+              {visible.length > limit && (
+                <Button
+                  variant="outline"
+                  className="mt-5 w-full rounded-xl bg-card"
+                  onClick={() => setLimit((n) => n + 12)}
+                >
+                  Daha fazla mekan göster ({visible.length - limit})
+                </Button>
+              )}
+              {!visible.length && !error && (
+                <div className="rounded-2xl border border-border bg-card px-5 py-10 text-center">
+                  <Coffee
+                    className="mx-auto mb-3 h-9 w-9 text-primary"
+                    aria-hidden="true"
+                  />
+                  <h3 className="text-lg font-semibold">
+                    {cafes.length
+                      ? "Bu seçimle eşleşen mekan yok"
+                      : position
+                        ? "Yakında mekan bulunamadı"
+                        : "Konumunu alarak başlayalım"}
+                  </h3>
+                  <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                    {cafes.length
+                      ? "Aramayı veya filtreleri değiştirerek tekrar bakabilirsin."
+                      : position
+                        ? "Aramayı yenileyebilir veya daha sonra tekrar deneyebilirsin."
+                        : "Konum izniyle çevrendeki mekanları ve mesafelerini gösterebiliriz."}
+                  </p>
+                  {cafes.length > 0 ? (
+                    <Button variant="outline" className="mt-4" onClick={clear}>
+                      Aramayı ve filtreyi temizle
+                    </Button>
+                  ) : !position ? (
+                    <Button
+                      className="mt-4"
+                      onClick={() => void requestLocation()}
+                    >
+                      Konumu al
+                    </Button>
+                  ) : null}
                 </div>
               )}
-            </>
+            </section>
           )}
           <VenueSources venues={cafes} />
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Gösterilen mesafeler yaklaşık kuş uçuşu uzaklıktır. Check-in için
+            konumun mekan ekranında ayrıca doğrulanır.
+          </p>
         </main>
+        {activeCheckIn && activeCheckIn.expiryTime > new Date() && (
+          <div className="pointer-events-none fixed inset-x-0 bottom-20 z-40 px-4">
+            <button
+              onClick={() => navigate(`/cafe/${activeCheckIn.cafeId}`)}
+              className="pointer-events-auto mx-auto flex w-full max-w-3xl items-center justify-between gap-3 rounded-2xl border border-border bg-card/95 p-3.5 text-left shadow-lg backdrop-blur-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            >
+              <span className="flex min-w-0 items-center gap-3">
+                <MapPin className="h-5 w-5 shrink-0 text-primary" />
+                <span className="min-w-0">
+                  <span className="block text-[11px] text-muted-foreground">
+                    Aktif check-in
+                  </span>
+                  <strong className="block truncate text-sm">
+                    {activeCheckIn.cafeName}
+                  </strong>
+                </span>
+              </span>
+              <span className="shrink-0 text-xs font-semibold text-primary">
+                Mekana dön →
+              </span>
+            </button>
+          </div>
+        )}
+        <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+          <SheetContent
+            side="bottom"
+            className="mx-auto max-h-[85dvh] max-w-3xl overflow-y-auto rounded-t-3xl border-border bg-card"
+          >
+            <SheetHeader>
+              <SheetTitle>Mekanları filtrele</SheetTitle>
+              <SheetDescription>
+                Arama alanını ve sıralamayı seç. Filtreler yüklenen mekanları
+                düzenler.
+              </SheetDescription>
+            </SheetHeader>
+            <div className="mt-6 space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="discover-radius">Arama alanı</Label>
+                <select
+                  id="discover-radius"
+                  value={radius}
+                  onChange={(e) => setRadius(Number(e.target.value))}
+                  className="h-11 w-full rounded-xl border border-input bg-background px-3 text-base focus-visible:outline-primary"
+                >
+                  <option value={500}>500 m</option>
+                  <option value={1000}>1 km</option>
+                  <option value={2000}>2 km</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="discover-sort">Mekan sıralaması</Label>
+                <select
+                  id="discover-sort"
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value)}
+                  className="h-11 w-full rounded-xl border border-input bg-background px-3 text-base focus-visible:outline-primary"
+                >
+                  <option value="nearby">En yakın</option>
+                  <option value="active">En hareketli</option>
+                </select>
+              </div>
+              <SheetClose asChild>
+                <Button className="h-11 w-full rounded-xl">
+                  Sonuçları göster
+                </Button>
+              </SheetClose>
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </PageLayout>
   );

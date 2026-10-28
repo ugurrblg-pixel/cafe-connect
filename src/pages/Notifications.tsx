@@ -134,7 +134,7 @@ export default function Notifications() {
       <div className="min-h-screen bg-background pb-24">
         <Header title="Bildirimler" />
 
-        <main className="pt-16">
+        <main className="mx-auto max-w-3xl pt-20">
           <Tabs defaultValue="waves" className="w-full">
             <TabsList className={cn('w-full grid mx-4 mt-2', paidFeatures ? 'grid-cols-3' : 'grid-cols-2')} style={{ width: 'calc(100% - 2rem)' }}>
               {paidFeatures && <TabsTrigger value="sparks" className="flex items-center gap-2">

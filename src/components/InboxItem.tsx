@@ -24,7 +24,7 @@ interface InboxItemProps {
 
 function formatSmartTime(date: Date | undefined, t: any): string {
   if (!date) return '';
-  
+
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
@@ -69,11 +69,12 @@ export const InboxItem = memo(function InboxItem({
       role="button"
       tabIndex={0}
       aria-disabled={isLoading}
+      onKeyDown={event=>{if(!isLoading&&(event.key==='Enter'||event.key===' ')){event.preventDefault();onClick();}}}
       className={cn(
         'w-full flex items-center gap-3.5 px-3 py-4 select-none cursor-pointer',
         'transition-all duration-200 ease-out',
-        'rounded-2xl',
-        'hover:bg-card/80',
+        'rounded-2xl border border-border/70 bg-card shadow-sm',
+        'hover:border-brand/30 hover:bg-card',
         // Unread: card-like with shadow
         hasUnread && 'bg-card shadow-md border border-primary/10',
         // Premium unread: warm glow
@@ -96,9 +97,9 @@ export const InboxItem = memo(function InboxItem({
               loading="lazy"
             />
           ) : (
-            <InitialsAvatar 
-              name={userName} 
-              size="md" 
+            <InitialsAvatar
+              name={userName}
+              size="md"
               className="w-14 h-14 shadow-md text-base font-bold"
             />
           )}
@@ -185,8 +186,8 @@ export const InboxItem = memo(function InboxItem({
         ) : hasUnread ? (
           <span className={cn(
             "min-w-6 h-6 px-2 text-xs font-bold rounded-full flex items-center justify-center shadow-sm",
-            isPremiumUser 
-              ? "bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-amber-500/25" 
+            isPremiumUser
+              ? "bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-amber-500/25"
               : "bg-primary text-primary-foreground shadow-primary/20"
           )}>
             {unreadCount > 99 ? '99+' : unreadCount}

@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageLayout } from '@/components/PageLayout';
+import { Header } from '@/components/Header';
 import { InboxItem } from '@/components/InboxItem';
 import { ProfileGateModal } from '@/components/ProfileGateModal';
 import { ConversationActionSheet } from '@/components/ConversationActionSheet';
@@ -79,13 +80,9 @@ export default function Messages() {
     <PageLayout>
       <div className="min-h-screen bg-background pb-24">
         {/* Clean Header */}
-        <header className="fixed top-0 left-0 right-0 z-50 safe-top glass-effect border-b border-border/60">
-          <div className="flex items-center h-14 px-5">
-            <h1 className="font-bold text-lg text-foreground">Mesajlar</h1>
-          </div>
-        </header>
+        <Header title="Mesajlar" />
 
-        <main className="pt-14">
+        <main className="mx-auto max-w-3xl pt-20">
           {error && (
             <div className="px-5 py-4 text-sm text-muted-foreground">
               Sohbet listesi yüklenemedi.
