@@ -42,9 +42,9 @@ export function BottomNav() {
 
   return (
     <nav aria-label="Ana gezinme"
-      className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-xl border-t border-border/80 shadow-sm safe-bottom z-50"
+      className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-xl border-t border-border/80 shadow-[0_-4px_24px_-12px_hsl(var(--foreground)/0.15)] safe-bottom z-50"
     >
-      <div className="mx-auto flex max-w-3xl items-center justify-around px-2 py-1">
+      <div className="mx-auto flex max-w-3xl items-center justify-around gap-1 px-3 py-2">
         {items.map(({ path, icon: Icon, labelKey, countKey }) => {
           const isActive = location.pathname === path || (path !== '/' && location.pathname.startsWith(`${path}/`));
           const count = countKey ? unreadCounts[countKey] : 0;
@@ -61,7 +61,7 @@ export function BottomNav() {
                 isActive ? 'nav-item-active' : 'nav-item-inactive'
               )}
             >
-              <div className={cn('relative flex h-8 w-8 items-center justify-center rounded-xl',isActive && 'border border-brand/20 bg-brand-soft')}>
+              <div className={cn('relative flex h-8 w-12 items-center justify-center rounded-xl transition-colors',isActive && 'border border-brand/20 bg-brand-soft')}>
                 <Icon className="w-[22px] h-[22px]" strokeWidth={isActive ? 2.2 : 1.5} />
                 {count > 0 && (
                   <span className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1">
@@ -69,7 +69,7 @@ export function BottomNav() {
                   </span>
                 )}
               </div>
-              <span className="text-[11px] font-medium mt-0.5">{label}</span>
+              <span className="text-[11px] font-semibold mt-1">{label}</span>
             </button>
           );
         })}

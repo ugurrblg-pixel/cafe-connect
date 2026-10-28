@@ -214,3 +214,6 @@
 @media (prefers-reduced-motion: reduce) { .venue-heat-hot, .venue-flame-hot .venue-flame { animation: none; } }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
+
+/* Quiet cafe-table detail; decorative only, no implied profile status. */
+.profile-cover { background-image: radial-gradient(circle at 85% 110%, transparent 0 38px, hsl(var(--brand) / .15) 39px 40px, transparent 41px 65px, hsl(var(--brand) / .12) 66px 67px, transparent 68px), linear-gradient(110deg, hsl(var(--brand-soft)), hsl(var(--background))); }

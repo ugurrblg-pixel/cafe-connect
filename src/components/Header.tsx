@@ -37,11 +37,11 @@ export function Header({
       )}
     >
       <div className="mx-auto flex h-16 max-w-3xl items-center justify-between gap-3 px-4">
-        {brand ? <div className="flex min-w-0 items-center gap-2.5"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand/20 bg-brand-soft text-primary"><Radar className="h-5 w-5" aria-hidden="true"/></span><div><p className="font-display text-lg font-bold leading-none tracking-tight">Riyo</p><p className="mt-1 text-[11px] font-medium text-muted-foreground">Sosyal Radar</p></div></div> : showBack ? (
+        {brand ? <div className="flex min-w-0 items-center gap-2.5"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-brand/20 bg-brand-soft text-primary shadow-sm"><Radar className="h-5 w-5" aria-hidden="true"/></span><div><p className="font-display text-xl font-bold leading-none tracking-tight">Riyo</p><p className="mt-1 text-[11px] font-medium text-muted-foreground">Sosyal Radar</p></div></div> : showBack ? (
           <button
             aria-label="Geri dön"
             onClick={() => navigate(-1)}
-            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-secondary transition-colors"
+            className="w-11 h-11 flex items-center justify-center rounded-xl border border-border/70 bg-card hover:bg-secondary transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           >
             <ChevronLeft className="w-6 h-6 text-foreground" />
           </button>

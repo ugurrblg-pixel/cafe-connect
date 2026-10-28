@@ -113,7 +113,7 @@ export default function Discover() {
               <Button
                 variant="outline"
                 size="icon"
-                className="h-9 w-9 rounded-xl bg-background"
+                className="h-11 w-11 rounded-2xl bg-card"
                 aria-label="Filtrele"
                 onClick={() => setFiltersOpen(true)}
               >
@@ -144,7 +144,7 @@ export default function Discover() {
           }
         />
         <main className="mx-auto max-w-3xl space-y-5 px-4 pt-24">
-          <div className="discovery-intro">
+          <div className="discovery-intro border-b border-border/70 pb-6">
             <p className="mb-2 text-xs font-semibold tracking-wide text-primary">
               SENİN ÇEVREN, YENİ HİKAYELER
             </p>
@@ -159,7 +159,7 @@ export default function Discover() {
           </div>
           <section
             aria-label="Konum ve arama alanı"
-            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/80 bg-card px-4 py-3 shadow-sm"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/80 bg-card px-4 py-3.5 shadow-sm"
           >
             <div className="flex min-w-0 flex-1 items-center gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand/20 bg-brand-soft text-primary">

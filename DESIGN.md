@@ -44,3 +44,7 @@ Keep the approved warm palette. Discovery opens with a restrained editorial head
 
 
 Owner revision: venue listing returns to the preceding single-column full-width photo cards at every viewport, with the original card proportions and check-in detail action. The refined heading, filters and conversation screens remain. This supersedes the two-column discovery refinement above.
+
+
+## Detail polish
+Preserve the single-column venue list. Shared navigation uses wider selected icon surfaces, subtle top shadow and stronger labels. Header controls and profile edit affordances have 44px targets and visible focus. The own-profile cover uses stationary concentric rings as decoration, without any verification or attendance meaning. Profile counters group in a neutral inset surface. Existing typography, runtime palette and privacy owners remain canonical.

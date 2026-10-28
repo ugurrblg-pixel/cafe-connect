@@ -120,7 +120,7 @@ export default function Profile() {
     );
   }
 
-  const cardClass = "bg-card rounded-2xl p-5 mb-4 border border-border/80";
+  const cardClass = "bg-card rounded-[22px] p-5 mb-4 border border-border/80";
   const cardShadow = { boxShadow: 'var(--shadow-card)' };
 
   return (
@@ -130,9 +130,9 @@ export default function Profile() {
         <main className="pt-6 px-4 max-w-2xl mx-auto"><div className="mb-5 flex items-center justify-between gap-3"><p className="font-display text-2xl font-bold">Profilin</p><Button variant="outline" size="icon" className="rounded-xl bg-card" aria-label="Güvenlik ve gizlilik ayarları" onClick={()=>navigate('/settings/safety')}><Shield/></Button></div>
 
           {/* Profile Hero */}
-          <div className="relative p-5 mb-6 rounded-2xl border border-border/80 bg-card overflow-hidden shadow-card">
-            <div className="absolute top-0 inset-x-0 h-20 bg-brand-soft" aria-hidden="true" />
-            <div className="relative flex items-end justify-between gap-4 pt-6 mb-5">
+          <div className="relative p-5 mb-6 rounded-[26px] border border-border/80 bg-card overflow-hidden shadow-card">
+            <div className="profile-cover absolute top-0 inset-x-0 h-24 bg-brand-soft" aria-hidden="true" />
+            <div className="relative flex flex-wrap items-end justify-between gap-4 pt-8 mb-5">
             <div className="relative ring-4 ring-card rounded-2xl">
               <ProfilePhotoCarousel
                 photos={profile.photo_urls}
@@ -147,7 +147,7 @@ export default function Profile() {
               )}
             </div>
 
-            <button onClick={() => navigate('/profile/edit')} className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold"><Edit2 className="w-3.5 h-3.5" />{t.profile.editProfile}</button>
+            <button onClick={() => navigate('/profile/edit')} className="flex min-h-11 items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold shadow-sm transition-shadow hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><Edit2 className="w-3.5 h-3.5" />{t.profile.editProfile}</button>
             </div>
             <p className="text-[10px] font-semibold tracking-[0.18em] uppercase text-primary mb-2">Profilin</p>
             <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">
@@ -157,7 +157,7 @@ export default function Profile() {
             <PurposeBadge purpose={profile.purpose} size="sm" />
 
 
-            <div className="grid grid-cols-2 gap-3 mt-5 border-t border-border pt-4"><div><p className="text-lg font-bold">{new Set([profile.photo_url,...profile.photo_urls].filter(Boolean)).size}</p><p className="text-xs text-muted-foreground">Fotoğrafın</p></div><div><p className="text-lg font-bold">{profile.hobbies.length}</p><p className="text-xs text-muted-foreground">İlgi alanın</p></div></div>
+            <div className="grid grid-cols-2 gap-3 mt-5 rounded-2xl border border-border/70 bg-background p-4"><div><p className="text-lg font-bold">{new Set([profile.photo_url,...profile.photo_urls].filter(Boolean)).size}</p><p className="text-xs text-muted-foreground">Fotoğrafın</p></div><div><p className="text-lg font-bold">{profile.hobbies.length}</p><p className="text-xs text-muted-foreground">İlgi alanın</p></div></div>
           </div>
 
           <section className={cardClass} style={cardShadow}>
@@ -171,7 +171,7 @@ export default function Profile() {
           <div className={cardClass} style={cardShadow}>
             <div className="flex items-center justify-between mb-2">
               <h2 className="font-semibold text-foreground">{t.profile.about}</h2>
-              <button onClick={() => navigate('/profile/edit')} aria-label="Profil bilgilerini düzenle" className="text-primary p-1 rounded-full hover:bg-primary/10 transition-colors">
+              <button onClick={() => navigate('/profile/edit')} aria-label="Profil bilgilerini düzenle" className="flex h-11 w-11 items-center justify-center text-primary rounded-xl bg-brand-soft hover:bg-secondary transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
                 <Edit2 className="w-4 h-4" />
               </button>
             </div>
