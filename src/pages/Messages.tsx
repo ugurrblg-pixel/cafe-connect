@@ -1,308 +1,457 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { PageLayout } from '@/components/PageLayout';
-import { Header } from '@/components/Header';
-import { InboxItem } from '@/components/InboxItem';
-import { ProfileGateModal } from '@/components/ProfileGateModal';
-import { ConversationActionSheet } from '@/components/ConversationActionSheet';
-import { useInboxData, InboxConversation } from '@/hooks/useInboxData';
-import { useProfileCompletion } from '@/hooks/useProfileCompletion';
-import { useI18n } from '@/contexts/I18nContext';
-import { MessageCircle, Coffee, MapPin, Hand, Sparkles, Crown, ChevronRight } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
-import { InitialsAvatar } from '@/components/InitialsAvatar';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-
+import { useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { PageLayout } from "@/components/PageLayout";
+import { InboxItem } from "@/components/InboxItem";
+import { ProfileGateModal } from "@/components/ProfileGateModal";
+import { ConversationActionSheet } from "@/components/ConversationActionSheet";
+import { useInboxData, type InboxConversation } from "@/hooks/useInboxData";
+import { useProfileCompletion } from "@/hooks/useProfileCompletion";
+import {
+  MessageCircle,
+  Coffee,
+  Hand,
+  Search,
+  X,
+  MoreHorizontal,
+  ArrowRight,
+  Users,
+  Loader2,
+  Send,
+} from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { InitialsAvatar } from "@/components/InitialsAvatar";
+import { toast } from "sonner";
+type Filter = "all" | "unread" | "new" | "active";
 export default function Messages() {
   const navigate = useNavigate();
-  const { t } = useI18n();
-  const { conversations, loading, error, createConversation, refetch } = useInboxData();
+  const { conversations, loading, error, createConversation, refetch } =
+    useInboxData();
   const { isComplete: isProfileComplete } = useProfileCompletion();
   const [openingChat, setOpeningChat] = useState<string | null>(null);
+  const openingRef = useRef(false);
   const [showProfileGate, setShowProfileGate] = useState(false);
-  
-  const [selectedConversation, setSelectedConversation] = useState<InboxConversation | null>(null);
+  const [selectedConversation, setSelectedConversation] =
+    useState<InboxConversation | null>(null);
   const [showActionSheet, setShowActionSheet] = useState(false);
-  const [deletedConversations, setDeletedConversations] = useState<Set<string>>(new Set());
-
-  const handleOpenChat = async (matchId: string, conversationId: string | null) => {
+  const [deleted, setDeleted] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
+  const visible = useMemo(
+    () => conversations.filter((c) => !deleted.has(c.matchId)),
+    [conversations, deleted],
+  );
+  const filtered = useMemo(
+    () =>
+      visible.filter(
+        (c) =>
+          (filter === "all" ||
+            (filter === "unread" && c.unreadCount > 0) ||
+            (filter === "new" && !c.lastMessage) ||
+            (filter === "active" && !!c.lastMessage)) &&
+          [c.otherUserName, c.cafeName, c.lastMessage?.content || ""]
+            .join(" ")
+            .toLocaleLowerCase("tr-TR")
+            .includes(search.trim().toLocaleLowerCase("tr-TR")),
+      ),
+    [visible, filter, search],
+  );
+  const newMatches = filtered.filter((c) => !c.lastMessage);
+  const activeChats = filtered.filter((c) => !!c.lastMessage);
+  const featured = activeChats.find((c) => c.unreadCount > 0);
+  const remaining = activeChats.filter((c) => c.matchId !== featured?.matchId);
+  const unread = visible.filter((c) => c.unreadCount > 0).length;
+  async function openChat(c: InboxConversation) {
+    if (openingRef.current) return;
     if (!isProfileComplete) {
       setShowProfileGate(true);
       return;
     }
-
-    setOpeningChat(matchId);
-    let convId = conversationId;
-    if (!convId) {
-      convId = await createConversation(matchId);
+    openingRef.current = true;
+    setOpeningChat(c.matchId);
+    try {
+      const id = c.conversationId || (await createConversation(c.matchId));
+      if (id) navigate("/chat/" + id);
+    } catch {
+      toast.error("Sohbet açılamadı. Tekrar deneyebilirsin.");
+    } finally {
+      openingRef.current = false;
+      setOpeningChat(null);
     }
-    setOpeningChat(null);
-    if (convId) {
-      navigate(`/chat/${convId}`);
-    }
-  };
-
-  const handleLongPress = (conversation: InboxConversation) => {
-    setSelectedConversation(conversation);
+  }
+  function actions(c: InboxConversation) {
+    setSelectedConversation(c);
     setShowActionSheet(true);
-  };
-
-  const handleDeleteConversation = () => {
+  }
+  function hide() {
     if (!selectedConversation) return;
-    setDeletedConversations(prev => new Set(prev).add(selectedConversation.matchId));
-    toast.success('Sohbet bu listede gizlendi', {
-      description: 'Sayfayı yenilediğinde yeniden görünür.',
+    setDeleted((prev) => new Set(prev).add(selectedConversation.matchId));
+    toast.success("Sohbet bu listede gizlendi", {
+      description: "Sayfayı yenilediğinde yeniden görünür.",
     });
     setSelectedConversation(null);
-  };
-
-  const visibleConversations = conversations.filter(
-    c => !deletedConversations.has(c.matchId)
-  );
-
-  // Split: new matches (no messages) vs active chats (have messages)
-  const { newMatches, activeChats } = useMemo(() => {
-    const newMatches: InboxConversation[] = [];
-    const activeChats: InboxConversation[] = [];
-    for (const c of visibleConversations) {
-      if (!c.lastMessage) {
-        newMatches.push(c);
-      } else {
-        activeChats.push(c);
-      }
-    }
-    return { newMatches, activeChats };
-  }, [visibleConversations]);
-
+  }
+  function avatar(c: InboxConversation, size = "h-14 w-14") {
+    return c.otherUserPhotoUrl ? (
+      <img
+        src={c.otherUserPhotoUrl}
+        alt={c.otherUserName}
+        className={size + " rounded-full object-cover"}
+        loading="lazy"
+      />
+    ) : (
+      <InitialsAvatar name={c.otherUserName} size="md" className={size} />
+    );
+  }
+  const filters: [Filter, string][] = [
+    ["all", "Tümü"],
+    ["new", "Yeni eşleşmeler"],
+    ["active", "Aktif sohbetler"],
+    ["unread", "Okunmamış"],
+  ];
   return (
     <PageLayout>
-      <div className="min-h-screen bg-background pb-24">
-        {/* Clean Header */}
-        <Header title="Mesajlar" />
-
-        <main className="mx-auto max-w-3xl pt-20">
-          <div className="px-5 pb-5 pt-2"><p className="mb-1 text-xs font-semibold text-primary">TANIŞTIK, ŞİMDİ SOHBET ZAMANI</p><h2 className="text-2xl font-bold tracking-tight">Sohbetlerin burada.</h2><p className="mt-2 text-sm text-muted-foreground">Karşılıklı bir selam, yeni bir sohbetin başlangıcı.</p></div>
+      <div className="messages-showcase mx-auto min-h-screen max-w-[440px] pb-28">
+        <header className="px-5 pb-5 pt-8">
+          <h1 className="font-sans text-4xl font-extrabold leading-none tracking-tight text-primary">
+            Riyo
+          </h1>
+          <p className="mt-0.5 font-sans text-sm font-semibold">Mesajlar</p>
+        </header>
+        <main className="space-y-5 px-5">
+          <div>
+            <p className="mb-1 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+              <span className="h-2 w-2 rounded-full bg-primary" />
+              Bağlantılar & sohbet
+            </p>
+            <h2 className="font-sans text-3xl font-extrabold leading-tight tracking-tight">
+              Kiminle kahve <span className="text-primary">içelim?</span>
+            </h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative min-w-0 flex-1">
+              <Search
+                className="pointer-events-none absolute left-3 top-4 h-4 w-4 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <Input
+                aria-label="Kişi, sohbet veya mekan ara"
+                placeholder="Kişi, sohbet veya mekan ara…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-12 rounded-xl border-border/60 bg-card pl-9 pr-9 text-sm shadow-sm"
+              />
+              {search && (
+                <button
+                  className="absolute right-0 top-0 flex h-12 w-9 items-center justify-center rounded-xl focus-visible:outline focus-visible:outline-primary"
+                  aria-label="Aramayı temizle"
+                  onClick={() => setSearch("")}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <label htmlFor="inbox-filter" className="sr-only">
+              Sohbet filtresi
+            </label>
+            <select
+              id="inbox-filter"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as Filter)}
+              className="h-12 max-w-28 rounded-xl border border-border/60 bg-card px-2 text-sm focus-visible:outline-primary"
+            >
+              {filters.map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div
+            role="group"
+            aria-label="Sohbet kategorisi"
+            className="flex gap-2 overflow-x-auto pb-1"
+          >
+            {filters.map(([key, label]) => (
+              <Button
+                key={key}
+                size="sm"
+                variant={filter === key ? "default" : "outline"}
+                aria-pressed={filter === key}
+                onClick={() => setFilter(key)}
+                className="shrink-0 rounded-full"
+              >
+                {label}
+                {key === "unread" && unread > 0 ? " (" + unread + ")" : ""}
+              </Button>
+            ))}
+            <Button
+              size="sm"
+              variant="outline"
+              className="shrink-0 rounded-full bg-card"
+              onClick={() => navigate("/notifications")}
+            >
+              <Hand className="h-4 w-4" />
+              El sallamalar
+            </Button>
+          </div>
           {error && (
-            <div className="px-5 py-4 text-sm text-muted-foreground">
-              Sohbet listesi yüklenemedi.
-              <Button variant="ghost" onClick={() => void refetch()}>Tekrar dene</Button>
+            <div
+              role="alert"
+              className="rounded-2xl border border-destructive/20 bg-card p-4 text-sm"
+            >
+              <p>Sohbet listesi yüklenemedi.</p>
+              <Button
+                variant="outline"
+                className="mt-3"
+                onClick={() => void refetch()}
+              >
+                Tekrar dene
+              </Button>
             </div>
           )}
           {loading ? (
-            <div className="px-4 py-4 space-y-2">
-              {/* Match row skeleton */}
-              <div className="flex gap-3 px-1 py-3 overflow-hidden">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="flex flex-col items-center gap-1.5 flex-shrink-0">
-                    <Skeleton className="w-16 h-16 rounded-full" />
-                    <Skeleton className="h-3 w-12 rounded" />
-                  </div>
-                ))}
-              </div>
-              <div className="h-px bg-border/40 mx-1" />
+            <div className="space-y-3" aria-label="Sohbetler yükleniyor">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center gap-3.5 p-3.5 rounded-2xl" style={{ animationDelay: `${i * 100}ms` }}>
-                  <Skeleton className="h-14 w-14 rounded-full flex-shrink-0" />
-                  <div className="flex-1 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <Skeleton className="h-4 w-28 rounded-lg" />
-                      <Skeleton className="h-3 w-10 rounded-lg" />
-                    </div>
-                    <Skeleton className="h-3.5 w-44 rounded-lg" />
-                  </div>
-                </div>
+                <Skeleton key={i} className="h-24 rounded-2xl" />
               ))}
             </div>
-          ) : visibleConversations.length > 0 ? (
+          ) : (
             <>
-              {/* New Matches - Horizontal scroll */}
               {newMatches.length > 0 && (
-                <div className="pt-3 pb-2">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 mb-3">
-                    Yeni Eşleşmeler
-                  </p>
-                  <div className="flex gap-4 px-5 overflow-x-auto pb-3 scrollbar-hide">
-                    {newMatches.map((match) => (
+                <section aria-labelledby="new-matches-title">
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <h2
+                      id="new-matches-title"
+                      className="message-heading text-lg font-semibold"
+                    >
+                      Yeni eşleşmeler
+                    </h2>
+                    <span className="rounded-full bg-accent/10 px-2 py-1 text-[11px] font-bold text-accent">
+                      {newMatches.length} eşleşme
+                    </span>
+                  </div>
+                  <div className="flex gap-3 overflow-x-auto pb-2">
+                    {newMatches.map((c) => (
                       <button
-                        key={match.matchId}
-                        onClick={() => handleOpenChat(match.matchId, match.conversationId)}
-                        disabled={openingChat === match.matchId}
-                        className="flex flex-col items-center gap-1.5 flex-shrink-0 group"
+                        key={c.matchId}
+                        disabled={openingChat !== null}
+                        onClick={() => void openChat(c)}
+                        aria-label={c.otherUserName + " ile sohbet başlat"}
+                        className="flex w-28 shrink-0 flex-col items-center gap-1 rounded-2xl border border-border/60 bg-card p-3 text-center shadow-sm focus-visible:outline focus-visible:outline-primary disabled:opacity-50"
                       >
-                        <div className="relative">
-                          <div className="w-[68px] h-[68px] rounded-full bg-gradient-to-br from-primary/80 to-amber-500/80 p-[2.5px] shadow-lg group-hover:shadow-xl transition-shadow group-active:scale-95 transition-transform">
-                            {match.otherUserPhotoUrl ? (
-                              <img
-                                src={match.otherUserPhotoUrl}
-                                alt={match.otherUserName}
-                                className="w-full h-full rounded-full object-cover border-2 border-background"
-                                loading="lazy"
-                              />
+                        <span className="relative mb-1">
+                          {avatar(c)}
+                          <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                            {openingChat === c.matchId ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
                             ) : (
-                              <div className="w-full h-full rounded-full border-2 border-background overflow-hidden">
-                                <InitialsAvatar name={match.otherUserName} size="md" className="w-full h-full text-sm" />
-                              </div>
+                              <Hand className="h-3 w-3" />
                             )}
-                          </div>
-                          {/* New dot */}
-                          <div className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-primary rounded-full border-2 border-background flex items-center justify-center">
-                            <Sparkles className="w-2 h-2 text-primary-foreground" />
-                          </div>
-                        </div>
-                        <span className="text-xs font-medium text-foreground/80 truncate max-w-[72px]">
-                          {match.otherUserName.split(' ')[0]}
+                          </span>
+                        </span>
+                        <span className="w-full truncate text-sm font-semibold">
+                          {c.otherUserName}
+                        </span>
+                        <span className="w-full truncate text-[11px] text-primary">
+                          {c.cafeName}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">
+                          Sohbet başlat
                         </span>
                       </button>
                     ))}
+                    <button
+                      className="flex w-28 shrink-0 flex-col items-center justify-center gap-2 rounded-2xl bg-accent/5 p-3 text-center focus-visible:outline focus-visible:outline-primary"
+                      onClick={() => navigate("/")}
+                    >
+                      <Coffee className="h-7 w-7 text-primary" />
+                      <span className="text-sm font-semibold">
+                        Mekanda keşfet
+                      </span>
+                    </button>
                   </div>
-                  {/* Separator */}
-                  <div className="mx-5 h-px bg-border/50" />
-                </div>
+                </section>
               )}
-
-              {/* Active Chats */}
-              {activeChats.length > 0 ? (
-                <div className="px-3 py-2">
-                  {activeChats.map((conversation, index) => (
-                    <div key={conversation.matchId}>
-                      <InboxItem
-                        id={conversation.matchId}
-                        userName={conversation.otherUserName}
-                        userPhotoUrl={conversation.otherUserPhotoUrl}
-                        lastMessage={conversation.lastMessage?.content}
-                        lastMessageTime={conversation.lastMessage?.createdAt || conversation.matchedAt}
-                        cafeName={conversation.cafeName}
-                        unreadCount={conversation.unreadCount}
-                        lastActiveAt={conversation.lastActiveAt}
-                        isLoading={openingChat === conversation.matchId}
-                        onClick={() => handleOpenChat(conversation.matchId, conversation.conversationId)}
-                        onLongPress={() => handleLongPress(conversation)}
-                      />
-                      {index < activeChats.length - 1 && (
-                        <div className="ml-[76px] mr-4">
-                          <div className="h-px bg-border/30" />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center px-6 py-12 text-center">
-                  <MessageCircle className="w-10 h-10 text-muted-foreground/30 mb-3" />
-                  <p className="text-sm text-muted-foreground">
-                    Henüz mesajlaşma yok. Yeni eşleşmelerine tıklayarak sohbet başlat!
+              {featured && (
+                <section
+                  aria-label="Okunmamış sohbet"
+                  className="rounded-3xl border border-border/60 bg-card p-5 shadow-card"
+                >
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <span className="max-w-full truncate rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-primary">
+                      {featured.cafeName || "Yeni mesaj"}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Sohbet seçenekleri"
+                      className="h-9 w-9 shrink-0"
+                      onClick={() => actions(featured)}
+                    >
+                      <MoreHorizontal />
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {avatar(featured)}
+                    <h3 className="message-heading min-w-0 flex-1 break-words text-lg font-semibold">
+                      {featured.otherUserName}
+                    </h3>
+                    <span
+                      className="rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-primary-foreground"
+                      aria-label={featured.unreadCount + " okunmamış mesaj"}
+                    >
+                      {featured.unreadCount > 99 ? "99+" : featured.unreadCount}
+                    </span>
+                  </div>
+                  <p className="my-4 line-clamp-3 break-words rounded-2xl bg-accent/5 p-3 text-[15px] leading-relaxed">
+                    {featured.lastMessage?.content}
                   </p>
-                </div>
+                  <Button
+                    disabled={openingChat !== null}
+                    onClick={() => void openChat(featured)}
+                    className="h-11 w-full rounded-full"
+                  >
+                    {openingChat === featured.matchId ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                    Cevap yaz
+                  </Button>
+                </section>
+              )}
+              {remaining.length > 0 && (
+                <section aria-labelledby="inbox-title">
+                  <div className="mb-3 flex items-center justify-between">
+                    <h2
+                      id="inbox-title"
+                      className="message-heading text-lg font-semibold"
+                    >
+                      Sohbetler
+                    </h2>
+                    <span
+                      role="status"
+                      className="text-xs text-muted-foreground"
+                    >
+                      {activeChats.length} sohbet
+                    </span>
+                  </div>
+                  <div className="space-y-3">
+                    {remaining.map((c) => (
+                      <div className="relative" key={c.matchId}>
+                        <InboxItem
+                          id={c.matchId}
+                          userName={c.otherUserName}
+                          userPhotoUrl={c.otherUserPhotoUrl}
+                          lastMessage={c.lastMessage?.content}
+                          lastMessageTime={
+                            c.lastMessage?.createdAt || c.matchedAt
+                          }
+                          cafeName={c.cafeName}
+                          unreadCount={c.unreadCount}
+                          isLoading={openingChat === c.matchId}
+                          onClick={() => void openChat(c)}
+                          onLongPress={() => actions(c)}
+                        />
+                        <button
+                          aria-label={c.otherUserName + " sohbet seçenekleri"}
+                          onClick={() => actions(c)}
+                          className="absolute bottom-2 right-2 flex h-8 w-9 items-center justify-center rounded-xl bg-card text-muted-foreground focus-visible:outline focus-visible:outline-primary"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+              {!filtered.length && !error && (
+                <section className="rounded-3xl border border-border/60 bg-card p-6 text-center">
+                  <MessageCircle
+                    className="mx-auto mb-4 h-10 w-10 text-primary"
+                    aria-hidden="true"
+                  />
+                  <h2 className="message-heading text-xl font-semibold">
+                    {visible.length
+                      ? "Bu seçimle eşleşen sohbet yok"
+                      : "İlk sohbetin bir selamla başlasın"}
+                  </h2>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    {visible.length
+                      ? "Kişi veya mekan adını değiştir ya da filtreleri temizle."
+                      : "Bir mekana check-in yap, el salla. İlgi karşılıklı olduğunda sohbet açılır."}
+                  </p>
+                  {visible.length ? (
+                    <Button
+                      variant="outline"
+                      className="mt-4 rounded-full"
+                      onClick={() => {
+                        setSearch("");
+                        setFilter("all");
+                      }}
+                    >
+                      Aramayı ve filtreleri temizle
+                    </Button>
+                  ) : (
+                    <Button
+                      className="mt-4 rounded-full"
+                      onClick={() => navigate("/")}
+                    >
+                      Mekan seç
+                    </Button>
+                  )}
+                </section>
               )}
             </>
-          ) : (
-            <MessagesEmptyState onDiscoverClick={() => navigate('/')} onPremiumClick={() => navigate('/subscription')} />
           )}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-accent/5 p-4">
+            <div>
+              <p className="text-sm font-semibold">Yeni biriyle tanış</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Mekanını seç, bir selam gönder.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full bg-card"
+              onClick={() => navigate("/")}
+            >
+              Mekan seç
+              <ArrowRight className="h-3 w-3" />
+            </Button>
+          </div>
+          <Button
+            variant="outline"
+            className="h-auto w-full justify-between whitespace-normal rounded-2xl bg-card p-4 text-left"
+            onClick={() => navigate("/activities")}
+          >
+            <span className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-accent" />
+              <span>
+                <strong className="block text-sm">Grup buluşmaları</strong>
+                <span className="block text-xs font-normal text-muted-foreground">
+                  Katıldığın aktiviteler ve grup sohbetleri.
+                </span>
+              </span>
+            </span>
+            <ArrowRight className="h-4 w-4 shrink-0" />
+          </Button>
         </main>
-
         <ProfileGateModal
           open={showProfileGate}
           onOpenChange={setShowProfileGate}
           action="message"
         />
-
         <ConversationActionSheet
           open={showActionSheet}
           onOpenChange={setShowActionSheet}
-          userName={selectedConversation?.otherUserName || ''}
-          onDelete={handleDeleteConversation}
+          userName={selectedConversation?.otherUserName || ""}
+          onDelete={hide}
         />
       </div>
     </PageLayout>
-  );
-}
-
-function MessagesEmptyState({ 
-  onDiscoverClick, 
-  onPremiumClick 
-}: { 
-  onDiscoverClick: () => void;
-  onPremiumClick: () => void;
-}) {
-  const steps = [
-    { icon: MapPin, title: 'Kafeye git', description: 'Yakınındaki bir kafeye check-in yap' },
-    { icon: Hand, title: 'El salla', description: 'İlgini çeken birine el salla' },
-    { icon: MessageCircle, title: 'Sohbet başlat', description: 'Karşılıklı el sallayınca sohbet açılır' },
-  ];
-
-  return (
-    <div className="flex flex-col items-center px-6 py-12 animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
-      <div className="relative mb-8">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-amber-500/10 to-primary/5 rounded-full blur-2xl scale-150" />
-        <div className="relative w-28 h-28 bg-gradient-to-br from-secondary to-secondary/60 rounded-full flex items-center justify-center shadow-lg">
-          <MessageCircle className="w-14 h-14 text-primary/50" strokeWidth={1.5} />
-          <div className="absolute -top-2 -right-1 w-6 h-6 bg-amber-500/20 rounded-full flex items-center justify-center animate-pulse">
-            <Sparkles className="w-3 h-3 text-amber-500" />
-          </div>
-        </div>
-        <div className="absolute -bottom-2 -right-3 w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-full flex items-center justify-center border-4 border-background shadow-lg">
-          <Coffee className="w-6 h-6 text-white" />
-        </div>
-      </div>
-
-      <h3 className="font-bold text-xl text-foreground mb-2 text-center">Henüz sohbetin yok ☕</h3>
-      <p className="text-muted-foreground text-center text-sm max-w-[280px] mb-8 leading-relaxed">
-        Bir kafeye check-in yap, insanlarla tanış ve sohbete başla!
-      </p>
-
-      <Button 
-        onClick={onDiscoverClick} 
-        size="lg"
-        className="w-full max-w-[300px] h-13 rounded-2xl text-base font-bold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-      >
-        <Coffee className="w-5 h-5 mr-2" />
-        Yakındaki Kafeleri Keşfet
-        <ChevronRight className="w-5 h-5 ml-1" />
-      </Button>
-
-      <p className="text-xs text-muted-foreground/70 mt-4 text-center">
-        💡 Ne kadar aktif olursan, o kadar hızlı eşleşirsin
-      </p>
-
-      <div className="w-full max-w-sm mt-10">
-        <p className="text-xs text-muted-foreground text-center mb-5 uppercase tracking-wider font-semibold flex items-center justify-center gap-2">
-          <span className="w-8 h-px bg-border" />
-          Nasıl Çalışır?
-          <span className="w-8 h-px bg-border" />
-        </p>
-        <div className="space-y-2.5">
-          {steps.map((step, index) => {
-            const Icon = step.icon;
-            return (
-              <div key={index} className="flex items-center gap-4 p-4 rounded-2xl bg-card/80 shadow-sm border border-border/30">
-                <div className="relative flex-shrink-0">
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary/12 to-primary/5 flex items-center justify-center">
-                    <Icon className="w-5 h-5 text-primary" />
-                  </div>
-                  <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center shadow-sm">
-                    {index + 1}
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-foreground text-[15px]">{step.title}</p>
-                  <p className="text-sm text-muted-foreground leading-snug">{step.description}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <button
-        onClick={onPremiumClick}
-        className="mt-10 flex items-center gap-2.5 px-5 py-3 rounded-full bg-gradient-to-r from-amber-500/10 to-amber-600/5 border border-amber-500/25 hover:border-amber-500/50 transition-all duration-300 hover:scale-[1.03] hover:shadow-md group"
-      >
-        <Crown className="w-4 h-4 text-amber-500" />
-        <span className="text-sm font-medium text-foreground/80 group-hover:text-foreground transition-colors">Daha hızlı eşleş</span>
-        <Sparkles className="w-3.5 h-3.5 text-amber-500/70" />
-      </button>
-    </div>
   );
 }

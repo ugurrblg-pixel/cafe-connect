@@ -76,3 +76,7 @@ Owner replaced the compact concept with the supplied social showcase HTML. Radar
 
 ## Supplied activity showcase
 Activity directory follows the supplied mint concept, Bricolage Grotesque headings and Karla body, Plus Jakarta wordmark, featured real plan and compact white cards. Date select filters all/today/tomorrow locally; all is default to avoid hiding future plans. Map remains available via explicit toggle, creation and detail/approval flows are preserved. Only backend-supported coffee/games/walk categories are offered. No static portraits, invented table amenities, fake live counts or direct wave-to-join action. Featured action opens detail before participation.
+
+
+## Supplied messages showcase
+Messages uses the supplied mint canvas, Riyo/Mesajlar header, exact coffee headline, searchable inbox, shared-state filter/select, match carousel and unread conversation highlight. All names, previews and unread counts come from the owned inbox projection. New waves route to Notifications; activity group conversations remain under Activities. No invented presence, distances, professions, table invitations or static portraits. Profile completion gates and server conversation creation remain; duplicate opening is guarded and failures recover. Temporary hide retains its explicit refresh disclosure.
