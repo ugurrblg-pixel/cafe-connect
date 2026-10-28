@@ -52,3 +52,6 @@ Preserve the single-column venue list. Shared navigation uses wider selected ico
 
 ## Owner supplied navigation dock
 The base64 SVG reference defines a floating graphite pill with a lime selected capsule. BottomNav implements it as real keyboard-operable route buttons; original app route names, unread counters and activity availability rules remain. Dock colors are locally scoped semantic variables in index.css and do not recolor the application. The container reserves safe-area space; the active-check-in shortcut stays above it. Source example labels (games/wheel/team) do not create unsupported routes.
+
+
+Owner adjustment: retain the floating capsule silhouette but use canonical card, primary terracotta, muted and border tokens throughout. The dock is capped at 448px, with 56px button targets and 22px icons. This supersedes the graphite/lime color specification; route behavior is unchanged.

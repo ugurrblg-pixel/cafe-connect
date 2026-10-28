@@ -44,7 +44,7 @@ export function BottomNav() {
     <nav aria-label="Ana gezinme"
       className="riyo-dock fixed inset-x-0 bottom-0 z-50 px-3"
     >
-      <div className="riyo-dock-surface mx-auto flex max-w-lg items-center gap-1 p-2">
+      <div className="riyo-dock-surface mx-auto flex max-w-md items-center gap-1 p-1.5">
         {items.map(({ path, icon: Icon, labelKey, countKey }) => {
           const isActive = location.pathname === path || (path !== '/' && location.pathname.startsWith(`${path}/`));
           const count = countKey ? unreadCounts[countKey] : 0;
@@ -57,12 +57,12 @@ export function BottomNav() {
               aria-current={isActive ? 'page' : undefined}
               onClick={() => handleNavClick(path, countKey)}
               className={cn(
-                'riyo-dock-item relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-full px-1 py-2.5',
+                'riyo-dock-item relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-full px-1 py-2',
                 isActive && 'riyo-dock-selected'
               )}
             >
-              <div className="relative flex h-7 w-9 items-center justify-center">
-                <Icon className="w-6 h-6" strokeWidth={isActive ? 2.2 : 1.5} />
+              <div className="relative flex h-6 w-9 items-center justify-center">
+                <Icon className="w-[22px] h-[22px]" strokeWidth={isActive ? 2.2 : 1.5} />
                 {count > 0 && (
                   <span className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] riyo-dock-count text-[10px] font-bold rounded-full flex items-center justify-center px-1">
                     {count > 99 ? '99+' : count}

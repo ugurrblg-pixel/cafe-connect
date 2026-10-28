@@ -218,12 +218,12 @@
 /* Quiet cafe-table detail; decorative only, no implied profile status. */
 .profile-cover { background-image: radial-gradient(circle at 85% 110%, transparent 0 38px, hsl(var(--brand) / .15) 39px 40px, transparent 41px 65px, hsl(var(--brand) / .12) 66px 67px, transparent 68px), linear-gradient(110deg, hsl(var(--brand-soft)), hsl(var(--background))); }
 
-/* Owner supplied floating graphite / lime menu. Scoped to the dock. */
-.riyo-dock { --dock-top: #1c202c; --dock-bottom: #121520; --dock-border: #2e3547; --dock-muted: #a9b0c2; --dock-neon: #ccff00; --dock-ink: #111520; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); pointer-events: none; }
-.riyo-dock-surface { pointer-events: auto; border: 1px solid var(--dock-border); border-radius: 999px; background: linear-gradient(var(--dock-top), var(--dock-bottom)); box-shadow: 0 12px 32px -12px #0009, inset 0 1px 0 #ffffff12; }
-.riyo-dock-item { min-height: 64px; color: var(--dock-muted); transition: background-color .18s ease, color .18s ease; }
-.riyo-dock-item:hover { color: white; background: #ffffff0c; }
-.riyo-dock-item:focus-visible { outline: 2px solid var(--dock-neon); outline-offset: 2px; }
-.riyo-dock-item.riyo-dock-selected { color: var(--dock-ink); background: linear-gradient(#ddff33, #c6f300); box-shadow: 0 2px 15px -5px #ccff0073; }
-.riyo-dock-count { background: var(--dock-neon); color: var(--dock-ink); box-shadow: 0 0 0 2px var(--dock-bottom); }
-.riyo-dock-selected .riyo-dock-count { background: var(--dock-ink); color: var(--dock-neon); box-shadow: 0 0 0 2px var(--dock-neon); }
+/* Floating menu aligned with the application's canonical warm palette. */
+.riyo-dock { padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); pointer-events: none; }
+.riyo-dock-surface { pointer-events: auto; border: 1px solid hsl(var(--border)); border-radius: 999px; background: hsl(var(--card) / .97); backdrop-filter: blur(16px); box-shadow: 0 6px 24px -10px hsl(var(--foreground) / .22); }
+.riyo-dock-item { min-height: 56px; color: hsl(var(--muted-foreground)); transition: background-color .18s ease, color .18s ease; }
+.riyo-dock-item:hover { color: hsl(var(--foreground)); background: hsl(var(--secondary)); }
+.riyo-dock-item:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+.riyo-dock-item.riyo-dock-selected { color: hsl(var(--primary-foreground)); background: hsl(var(--primary)); box-shadow: 0 2px 8px -3px hsl(var(--primary) / .3); }
+.riyo-dock-count { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); box-shadow: 0 0 0 2px hsl(var(--card)); }
+.riyo-dock-selected .riyo-dock-count { background: hsl(var(--card)); color: hsl(var(--primary)); box-shadow: 0 0 0 2px hsl(var(--primary)); }
