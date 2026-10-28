@@ -88,3 +88,7 @@ Profile follows the supplied mint/white Plus Jakarta concept: branded header, id
 
 ## Cross-screen reconciliation
 Owner requested one related concept across routes. Canonical background is now mint #F2FCF5, with white cards, terracotta primary and Plus Jakarta Sans body/headings throughout product pages. PageLayout and shared Header constrain standard screens to 440px; specialized chat/venue compositions retain their functional structure. Radar, activities, inbox and profile now inherit the same typography. Profile edit uses matching rounded cards, section icons, a clear save action and honest completion copy. It no longer writes a stale visibility value while saving unrelated fields; useProfileVisibility remains the owner. All verification, photo screening, payment availability and deletion contracts remain.
+
+
+## Notifications
+Dock retains a permanent Selamlar route and unread-event count alongside Activities. Notification center follows the mint/white concept, with incoming waves and matches and explicit mutual-match instructions. Only loaded notification events are marked seen, never chat messages. Existing same-venue wave-back checks remain.

@@ -1,0 +1,21 @@
+import {render,screen,fireEvent,waitFor} from '@testing-library/react';
+import {MemoryRouter} from 'react-router-dom';
+import {beforeEach,expect,it,vi} from 'vitest';
+const state=vi.hoisted(()=>({loading:false,seen:vi.fn(),send:vi.fn(),waves:[] as any[]}));
+vi.mock('@/contexts/NotificationContext',()=>({useNotifications:()=>({resetUnreadCount:state.seen})}));
+vi.mock('@/hooks/useWaves',()=>({useWaves:()=>({incomingWaves:state.waves,sendWave:state.send,hasWavedAt:()=>false,loading:state.loading})}));
+vi.mock('@/hooks/useMatches',()=>({useMatches:()=>({matches:[],createConversationForMatch:vi.fn(),loading:false})}));
+vi.mock('@/hooks/useSparks',()=>({useSparks:()=>({incomingSparks:[],loading:false})}));
+vi.mock('@/hooks/useCafes',()=>({useCafes:()=>({cafes:[]})}));
+vi.mock('@/hooks/useActiveCheckIn',()=>({useActiveCheckIn:()=>({activeCheckIn:null})}));
+vi.mock('@/components/PageLayout',()=>({PageLayout:({children}:any)=><>{children}</>}));
+vi.mock('@/components/InitialsAvatar',()=>({InitialsAvatar:()=>null}));
+vi.mock('@/components/MatchActionSheet',()=>({MatchActionSheet:()=>null}));
+vi.mock('@/components/SparkPaywallModal',()=>({SparkPaywallModal:()=>null}));
+vi.mock('@/components/SparkReceivedList',()=>({SparkReceivedList:()=>null}));
+import Notifications from './Notifications';
+function open(){render(<MemoryRouter><Notifications/></MemoryRouter>)}
+beforeEach(()=>{state.loading=false;state.waves=[];state.seen.mockReset();state.send.mockReset();});
+it('explains where waves arrive and marks only loaded notification events seen',async()=>{open();expect(screen.getByRole('heading',{name:'Sana gelen selamlar.'})).toBeVisible();expect(screen.getByRole('tab',{name:/Gelen selamlar/})).toBeVisible();await waitFor(()=>expect(state.seen).toHaveBeenCalledWith('waves'));expect(state.seen).not.toHaveBeenCalledWith('messages');});
+it('does not clear notifications while their data is loading',()=>{state.loading=true;open();expect(state.seen).not.toHaveBeenCalled();});
+it('shows the real greeting and preserves the same-venue response gate',()=>{state.waves=[{id:'wave',fromUserId:'other',cafeId:'cafe',createdAt:new Date(),fromUser:{displayName:'Deniz',photoUrl:''}}];open();expect(screen.getByText('Deniz sana el salladı 👋')).toBeVisible();fireEvent.click(screen.getByRole('button',{name:'Selam ver'}));expect(state.send).not.toHaveBeenCalled();});
