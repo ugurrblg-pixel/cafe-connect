@@ -104,10 +104,10 @@ export default function Discover() {
         <main className="mx-auto max-w-3xl space-y-5 px-5 pt-7 sm:px-8">
           <header className="mb-6 flex items-center justify-between gap-4">
             <div>
-              <h1 className="font-display text-[46px] font-extrabold leading-none tracking-[-0.055em] text-primary sm:text-[56px]">
+              <h1 className="font-sans text-[56px] font-extrabold leading-[1.05] tracking-[-0.045em] text-primary sm:text-[64px]">
                 Riyo
               </h1>
-              <p className="mt-2 text-sm font-medium tracking-[0.04em] text-muted-foreground sm:text-base">
+              <p className="mt-1 font-sans text-[19px] font-normal leading-snug tracking-normal text-muted-foreground sm:text-[22px]">
                 Sosyal Radar
               </p>
             </div>
@@ -277,7 +277,7 @@ export default function Discover() {
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <h2
                   id="venue-list-title"
-                  className="font-sans text-[25px] font-bold leading-tight tracking-[-0.035em] sm:text-[30px]"
+                  className="font-sans text-[24px] font-extrabold leading-[1.2] tracking-[-0.035em] sm:text-[30px]"
                 >
                   Bir kahve molası ver.
                 </h2>

@@ -65,3 +65,6 @@ Compact concept header alignment: in-flow large terracotta Riyo wordmark and Sos
 
 
 Radar typography polish: Syne is reserved for the Riyo wordmark, with tight optical spacing. Compact list titles and venue names explicitly use Plus Jakarta Sans for Turkish readability. Supporting distance/count text uses medium weight and tabular numerals; provider captions have an 11px floor. No data or route behavior changes.
+
+
+Owner correction to screenshot typography: the compact mockup uses a plain geometric sans wordmark, not Syne. Radar Riyo is explicitly Plus Jakarta Sans extra-bold at 56px (64px wide), with normal-spaced 19px gray Sosyal Radar beneath. The compact section headline uses the same sans family extra-bold. This supersedes the preceding wordmark typography choice.
