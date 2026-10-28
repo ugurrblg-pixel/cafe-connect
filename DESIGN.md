@@ -62,3 +62,6 @@ Owner chose the compact-list mockup. VenueListCard is a single full-width route 
 
 
 Compact concept header alignment: in-flow large terracotta Riyo wordmark and Sosyal Radar subtitle; notification/filter actions; unified search/radius field and pill categories. The real location action remains visible when needed. No prototype labels or invented metadata enter production.
+
+
+Radar typography polish: Syne is reserved for the Riyo wordmark, with tight optical spacing. Compact list titles and venue names explicitly use Plus Jakarta Sans for Turkish readability. Supporting distance/count text uses medium weight and tabular numerals; provider captions have an 11px floor. No data or route behavior changes.

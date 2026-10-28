@@ -44,10 +44,10 @@ export function VenueListCard({
           className="h-24 w-24 shrink-0 rounded-2xl sm:h-32 sm:w-36"
         />
         <div className="min-w-0 flex-1">
-          <h3 className="break-words font-display text-base font-bold leading-snug tracking-tight sm:text-xl">
+          <h3 className="break-words font-sans text-[17px] font-bold leading-[1.3] tracking-[-0.025em] sm:text-xl">
             {cafe.name}
           </h3>
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground sm:text-sm">
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-medium leading-relaxed tabular-nums text-muted-foreground sm:text-sm">
             {cafe.distance && (
               <span className="inline-flex items-center gap-1">
                 <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
@@ -68,7 +68,7 @@ export function VenueListCard({
               </span>
             )}
           </p>
-          <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
+          <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
             Kaynak: {venueSourceName(cafe.dataSource)}
           </p>
         </div>
