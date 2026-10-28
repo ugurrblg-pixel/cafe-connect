@@ -1,38 +1,55 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Header } from '@/components/Header';
-import { PageLayout } from '@/components/PageLayout';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { HobbySelector } from '@/components/HobbySelector';
-import { ProfilePhotoManager } from '@/components/ProfilePhotoManager';
-import { FavoriteVenuesSelector } from '@/components/profile/FavoriteVenuesSelector';
-import { CoffeePreferenceSelector } from '@/components/profile/CoffeePreferenceSelector';
-import { SocialEnergySelector } from '@/components/profile/SocialEnergySelector';
-import { Loader2, MessageCircle, Users, Heart, Camera, Pencil, Compass, Sparkles, MapPin, Coffee, Zap, User, Quote, UtensilsCrossed, Star, CalendarDays } from 'lucide-react';
-import { toast } from 'sonner';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Purpose } from '@/types';
-import { containsProfanity, getProfanityError } from '@/lib/profanityFilter';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Header } from "@/components/Header";
+import { PageLayout } from "@/components/PageLayout";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { HobbySelector } from "@/components/HobbySelector";
+import { ProfilePhotoManager } from "@/components/ProfilePhotoManager";
+import { FavoriteVenuesSelector } from "@/components/profile/FavoriteVenuesSelector";
+import { CoffeePreferenceSelector } from "@/components/profile/CoffeePreferenceSelector";
+import { SocialEnergySelector } from "@/components/profile/SocialEnergySelector";
+import {
+  Loader2,
+  MessageCircle,
+  Users,
+  Heart,
+  Camera,
+  Pencil,
+  Compass,
+  Sparkles,
+  MapPin,
+  Coffee,
+  Zap,
+  User,
+  Quote,
+  UtensilsCrossed,
+  Star,
+  CalendarDays,
+} from "lucide-react";
+import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Purpose } from "@/types";
+import { containsProfanity, getProfanityError } from "@/lib/profanityFilter";
 
 export const ZODIAC_OPTIONS = [
-  { value: 'aries', label: 'Koç', emoji: '♈' },
-  { value: 'taurus', label: 'Boğa', emoji: '♉' },
-  { value: 'gemini', label: 'İkizler', emoji: '♊' },
-  { value: 'cancer', label: 'Yengeç', emoji: '♋' },
-  { value: 'leo', label: 'Aslan', emoji: '♌' },
-  { value: 'virgo', label: 'Başak', emoji: '♍' },
-  { value: 'libra', label: 'Terazi', emoji: '♎' },
-  { value: 'scorpio', label: 'Akrep', emoji: '♏' },
-  { value: 'sagittarius', label: 'Yay', emoji: '♐' },
-  { value: 'capricorn', label: 'Oğlak', emoji: '♑' },
-  { value: 'aquarius', label: 'Kova', emoji: '♒' },
-  { value: 'pisces', label: 'Balık', emoji: '♓' },
+  { value: "aries", label: "Koç", emoji: "♈" },
+  { value: "taurus", label: "Boğa", emoji: "♉" },
+  { value: "gemini", label: "İkizler", emoji: "♊" },
+  { value: "cancer", label: "Yengeç", emoji: "♋" },
+  { value: "leo", label: "Aslan", emoji: "♌" },
+  { value: "virgo", label: "Başak", emoji: "♍" },
+  { value: "libra", label: "Terazi", emoji: "♎" },
+  { value: "scorpio", label: "Akrep", emoji: "♏" },
+  { value: "sagittarius", label: "Yay", emoji: "♐" },
+  { value: "capricorn", label: "Oğlak", emoji: "♑" },
+  { value: "aquarius", label: "Kova", emoji: "♒" },
+  { value: "pisces", label: "Balık", emoji: "♓" },
 ];
 
 interface ProfileData {
@@ -60,23 +77,25 @@ export default function ProfileEdit() {
   const [saving, setSaving] = useState(false);
   const [photosBusy, setPhotosBusy] = useState(false);
   const [favoriteVenueIds, setFavoriteVenueIds] = useState<string[]>([]);
-  const [savedFavoriteVenueIds, setSavedFavoriteVenueIds] = useState<string[]>([]);
+  const [savedFavoriteVenueIds, setSavedFavoriteVenueIds] = useState<string[]>(
+    [],
+  );
   const [profile, setProfile] = useState<ProfileData>({
-    id: '',
-    display_name: '',
-    bio: '',
-    photo_url: '',
+    id: "",
+    display_name: "",
+    bio: "",
+    photo_url: "",
     photo_urls: [],
     is_visible: true,
-    purpose: 'friendship',
+    purpose: "friendship",
     hobbies: [],
     coffee_preference: null,
     social_energy: null,
     gender: null,
-    motto: '',
-    food_personality: '',
+    motto: "",
+    food_personality: "",
     zodiac_sign: null,
-    weekend_plan: '',
+    weekend_plan: "",
   });
 
   useEffect(() => {
@@ -86,43 +105,45 @@ export default function ProfileEdit() {
       // Fetch profile and favorite venues in parallel
       const [profileRes, favRes] = await Promise.all([
         supabase
-          .from('profiles')
-          .select('id, display_name, bio, photo_url, photo_urls, is_visible, purpose, hobbies, coffee_preference, social_energy, gender, motto, food_personality, zodiac_sign, weekend_plan')
-          .eq('user_id', user.id)
+          .from("profiles")
+          .select(
+            "id, display_name, bio, photo_url, photo_urls, is_visible, purpose, hobbies, coffee_preference, social_energy, gender, motto, food_personality, zodiac_sign, weekend_plan",
+          )
+          .eq("user_id", user.id)
           .maybeSingle(),
         supabase
-          .from('user_favorite_venues')
-          .select('venue_id')
-          .eq('user_id', user.id),
+          .from("user_favorite_venues")
+          .select("venue_id")
+          .eq("user_id", user.id),
       ]);
 
       if (profileRes.error) {
-        console.error('Error fetching profile:', profileRes.error);
-        toast.error('Profil yüklenemedi');
+        console.error("Error fetching profile:", profileRes.error);
+        toast.error("Profil yüklenemedi");
       } else if (profileRes.data) {
         const data = profileRes.data;
         setProfile({
           id: data.id,
-          display_name: data.display_name || '',
-          bio: data.bio || '',
-          photo_url: data.photo_url || '',
+          display_name: data.display_name || "",
+          bio: data.bio || "",
+          photo_url: data.photo_url || "",
           photo_urls: (data.photo_urls as string[]) || [],
           is_visible: data.is_visible ?? true,
-          purpose: (data.purpose as Purpose) || 'friendship',
+          purpose: (data.purpose as Purpose) || "friendship",
           hobbies: (data.hobbies as string[]) || [],
           coffee_preference: (data as any).coffee_preference || null,
           social_energy: (data as any).social_energy || null,
           gender: (data as any).gender || null,
-          motto: (data as any).motto || '',
-          food_personality: (data as any).food_personality || '',
+          motto: (data as any).motto || "",
+          food_personality: (data as any).food_personality || "",
           zodiac_sign: (data as any).zodiac_sign || null,
-          weekend_plan: (data as any).weekend_plan || '',
+          weekend_plan: (data as any).weekend_plan || "",
         });
       }
 
       if (!favRes.error && favRes.data) {
-        setFavoriteVenueIds(favRes.data.map(f => f.venue_id));
-        setSavedFavoriteVenueIds(favRes.data.map(f => f.venue_id));
+        setFavoriteVenueIds(favRes.data.map((f) => f.venue_id));
+        setSavedFavoriteVenueIds(favRes.data.map((f) => f.venue_id));
       }
 
       setLoading(false);
@@ -131,45 +152,80 @@ export default function ProfileEdit() {
   }, [user]);
 
   const handleSave = async () => {
-    if (!user || !profile.id || photosBusy) return;
+    if (!user || !profile.id || photosBusy || saving) return;
 
     // Basic edits can be saved before the profile is complete.
     // The existing profile gate still determines eligibility for social actions.
 
     const trimmedName = profile.display_name.trim();
-    if (!trimmedName) { toast.error('İsim zorunludur'); return; }
-    if (trimmedName.length < 2) { toast.error('İsim en az 2 karakter olmalı'); return; }
-    if (trimmedName.length > 50) { toast.error('İsim en fazla 50 karakter olabilir'); return; }
-    if (containsProfanity(trimmedName)) { toast.error(getProfanityError()); return; }
+    if (!trimmedName) {
+      toast.error("İsim zorunludur");
+      return;
+    }
+    if (trimmedName.length < 2) {
+      toast.error("İsim en az 2 karakter olmalı");
+      return;
+    }
+    if (trimmedName.length > 50) {
+      toast.error("İsim en fazla 50 karakter olabilir");
+      return;
+    }
+    if (containsProfanity(trimmedName)) {
+      toast.error(getProfanityError());
+      return;
+    }
 
     // Block repetitive characters, meaningless input, only numbers
     const lowerName = trimmedName.toLowerCase();
-    const strippedName = lowerName.replace(/\s/g, '');
+    const strippedName = lowerName.replace(/\s/g, "");
     const uniqueChars = new Set(strippedName).size;
     const hasOnlyRepeating = /^(.)\1+$/.test(strippedName);
     const hasRepeatingPattern = /^(.{1,3})\1{2,}$/.test(strippedName);
-    const hasOnlySpecialChars = /^[^a-zA-ZçğıöşüÇĞİÖŞÜ0-9]+$/.test(strippedName);
+    const hasOnlySpecialChars = /^[^a-zA-ZçğıöşüÇĞİÖŞÜ0-9]+$/.test(
+      strippedName,
+    );
     const hasExcessiveRepeats = /(.)\1{3,}/.test(lowerName);
     const hasOnlyNumbers = /^[0-9]+$/.test(strippedName);
-    const letterCount = (strippedName.match(/[a-zA-ZçğıöşüÇĞİÖŞÜ]/g) || []).length;
+    const letterCount = (strippedName.match(/[a-zA-ZçğıöşüÇĞİÖŞÜ]/g) || [])
+      .length;
 
-    if (hasOnlyRepeating || hasRepeatingPattern || hasOnlySpecialChars || uniqueChars < 2 || hasExcessiveRepeats || hasOnlyNumbers || letterCount < 2) {
-      toast.error('Lütfen geçerli bir isim girin');
+    if (
+      hasOnlyRepeating ||
+      hasRepeatingPattern ||
+      hasOnlySpecialChars ||
+      uniqueChars < 2 ||
+      hasExcessiveRepeats ||
+      hasOnlyNumbers ||
+      letterCount < 2
+    ) {
+      toast.error("Lütfen geçerli bir isim girin");
       return;
     }
 
     const trimmedBio = profile.bio.trim();
-    if (trimmedBio.length > 120) { toast.error('Bio en fazla 120 karakter olabilir'); return; }
-    if (trimmedBio && trimmedBio.length < 10) { toast.error('Bio en az 10 karakter olmalı'); return; }
-    if (containsProfanity(trimmedBio)) { toast.error(getProfanityError()); return; }
+    if (trimmedBio.length > 120) {
+      toast.error("Bio en fazla 120 karakter olabilir");
+      return;
+    }
+    if (trimmedBio && trimmedBio.length < 10) {
+      toast.error("Bio en az 10 karakter olmalı");
+      return;
+    }
+    if (containsProfanity(trimmedBio)) {
+      toast.error(getProfanityError());
+      return;
+    }
 
     // Validate bio: block meaningless inputs
     if (trimmedBio) {
-      const hasOnlyEmojis = /^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+$/u.test(trimmedBio);
+      const hasOnlyEmojis =
+        /^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+$/u.test(
+          trimmedBio,
+        );
       const hasOnlyNums = /^[0-9\s]+$/.test(trimmedBio);
       const hasBioRepeats = /(.)\1{3,}/.test(trimmedBio);
       if (hasOnlyEmojis || hasOnlyNums || hasBioRepeats) {
-        toast.error('Lütfen anlamlı bir bio yazın');
+        toast.error("Lütfen anlamlı bir bio yazın");
         return;
       }
     }
@@ -177,11 +233,10 @@ export default function ProfileEdit() {
     setSaving(true);
     try {
       const profileRes = await supabase
-        .from('profiles')
+        .from("profiles")
         .update({
           display_name: trimmedName,
           bio: trimmedBio,
-          is_visible: profile.is_visible,
           purpose: profile.purpose,
           hobbies: profile.hobbies,
           coffee_preference: profile.coffee_preference,
@@ -192,28 +247,31 @@ export default function ProfileEdit() {
           zodiac_sign: profile.zodiac_sign,
           weekend_plan: profile.weekend_plan.trim() || null,
         } as any)
-        .eq('id', profile.id)
-        .select('id')
+        .eq("id", profile.id)
+        .select("id")
         .single();
       if (profileRes.error) throw profileRes.error;
       await refreshProfile();
-      const favoritesChanged = JSON.stringify([...favoriteVenueIds].sort())
-        !== JSON.stringify([...savedFavoriteVenueIds].sort());
+      const favoritesChanged =
+        JSON.stringify([...favoriteVenueIds].sort()) !==
+        JSON.stringify([...savedFavoriteVenueIds].sort());
       if (favoritesChanged) {
-        const { error } = await supabase.rpc('save_own_favorite_venues', {
+        const { error } = await supabase.rpc("save_own_favorite_venues", {
           venue_ids: favoriteVenueIds,
         });
         if (error) {
-          toast.error('Profil bilgilerin kaydedildi, fakat favori mekanlar kaydedilemedi. Lütfen tekrar deneyin.');
+          toast.error(
+            "Profil bilgilerin kaydedildi, fakat favori mekanlar kaydedilemedi. Lütfen tekrar deneyin.",
+          );
           return;
         }
         setSavedFavoriteVenueIds([...favoriteVenueIds]);
       }
-      toast.success('Profil kaydedildi!');
-      navigate('/profile');
+      toast.success("Profil kaydedildi!");
+      navigate("/profile");
     } catch (error) {
-      console.error('Error saving profile:', error);
-      toast.error('Profil kaydedilemedi');
+      console.error("Error saving profile:", error);
+      toast.error("Profil kaydedilemedi");
     } finally {
       setSaving(false);
     }
@@ -221,13 +279,23 @@ export default function ProfileEdit() {
 
   // Riyo Score calculation
   const completionSteps = [
-    { label: 'Fotoğraf (min 2)', done: profile.photo_urls.filter(u => !!u).length >= 2, weight: 25 },
-    { label: 'Bio', done: !!profile.bio.trim() && profile.bio.trim().length >= 10, weight: 20 },
-    { label: 'Kahve tercihi', done: !!profile.coffee_preference, weight: 15 },
-    { label: 'Sosyal enerji', done: !!profile.social_energy, weight: 15 },
-    { label: 'Favori mekan', done: favoriteVenueIds.length > 0, weight: 25 },
+    {
+      label: "Fotoğraf (min 2)",
+      done: profile.photo_urls.filter((u) => !!u).length >= 2,
+      weight: 25,
+    },
+    {
+      label: "Bio",
+      done: !!profile.bio.trim() && profile.bio.trim().length >= 10,
+      weight: 20,
+    },
+    { label: "Kahve tercihi", done: !!profile.coffee_preference, weight: 15 },
+    { label: "Sosyal enerji", done: !!profile.social_energy, weight: 15 },
+    { label: "Favori mekan", done: favoriteVenueIds.length > 0, weight: 25 },
   ];
-  const completionPercent = completionSteps.filter(s => s.done).reduce((sum, s) => sum + s.weight, 0);
+  const completionPercent = completionSteps
+    .filter((s) => s.done)
+    .reduce((sum, s) => sum + s.weight, 0);
 
   if (loading) {
     return (
@@ -251,22 +319,32 @@ export default function ProfileEdit() {
       <div className="min-h-screen bg-background pb-24">
         <Header title="Profili Düzenle" showBack />
 
-        <main className="pt-16 px-4 pb-24 space-y-4">
-
+        <main className="pt-20 px-5 pb-12 space-y-5">
+          <div className="pb-1">
+            <p className="mb-1 text-[11px] font-bold uppercase tracking-wider text-primary">
+              Sosyal kimlik & tercihler
+            </p>
+            <h1 className="text-3xl font-extrabold leading-tight tracking-tight">
+              Biraz daha <span className="text-primary">sen.</span>
+            </h1>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              Fotoğraflarını, ilgi alanlarını ve tanışma tercihlerini düzenle.
+            </p>
+          </div>
           {/* Riyo Score Banner */}
-          <section className="card-elevated p-4 mt-2">
+          <section className="card-elevated p-5">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-primary" />
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold text-foreground">
-                  Riyo Skoru: %{completionPercent}
+                  Profil tamamlama: %{completionPercent}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {completionPercent === 100
-                    ? 'Profilin tam! Daha fazla eşleşme alırsın 🎉'
-                    : 'Tamamlanmış profiller daha fazla etkileşim alır'}
+                    ? "Profil bilgilerin tamam. Yeni bir sohbete hazırsın."
+                    : "Eksik alanları tamamlayarak kendini daha iyi anlat."}
                 </p>
               </div>
             </div>
@@ -274,7 +352,7 @@ export default function ProfileEdit() {
             <div className="w-full h-2.5 rounded-full bg-secondary overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
-                  completionPercent === 100 ? 'bg-green-500' : 'bg-primary'
+                  completionPercent === 100 ? "bg-green-500" : "bg-primary"
                 }`}
                 style={{ width: `${completionPercent}%` }}
               />
@@ -282,22 +360,43 @@ export default function ProfileEdit() {
             {/* Missing steps */}
             {completionPercent < 100 && (
               <div className="flex flex-wrap gap-2 mt-3">
-                {completionSteps.filter(s => !s.done).map(s => (
-                  <span key={s.label} className="text-xs px-2.5 py-1 rounded-full bg-warning/10 text-warning font-medium">
-                    {s.label} eksik
-                  </span>
-                ))}
+                {completionSteps
+                  .filter((s) => !s.done)
+                  .map((s) => (
+                    <span
+                      key={s.label}
+                      className="text-xs px-2.5 py-1 rounded-full bg-warning/10 text-warning font-medium"
+                    >
+                      {s.label} eksik
+                    </span>
+                  ))}
               </div>
             )}
           </section>
 
           {/* Photos Section */}
           <section className="card-elevated p-4">
-            <SectionHeader icon={Camera} title="Fotoğraflar" subtitle="En az 2 fotoğraf eklemelisin" />
+            <SectionHeader
+              icon={Camera}
+              title="Fotoğraflar"
+              subtitle="Fotoğrafların yüklenirken içerik kontrolünden geçer."
+            />
             <div className="mt-3">
               <ProfilePhotoManager
-                photos={profile.photo_urls.length > 0 ? profile.photo_urls : (profile.photo_url ? [profile.photo_url] : [])}
-                onPhotosChange={(photos) => setProfile(prev => ({ ...prev, photo_urls: photos, photo_url: photos[0] || '' }))}
+                photos={
+                  profile.photo_urls.length > 0
+                    ? profile.photo_urls
+                    : profile.photo_url
+                      ? [profile.photo_url]
+                      : []
+                }
+                onPhotosChange={(photos) =>
+                  setProfile((prev) => ({
+                    ...prev,
+                    photo_urls: photos,
+                    photo_url: photos[0] || "",
+                  }))
+                }
                 onBusyChange={setPhotosBusy}
               />
             </div>
@@ -305,35 +404,56 @@ export default function ProfileEdit() {
 
           {/* Basic Info Section */}
           <section className="card-elevated p-4">
-            <SectionHeader icon={Pencil} title="Temel Bilgiler" subtitle="Seni tanıtan bilgiler" />
+            <SectionHeader
+              icon={Pencil}
+              title="Temel Bilgiler"
+              subtitle="Seni tanıtan bilgiler"
+            />
             <div className="mt-4 space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="display_name" className="text-sm font-medium">Görünen İsim</Label>
+                <Label htmlFor="display_name" className="text-sm font-medium">
+                  Görünen İsim
+                </Label>
                 <Input
                   id="display_name"
                   value={profile.display_name}
-                  onChange={(e) => setProfile(prev => ({ ...prev, display_name: e.target.value }))}
+                  onChange={(e) =>
+                    setProfile((prev) => ({
+                      ...prev,
+                      display_name: e.target.value,
+                    }))
+                  }
                   placeholder="İsminiz nasıl görünsün?"
                   maxLength={50}
                   className="h-11"
                 />
-                <p className="text-xs text-muted-foreground text-right">{profile.display_name.length}/50</p>
+                <p className="text-xs text-muted-foreground text-right">
+                  {profile.display_name.length}/50
+                </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bio" className="text-sm font-medium">Hakkında</Label>
+                <Label htmlFor="bio" className="text-sm font-medium">
+                  Hakkında
+                </Label>
                 <Textarea
                   id="bio"
                   value={profile.bio}
-                  onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
+                  onChange={(e) =>
+                    setProfile((prev) => ({ ...prev, bio: e.target.value }))
+                  }
                   placeholder="Birlikte kahve içsek muhtemelen… ☕"
                   maxLength={120}
                   rows={3}
                   className="resize-none"
                 />
                 <div className="flex justify-between">
-                  <p className="text-xs text-muted-foreground">Min 10 karakter</p>
-                  <p className="text-xs text-muted-foreground">{profile.bio.length}/120</p>
+                  <p className="text-xs text-muted-foreground">
+                    Min 10 karakter
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {profile.bio.length}/120
+                  </p>
                 </div>
               </div>
             </div>
@@ -341,20 +461,24 @@ export default function ProfileEdit() {
 
           {/* Gender Section */}
           <section className="card-elevated p-4">
-            <SectionHeader icon={User} title="Cinsiyet" subtitle="Rastgele eşleştirme için gerekli" />
+            <SectionHeader
+              icon={User}
+              title="Cinsiyet"
+              subtitle="Rastgele eşleştirme için gerekli"
+            />
             <div className="mt-4">
               <ToggleGroup
                 type="single"
-                value={profile.gender || ''}
+                value={profile.gender || ""}
                 onValueChange={(value) => {
-                  if (value) setProfile(prev => ({ ...prev, gender: value }));
+                  if (value) setProfile((prev) => ({ ...prev, gender: value }));
                 }}
                 className="grid grid-cols-3 gap-2"
               >
                 {[
-                  { value: 'male', label: 'Erkek', emoji: '👨' },
-                  { value: 'female', label: 'Kadın', emoji: '👩' },
-                  { value: 'other', label: 'Diğer', emoji: '🌈' },
+                  { value: "male", label: "Erkek", emoji: "👨" },
+                  { value: "female", label: "Kadın", emoji: "👩" },
+                  { value: "other", label: "Diğer", emoji: "🌈" },
                 ].map(({ value, label, emoji }) => (
                   <ToggleGroupItem
                     key={value}
@@ -371,20 +495,38 @@ export default function ProfileEdit() {
 
           {/* Purpose Section */}
           <section className="card-elevated p-4">
-            <SectionHeader icon={Compass} title="Ne arıyorsun?" subtitle="Niyetini göster, doğru kişilerle eşleş" />
+            <SectionHeader
+              icon={Compass}
+              title="Ne arıyorsun?"
+              subtitle="Niyetini göster, doğru kişilerle eşleş"
+            />
             <div className="mt-4">
               <ToggleGroup
                 type="single"
                 value={profile.purpose}
                 onValueChange={(value) => {
-                  if (value) setProfile(prev => ({ ...prev, purpose: value as Purpose }));
+                  if (value)
+                    setProfile((prev) => ({
+                      ...prev,
+                      purpose: value as Purpose,
+                    }));
                 }}
                 className="grid grid-cols-3 gap-2"
               >
                 {[
-                  { value: 'friendship', icon: Users, label: 'Arkadaşlık', emoji: '🤝' },
-                  { value: 'dating', icon: Heart, label: 'Flört', emoji: '💕' },
-                  { value: 'chat', icon: MessageCircle, label: 'Sohbet', emoji: '💬' },
+                  {
+                    value: "friendship",
+                    icon: Users,
+                    label: "Arkadaşlık",
+                    emoji: "🤝",
+                  },
+                  { value: "dating", icon: Heart, label: "Flört", emoji: "💕" },
+                  {
+                    value: "chat",
+                    icon: MessageCircle,
+                    label: "Sohbet",
+                    emoji: "💬",
+                  },
                 ].map(({ value, label, emoji }) => (
                   <ToggleGroupItem
                     key={value}
@@ -401,40 +543,62 @@ export default function ProfileEdit() {
 
           {/* Hobbies Section */}
           <section className="card-elevated p-4">
-            <SectionHeader icon={Heart} title="İlgi Alanları" subtitle="Ortak hobiler eşleşmelere yardımcı olur" />
+            <SectionHeader
+              icon={Heart}
+              title="İlgi Alanları"
+              subtitle="Ortak hobiler eşleşmelere yardımcı olur"
+            />
             <div className="mt-4">
               <HobbySelector
                 selectedHobbies={profile.hobbies}
-                onHobbiesChange={(hobbies) => setProfile(prev => ({ ...prev, hobbies }))}
+                onHobbiesChange={(hobbies) =>
+                  setProfile((prev) => ({ ...prev, hobbies }))
+                }
               />
             </div>
           </section>
 
           {/* Coffee Preference Section */}
           <section className="card-elevated p-4">
-            <SectionHeader icon={Coffee} title="Kahve Tercihim" subtitle="Favori kahven hangisi?" />
+            <SectionHeader
+              icon={Coffee}
+              title="Kahve Tercihim"
+              subtitle="Favori kahven hangisi?"
+            />
             <div className="mt-4">
               <CoffeePreferenceSelector
                 value={profile.coffee_preference}
-                onChange={(value) => setProfile(prev => ({ ...prev, coffee_preference: value }))}
+                onChange={(value) =>
+                  setProfile((prev) => ({ ...prev, coffee_preference: value }))
+                }
               />
             </div>
           </section>
 
           {/* Social Energy Section */}
           <section className="card-elevated p-4">
-            <SectionHeader icon={Zap} title="Sosyal Enerjim" subtitle="Enerjin benzer kişilerle eşleşmeni sağlar" />
+            <SectionHeader
+              icon={Zap}
+              title="Sosyal Enerjim"
+              subtitle="İnsanlarla nasıl bir ortamda tanışmak istersin?"
+            />
             <div className="mt-4">
               <SocialEnergySelector
                 value={profile.social_energy}
-                onChange={(value) => setProfile(prev => ({ ...prev, social_energy: value }))}
+                onChange={(value) =>
+                  setProfile((prev) => ({ ...prev, social_energy: value }))
+                }
               />
             </div>
           </section>
 
           {/* Favorite Venues Section */}
           <section className="card-elevated p-4">
-            <SectionHeader icon={MapPin} title="Favori Mekanlarım" subtitle="1–3 mekan seç, ortak mekanlar eşleşmeyi artırır" />
+            <SectionHeader
+              icon={MapPin}
+              title="Favori Mekanlarım"
+              subtitle="Sevdiğin 1–3 mekanı profiline ekle."
+            />
             <div className="mt-4">
               {user && (
                 <FavoriteVenuesSelector
@@ -448,43 +612,67 @@ export default function ProfileEdit() {
 
           {/* Motto Section */}
           <section className="card-elevated p-4">
-            <SectionHeader icon={Quote} title="Hayattaki Mottoum" subtitle="Seni tanımlayan bir cümle veya alıntı" />
+            <SectionHeader
+              icon={Quote}
+              title="Hayattaki Mottoum"
+              subtitle="Seni tanımlayan bir cümle veya alıntı"
+            />
             <div className="mt-4">
               <Input
                 value={profile.motto}
-                onChange={(e) => setProfile(prev => ({ ...prev, motto: e.target.value }))}
+                onChange={(e) =>
+                  setProfile((prev) => ({ ...prev, motto: e.target.value }))
+                }
                 placeholder="Hayat kısa, kahveni sıcak iç ☕"
                 maxLength={80}
                 className="h-11"
               />
-              <p className="text-xs text-muted-foreground text-right mt-1">{profile.motto.length}/80</p>
+              <p className="text-xs text-muted-foreground text-right mt-1">
+                {profile.motto.length}/80
+              </p>
             </div>
           </section>
 
           {/* Food Personality Section */}
           <section className="card-elevated p-4">
-            <SectionHeader icon={UtensilsCrossed} title="Bir Yemekle Tanımla" subtitle="Sen bir yemek olsan ne olurdun?" />
+            <SectionHeader
+              icon={UtensilsCrossed}
+              title="Bir Yemekle Tanımla"
+              subtitle="Sen bir yemek olsan ne olurdun?"
+            />
             <div className="mt-4">
               <Input
                 value={profile.food_personality}
-                onChange={(e) => setProfile(prev => ({ ...prev, food_personality: e.target.value }))}
+                onChange={(e) =>
+                  setProfile((prev) => ({
+                    ...prev,
+                    food_personality: e.target.value,
+                  }))
+                }
                 placeholder="Pizza — her ortama uyarım 🍕"
                 maxLength={60}
                 className="h-11"
               />
-              <p className="text-xs text-muted-foreground text-right mt-1">{profile.food_personality.length}/60</p>
+              <p className="text-xs text-muted-foreground text-right mt-1">
+                {profile.food_personality.length}/60
+              </p>
             </div>
           </section>
 
           {/* Zodiac Section */}
           <section className="card-elevated p-4">
-            <SectionHeader icon={Star} title="Burcum" subtitle="Astroloji meraklıları için" />
+            <SectionHeader
+              icon={Star}
+              title="Burcum"
+              subtitle="Astroloji meraklıları için"
+            />
             <div className="mt-4">
               <ToggleGroup
                 type="single"
-                value={profile.zodiac_sign || ''}
+                value={profile.zodiac_sign || ""}
                 onValueChange={(value) => {
-                  if (value) setProfile(prev => ({ ...prev, zodiac_sign: value }));
+                  if (value)
+                    setProfile((prev) => ({ ...prev, zodiac_sign: value }));
                 }}
                 className="grid grid-cols-4 gap-2"
               >
@@ -504,25 +692,55 @@ export default function ProfileEdit() {
 
           {/* Weekend Plan Section */}
           <section className="card-elevated p-4">
-            <SectionHeader icon={CalendarDays} title="Hafta Sonu Planım" subtitle="Hafta sonları genelde ne yaparsın?" />
+            <SectionHeader
+              icon={CalendarDays}
+              title="Hafta Sonu Planım"
+              subtitle="Hafta sonları genelde ne yaparsın?"
+            />
             <div className="mt-4">
               <Input
                 value={profile.weekend_plan}
-                onChange={(e) => setProfile(prev => ({ ...prev, weekend_plan: e.target.value }))}
+                onChange={(e) =>
+                  setProfile((prev) => ({
+                    ...prev,
+                    weekend_plan: e.target.value,
+                  }))
+                }
                 placeholder="Kafede kitap okur, akşam arkadaşlarla buluşurum 📚"
                 maxLength={80}
                 className="h-11"
               />
-              <p className="text-xs text-muted-foreground text-right mt-1">{profile.weekend_plan.length}/80</p>
+              <p className="text-xs text-muted-foreground text-right mt-1">
+                {profile.weekend_plan.length}/80
+              </p>
             </div>
           </section>
 
+          <section className="rounded-2xl border border-border/70 bg-card p-4">
+            <h2 className="text-sm font-semibold">Hesap & gizlilik</h2>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              Görünürlük, hesap doğrulama ve üyelik bilgilerini Profil
+              ekranından yönetebilirsin. Bu form gizlilik ayarını değiştirmez.
+            </p>
+            <Button
+              variant="ghost"
+              className="mt-2 px-0 text-primary"
+              onClick={() => navigate("/profile")}
+            >
+              Profil ve ayarlara dön →
+            </Button>
+          </section>
           {/* Save Button */}
           <div className="pt-2">
             <Button
               onClick={handleSave}
-              disabled={saving || photosBusy || !profile.display_name.trim()}
-              className="w-full h-12 text-base font-semibold rounded-xl"
+              disabled={
+                saving ||
+                photosBusy ||
+                !profile.id ||
+                !profile.display_name.trim()
+              }
+              className="w-full h-12 text-base font-semibold rounded-full"
             >
               {saving ? (
                 <>
@@ -530,7 +748,7 @@ export default function ProfileEdit() {
                   Kaydediliyor...
                 </>
               ) : (
-                'Profili Kaydet'
+                "Değişiklikleri kaydet"
               )}
             </Button>
           </div>
@@ -541,10 +759,18 @@ export default function ProfileEdit() {
 }
 
 /* Reusable section header */
-function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementType; title: string; subtitle: string }) {
+function SectionHeader({
+  icon: Icon,
+  title,
+  subtitle,
+}: {
+  icon: React.ElementType;
+  title: string;
+  subtitle: string;
+}) {
   return (
     <div className="flex items-center gap-3">
-      <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center shrink-0">
+      <div className="w-10 h-10 rounded-xl bg-brand-soft flex items-center justify-center shrink-0">
         <Icon className="w-4 h-4 text-muted-foreground" />
       </div>
       <div>

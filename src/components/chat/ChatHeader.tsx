@@ -40,7 +40,7 @@ export function ChatHeader({
 
   return (
     <div className={cn(
-      "fixed top-0 left-0 right-0 z-50 bg-background/98 backdrop-blur-lg border-b shadow-sm",
+      "fixed top-0 left-0 right-0 mx-auto max-w-[440px] z-50 bg-background/98 backdrop-blur-lg border-b shadow-sm",
       isPremium ? "border-amber-500/30" : "border-border/50"
     )}>
       <div className="flex items-center justify-between px-2 py-2.5">

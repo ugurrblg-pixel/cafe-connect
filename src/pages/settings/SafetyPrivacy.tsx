@@ -33,7 +33,7 @@ export default function SafetyPrivacy() {
       <div className="min-h-screen bg-background pb-24">
         <Header title="Güvenlik & Gizlilik" showBack />
 
-        <main className="pt-16 px-4 space-y-4">
+        <main className="pt-20 px-5 space-y-4">
           <section className="card-elevated p-4" aria-labelledby="profile-visibility-title">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-3">

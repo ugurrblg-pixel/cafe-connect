@@ -36,7 +36,7 @@ export function Header({
         className
       )}
     >
-      <div className="mx-auto flex h-16 max-w-3xl items-center justify-between gap-3 px-4">
+      <div className="mx-auto flex h-16 max-w-[440px] items-center justify-between gap-3 px-4">
         {brand ? <div className="flex min-w-0 items-center gap-2.5"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-brand/20 bg-brand-soft text-primary shadow-sm"><Radar className="h-5 w-5" aria-hidden="true"/></span><div><p className="font-display text-xl font-bold leading-none tracking-tight">Riyo</p><p className="mt-1 text-[11px] font-medium text-muted-foreground">Sosyal Radar</p></div></div> : showBack ? (
           <button
             aria-label="Geri dön"
@@ -49,7 +49,7 @@ export function Header({
           <div className="w-10" />
         )}
 
-        <h1 className={brand?'sr-only':'font-display text-lg font-bold text-foreground tracking-tight'}>{title}</h1>
+        <h1 className={brand?'sr-only':'font-sans text-lg font-bold text-foreground tracking-tight'}>{title}</h1>
 
         {rightAction || (showMenu ? (
           <button

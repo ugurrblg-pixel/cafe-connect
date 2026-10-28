@@ -6,7 +6,7 @@ export default function TermsOfUse() {
     <PageLayout>
       <div className="min-h-screen bg-background pb-24">
         <Header title="Kullanım Koşulları" showBack />
-        <main className="pt-16 px-4 max-w-lg mx-auto">
+        <main className="pt-20 px-5 max-w-lg mx-auto">
           {/* Title & Date */}
           <div className="py-6">
             <h1 className="text-2xl font-bold text-foreground tracking-tight">RİYO KULLANIM KOŞULLARI</h1>

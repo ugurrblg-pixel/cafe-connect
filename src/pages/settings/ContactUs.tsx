@@ -10,7 +10,7 @@ export default function ContactUs() {
     <PageLayout>
       <div className="min-h-screen bg-background pb-24">
         <Header title={t.contact.title} showBack />
-        <main className="pt-16 px-4 space-y-4">
+        <main className="pt-20 px-5 space-y-4">
           <p className="text-muted-foreground text-sm mt-2">{t.contact.intro}</p>
 
           <section className="card-elevated p-4">

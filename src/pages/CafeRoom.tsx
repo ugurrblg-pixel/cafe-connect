@@ -91,7 +91,7 @@ export default function CafeRoom() {
 
   if (cafesLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="mx-auto min-h-screen max-w-[440px] bg-background">
         <Skeleton className="h-56 w-full" />
         <div className="px-4 -mt-16 relative">
           <Skeleton className="h-32 w-full rounded-2xl" />
@@ -389,7 +389,7 @@ export default function CafeRoom() {
       </main>
 
       {/* Fixed Check-in Button */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 glass-effect border-t border-border safe-bottom">
+      <div className="fixed bottom-0 left-0 right-0 mx-auto max-w-[440px] p-4 glass-effect border-t border-border safe-bottom">
         <CheckInButton
           isCheckedIn={isCheckedIn}
           onCheckIn={handleCheckIn}

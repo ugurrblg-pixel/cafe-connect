@@ -222,8 +222,8 @@ export default function ChatRoom() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-secondary/20 flex flex-col">
-        <div className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-border shadow-sm">
+      <div className="mx-auto min-h-screen max-w-[440px] bg-background flex flex-col">
+        <div className="fixed top-0 left-0 right-0 mx-auto max-w-[440px] z-50 bg-background border-b border-border shadow-sm">
           <div className="flex items-center gap-3 px-4 py-3">
             <Skeleton className="w-10 h-10 rounded-full" />
             <div className="space-y-1.5">
@@ -246,8 +246,8 @@ export default function ChatRoom() {
   // Show blocked/no match state
   if (hasMatch === false) {
     return (
-      <div className="min-h-screen bg-secondary/20 flex flex-col">
-        <div className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-border shadow-sm">
+      <div className="mx-auto min-h-screen max-w-[440px] bg-background flex flex-col">
+        <div className="fixed top-0 left-0 right-0 mx-auto max-w-[440px] z-50 bg-background border-b border-border shadow-sm">
           <div className="flex items-center gap-3 px-4 py-3">
             <button 
               onClick={() => navigate('/messages')} 
@@ -282,7 +282,7 @@ export default function ChatRoom() {
   }
 
   return (
-    <div className="min-h-screen bg-secondary/20 flex flex-col">
+    <div className="mx-auto min-h-screen max-w-[440px] bg-background flex flex-col">
       {/* Header with online status and premium badge */}
       <ChatHeader
         userName={otherUser?.displayName || 'User'}
@@ -409,7 +409,7 @@ export default function ChatRoom() {
       </div>
 
       {/* Message input - refined, warm, and modern */}
-      <div className="fixed bottom-0 left-0 right-0 px-4 py-3 bg-background/98 backdrop-blur-lg border-t border-border/50 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]">
+      <div className="fixed bottom-0 left-0 right-0 mx-auto max-w-[440px] px-4 py-3 bg-background/98 backdrop-blur-lg border-t border-border/50 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]">
         {/* Premium visibility hint */}
         {isPremium && (
           <div className="flex items-center justify-center gap-1.5 mb-2.5 text-xs text-amber-600 dark:text-amber-400 font-medium">

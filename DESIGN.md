@@ -6,11 +6,11 @@ Riyo is a Turkish cafe-based social application. This document records the owner
 
 Model B: `src/index.css` owns runtime semantic HSL tokens. `tailwind.config.ts` maps those tokens to shared primitives. This document mirrors source roles; it does not generate or override CSS.
 
-- Background: #F8F7F4; foreground: #1E293B.
+- Background: #F2FCF5; foreground: #1E293B.
 - Primary: #BF5237 with white labels (4.69:1); decorative brand: #E07A5F, soft brand: #FDF4F0. The supplied light terracotta is darkened for readable small button labels.
 - Accent: #26784F; online: #52B788; secondary: #F1EFEA.
 - Muted foreground: #5D6B80; border: #E2E8F0.
-- Font: Plus Jakarta Sans body, Syne headings, system fallbacks.
+- Font: Plus Jakarta Sans body and headings, system fallbacks.
 - Existing rounded controls/cards and neutral shadows come from shared CSS/primitive classes. Do not introduce screen-local colors or a second token adapter.
 
 ## Canonical owners
@@ -84,3 +84,7 @@ Messages uses the supplied mint canvas, Riyo/Mesajlar header, exact coffee headl
 
 ## Supplied profile showcase
 Profile follows the supplied mint/white Plus Jakarta concept: branded header, identity card with own photo carousel, actual active check-in, truthful photo/interest counts, favorites and preferences. Favorites are fetched under the current owner with existing RLS. Visibility uses the canonical useProfileVisibility hook with loading, disabled-save and failure recovery; no separate Wave permission is invented. VerificationRequest, account details, settings, sign-out and AccountDeletionSection remain. Premium remains visibly unavailable to purchase; existing members may inspect subscription details. No fake handle, check-in history, wave statistics, public status or activity history.
+
+
+## Cross-screen reconciliation
+Owner requested one related concept across routes. Canonical background is now mint #F2FCF5, with white cards, terracotta primary and Plus Jakarta Sans body/headings throughout product pages. PageLayout and shared Header constrain standard screens to 440px; specialized chat/venue compositions retain their functional structure. Radar, activities, inbox and profile now inherit the same typography. Profile edit uses matching rounded cards, section icons, a clear save action and honest completion copy. It no longer writes a stale visibility value while saving unrelated fields; useProfileVisibility remains the owner. All verification, photo screening, payment availability and deletion contracts remain.

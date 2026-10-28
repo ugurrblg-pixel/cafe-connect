@@ -21,7 +21,7 @@ export default function HelpSupport() {
     <PageLayout>
       <div className="min-h-screen bg-background pb-24">
         <Header title={t.settings.helpSupport} showBack />
-        <main className="pt-16 px-4">
+        <main className="pt-20 px-5">
           <section className="card-elevated overflow-hidden">
             {items.map(({ icon, label, description, onClick }, idx) => (
               <button key={label} onClick={onClick} className={`w-full flex items-center justify-between p-4 hover:bg-secondary/50 transition-colors text-left ${idx < items.length - 1 ? 'border-b border-border' : ''}`}>

@@ -104,7 +104,7 @@ export function CheckInStatusBar() {
     <div
       onClick={handleNavigateToCafe}
       className={cn(
-        'fixed top-0 left-0 right-0 z-40 safe-top',
+        'fixed top-0 left-0 right-0 mx-auto max-w-[440px] z-40 safe-top',
         'cursor-pointer overflow-hidden',
         'transition-all duration-300 ease-out',
         isVisible && !isExiting 
