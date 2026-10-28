@@ -211,7 +211,7 @@ export default function Profile() {
 
   return (
     <PageLayout>
-      <div className="min-h-screen bg-background pb-24">
+      <div className="profile-showcase mx-auto min-h-screen max-w-[440px] pb-28">
         {/* No Header — clean profile-first layout */}
         <main className="px-5 pt-8">
           <header className="mb-6 flex items-start justify-between gap-3">
