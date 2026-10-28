@@ -116,6 +116,7 @@ beforeEach(() => {
 });
 it("provides a real filter reset and keeps missing setup non-interactive", async () => {
   open();
+  fireEvent.click(screen.getByRole("button", { name: "Haritayı göster" }));
   await screen.findByLabelText("Test haritası");
   fireEvent.change(
     screen.getByRole("textbox", { name: "Aktivite veya mekan ara" }),
@@ -225,4 +226,21 @@ it("does not render cached group messages when renewed access is refused", async
   expect(screen.queryByText("Gizli eski mesaj")).not.toBeInTheDocument();
   await screen.findByText("Sohbet erişimi doğrulanamadı.");
   expect(screen.queryByText("Gizli eski mesaj")).not.toBeInTheDocument();
+});
+
+it("filters activity dates locally and keeps participation behind details", () => {
+  state.rows = [
+    { ...row, starts_at: new Date(Date.now() + 3 * 86400000).toISOString() },
+  ];
+  open();
+  expect(
+    screen.getByRole("heading", { name: /Bugün hangi aktiviteye/ }),
+  ).toBeVisible();
+  fireEvent.change(screen.getByLabelText("Aktivite tarihi"), {
+    target: { value: "today" },
+  });
+  expect(screen.getByText("Bu seçimle eşleşen plan yok")).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Filtreleri temizle" }));
+  expect(screen.getByLabelText("Aktivite tarihi")).toHaveValue("all");
+  expect(state.rpc).not.toHaveBeenCalled();
 });

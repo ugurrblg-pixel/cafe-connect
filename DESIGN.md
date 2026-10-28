@@ -72,3 +72,7 @@ Owner correction to screenshot typography: the compact mockup uses a plain geome
 
 ## Latest supplied Radar HTML
 Owner replaced the compact concept with the supplied social showcase HTML. Radar now has a 440px warm canvas, coffee ring decoration, 36px Riyo header, short subtitle, exact hero copy, separate search/radius controls, featured venue and white nearby cards. Featured venue is selected from filtered real results by active attendance; when nobody is present the badge says Yakınında keşfet. No fabricated ratings, amenities, availability, live waves or attendee portraits. Existing route and consent gates stay unchanged; source credits remain.
+
+
+## Supplied activity showcase
+Activity directory follows the supplied mint concept, Bricolage Grotesque headings and Karla body, Plus Jakarta wordmark, featured real plan and compact white cards. Date select filters all/today/tomorrow locally; all is default to avoid hiding future plans. Map remains available via explicit toggle, creation and detail/approval flows are preserved. Only backend-supported coffee/games/walk categories are offered. No static portraits, invented table amenities, fake live counts or direct wave-to-join action. Featured action opens detail before participation.
