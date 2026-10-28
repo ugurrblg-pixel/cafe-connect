@@ -44,7 +44,7 @@ export function BottomNav() {
     <nav aria-label="Ana gezinme"
       className="riyo-dock fixed inset-x-0 bottom-0 z-50 px-3"
     >
-      <div className="riyo-dock-surface mx-auto flex max-w-md items-center gap-1 p-1.5">
+      <div className="riyo-dock-surface mx-auto flex max-w-[400px] items-center gap-1 p-1.5">
         {items.map(({ path, icon: Icon, labelKey, countKey }) => {
           const isActive = location.pathname === path || (path !== '/' && location.pathname.startsWith(`${path}/`));
           const count = countKey ? unreadCounts[countKey] : 0;

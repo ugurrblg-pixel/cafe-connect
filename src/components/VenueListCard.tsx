@@ -26,13 +26,13 @@ export function VenueListCard({
   return (
     <article
       style={style}
-      className="border-b border-border/70 last:border-b-0"
+      className="rounded-2xl border border-border/60 bg-card shadow-sm"
     >
       <button
         type="button"
         onClick={onClick}
         aria-label={cafe.name + " mekanını aç"}
-        className="group flex w-full items-center gap-3 rounded-2xl py-4 text-left transition-colors hover:bg-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:gap-5"
+        className="group flex w-full items-center gap-3 rounded-2xl p-3 text-left transition-colors hover:bg-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
       >
         <CafeImage
           cafeId={cafe.id}
@@ -41,13 +41,13 @@ export function VenueListCard({
           category={cafe.category}
           aspectRatio="square"
           priority={priority}
-          className="h-24 w-24 shrink-0 rounded-2xl sm:h-32 sm:w-36"
+          className="h-24 w-24 shrink-0 rounded-xl"
         />
         <div className="min-w-0 flex-1">
-          <h3 className="break-words font-sans text-[17px] font-bold leading-[1.3] tracking-[-0.025em] sm:text-xl">
+          <h3 className="break-words font-sans text-base font-bold leading-[1.3] tracking-[-0.025em]">
             {cafe.name}
           </h3>
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-medium leading-relaxed tabular-nums text-muted-foreground sm:text-sm">
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-medium leading-relaxed tabular-nums text-muted-foreground">
             {cafe.distance && (
               <span className="inline-flex items-center gap-1">
                 <MapPin className="h-3.5 w-3.5" aria-hidden="true" />

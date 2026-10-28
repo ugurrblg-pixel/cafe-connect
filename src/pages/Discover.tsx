@@ -15,6 +15,8 @@ import {
 import { PageLayout } from "@/components/PageLayout";
 import { ProfileCompletionBanner } from "@/components/ProfileCompletionBanner";
 import { RandomMatchCard } from "@/components/RandomMatchCard";
+import { CafeImage } from "@/components/CafeImage";
+import { formatActiveUserCount } from "@/lib/photoAccess";
 import { VenueListCard } from "@/components/VenueListCard";
 import { VenueSources } from "@/components/VenueSources";
 import { Button } from "@/components/ui/button";
@@ -63,10 +65,6 @@ export default function Discover() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [limit, setLimit] = useState(12);
   const searchInput = useRef<HTMLInputElement>(null);
-  const base = useMemo(
-    () => filterDiscovery(cafes, query, "all", radius, sort),
-    [cafes, query, radius, sort],
-  );
   const visible = useMemo(
     () => filterDiscovery(cafes, query, filter, radius, sort),
     [cafes, query, filter, radius, sort],
@@ -96,18 +94,23 @@ export default function Discover() {
     searchInput.current?.focus();
   }
   const radiusLabel = radius === 500 ? "500 m" : `${radius / 1000} km`;
-  const counts = (key: VenueFilter) =>
-    filterDiscovery(base, "", key, radius, sort).length;
+  const featured = visible.reduce<(typeof visible)[number] | null>(
+    (best, venue) =>
+      !best || venue.activeUsers > best.activeUsers ? venue : best,
+    null,
+  );
+  const nearby = visible.filter((venue) => venue.id !== featured?.id);
   return (
     <PageLayout>
-      <div className="min-h-screen bg-background pb-28">
-        <main className="mx-auto max-w-3xl space-y-5 px-5 pt-7 sm:px-8">
-          <header className="mb-6 flex items-center justify-between gap-4">
+      <div className="radar-vitrine mx-auto min-h-screen max-w-[440px] bg-background pb-28 shadow-sm">
+        <main className="mx-auto space-y-5 px-5 pt-8">
+          <header className="relative isolate flex items-start justify-between gap-4 pb-1">
+            <div className="radar-coffee-stain" aria-hidden="true" />
             <div>
-              <h1 className="font-sans text-[56px] font-extrabold leading-[1.05] tracking-[-0.045em] text-primary sm:text-[64px]">
+              <h1 className="font-sans text-4xl font-extrabold leading-none tracking-tight text-primary">
                 Riyo
               </h1>
-              <p className="mt-1 font-sans text-[19px] font-normal leading-snug tracking-normal text-muted-foreground sm:text-[22px]">
+              <p className="mt-0.5 font-sans text-sm font-semibold tracking-tight text-foreground/80">
                 Sosyal Radar
               </p>
             </div>
@@ -115,7 +118,7 @@ export default function Discover() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative h-11 w-11"
+                className="relative h-11 w-11 rounded-full bg-card shadow-sm"
                 aria-label="Bildirimler"
                 onClick={() => navigate("/notifications")}
               >
@@ -127,7 +130,7 @@ export default function Discover() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-11 w-11"
+                className="h-11 w-11 rounded-full bg-card shadow-sm"
                 aria-label="Filtrele"
                 onClick={() => setFiltersOpen(true)}
               >
@@ -135,6 +138,9 @@ export default function Discover() {
               </Button>
             </div>
           </header>
+          <h2 className="font-sans text-3xl font-extrabold leading-tight tracking-tight">
+            Bugün nerede <span className="text-primary">buluşalım?</span>
+          </h2>
           {locationError && !locationLoading && (
             <p
               role="alert"
@@ -143,8 +149,8 @@ export default function Discover() {
               {locationError.message}
             </p>
           )}
-          <div className="flex items-center rounded-2xl border border-border bg-card shadow-sm">
-            <div className="relative min-w-0 flex-1">
+          <div className="flex items-center gap-2.5">
+            <div className="relative min-w-0 flex-1 rounded-2xl border border-border/60 bg-card shadow-sm">
               <Search
                 className="pointer-events-none absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground"
                 aria-hidden="true"
@@ -155,7 +161,7 @@ export default function Discover() {
                 placeholder="Mekan ara"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="h-14 rounded-2xl border-0 bg-transparent pl-10 pr-10 text-base shadow-none focus-visible:ring-inset focus-visible:ring-primary/30"
+                className="h-12 rounded-2xl border-0 bg-transparent pl-10 pr-10 text-base shadow-none focus-visible:ring-inset focus-visible:ring-primary/30"
               />
               {query && (
                 <button
@@ -173,7 +179,7 @@ export default function Discover() {
             </div>
             <Button
               variant="ghost"
-              className="h-10 shrink-0 rounded-none border-l border-border px-4 text-sm"
+              className="h-12 shrink-0 rounded-2xl border border-border/60 bg-card px-3.5 text-xs shadow-sm"
               aria-label="Arama alanını değiştir"
               onClick={() => setFiltersOpen(true)}
             >
@@ -213,18 +219,51 @@ export default function Discover() {
                 variant="outline"
                 onClick={() => setFilter(value)}
                 aria-pressed={filter === value}
-                className={`h-10 shrink-0 rounded-full px-5 text-sm ${filter === value ? "border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground" : "bg-card"}`}
+                className={`h-10 shrink-0 rounded-full px-5 text-xs ${filter === value ? "border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground" : "bg-card"}`}
               >
                 {Icon && <Icon className="h-3.5 w-3.5" aria-hidden="true" />}
                 {label}
-                {value === "all"
-                  ? ` (${base.length})`
-                  : counts(value) > 0
-                    ? ` (${counts(value)})`
-                    : ""}
               </Button>
             ))}
           </div>
+          {!loading && !locationLoading && featured && (
+            <section aria-label="Öne çıkan mekan">
+              <button
+                type="button"
+                onClick={() => navigate("/cafe/" + featured.id)}
+                aria-label={featured.name + " mekanını aç"}
+                className="relative block h-72 w-full overflow-hidden rounded-3xl text-left shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                <CafeImage
+                  cafeId={featured.id}
+                  imageUrl={featured.imageUrl}
+                  alt={featured.name}
+                  category={featured.category}
+                  aspectRatio="hero"
+                  priority
+                  className="h-full w-full"
+                />
+                <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                <span className="absolute left-3.5 top-3.5 rounded-full bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground">
+                  {featured.activeUsers > 0
+                    ? "Şimdi hareketli"
+                    : "Yakınında keşfet"}
+                </span>
+                <span className="absolute inset-x-0 bottom-8 px-5 text-white">
+                  <h3 className="mb-2 font-sans text-2xl font-bold tracking-tight">
+                    {featured.name}
+                  </h3>
+                  <span className="flex items-center justify-between gap-3 text-sm font-medium">
+                    <span className="flex items-center gap-1.5">
+                      <Users className="h-4 w-4" />
+                      {formatActiveUserCount(featured.activeUsers)} kişi burada
+                    </span>
+                    <span>{featured.distance}</span>
+                  </span>
+                </span>
+              </button>
+            </section>
+          )}
           <ProfileCompletionBanner />
           {activities.data === true && (
             <Button
@@ -277,9 +316,9 @@ export default function Discover() {
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <h2
                   id="venue-list-title"
-                  className="font-sans text-[24px] font-extrabold leading-[1.2] tracking-[-0.035em] sm:text-[30px]"
+                  className="font-sans text-xl font-bold tracking-tight"
                 >
-                  Bir kahve molası ver.
+                  Sana yakın
                 </h2>
                 <div className="flex items-center gap-3">
                   <label className="sr-only" htmlFor="list-sort">
@@ -304,8 +343,8 @@ export default function Discover() {
                   </p>
                 </div>
               </div>
-              <div>
-                {visible.slice(0, limit).map((cafe, index) => (
+              <div className="space-y-3">
+                {nearby.slice(0, limit).map((cafe, index) => (
                   <VenueListCard
                     key={cafe.id}
                     cafe={cafe}
@@ -314,13 +353,13 @@ export default function Discover() {
                   />
                 ))}
               </div>
-              {visible.length > limit && (
+              {nearby.length > limit && (
                 <Button
                   variant="outline"
                   className="mt-5 w-full rounded-xl bg-card"
                   onClick={() => setLimit((n) => n + 12)}
                 >
-                  Daha fazla mekan göster ({visible.length - limit})
+                  Daha fazla mekan göster ({nearby.length - limit})
                 </Button>
               )}
               {!visible.length && !error && (

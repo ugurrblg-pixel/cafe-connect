@@ -81,7 +81,7 @@ export function CafeImage({
         loading={priority?'eager':'lazy'}
         decoding="async"
       />
-      {representative && <span className="absolute bottom-2 left-2 rounded-full bg-black/50 px-2 py-1 text-[10px] text-white backdrop-blur-sm">Temsili görsel</span>}
+      {representative && <span className="absolute bottom-2 left-2 z-10 rounded-full bg-black/50 px-2 py-1 text-[10px] text-white backdrop-blur-sm">Temsili görsel</span>}
     </div>
   );
 }

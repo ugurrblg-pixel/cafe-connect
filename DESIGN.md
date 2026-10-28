@@ -68,3 +68,7 @@ Radar typography polish: Syne is reserved for the Riyo wordmark, with tight opti
 
 
 Owner correction to screenshot typography: the compact mockup uses a plain geometric sans wordmark, not Syne. Radar Riyo is explicitly Plus Jakarta Sans extra-bold at 56px (64px wide), with normal-spaced 19px gray Sosyal Radar beneath. The compact section headline uses the same sans family extra-bold. This supersedes the preceding wordmark typography choice.
+
+
+## Latest supplied Radar HTML
+Owner replaced the compact concept with the supplied social showcase HTML. Radar now has a 440px warm canvas, coffee ring decoration, 36px Riyo header, short subtitle, exact hero copy, separate search/radius controls, featured venue and white nearby cards. Featured venue is selected from filtered real results by active attendance; when nobody is present the badge says Yakınında keşfet. No fabricated ratings, amenities, availability, live waves or attendee portraits. Existing route and consent gates stay unchanged; source credits remain.
