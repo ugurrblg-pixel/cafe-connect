@@ -424,7 +424,7 @@ export default function Discover() {
           </p>
         </main>
         {activeCheckIn && activeCheckIn.expiryTime > new Date() && (
-          <div className="pointer-events-none fixed inset-x-0 bottom-20 z-40 px-4">
+          <div className="pointer-events-none fixed inset-x-0 bottom-[calc(6.5rem+env(safe-area-inset-bottom,0px))] z-40 px-4">
             <button
               onClick={() => navigate(`/cafe/${activeCheckIn.cafeId}`)}
               className="pointer-events-auto mx-auto flex w-full max-w-3xl items-center justify-between gap-3 rounded-2xl border border-border bg-card/95 p-3.5 text-left shadow-lg backdrop-blur-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"

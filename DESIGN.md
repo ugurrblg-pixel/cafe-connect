@@ -48,3 +48,7 @@ Owner revision: venue listing returns to the preceding single-column full-width 
 
 ## Detail polish
 Preserve the single-column venue list. Shared navigation uses wider selected icon surfaces, subtle top shadow and stronger labels. Header controls and profile edit affordances have 44px targets and visible focus. The own-profile cover uses stationary concentric rings as decoration, without any verification or attendance meaning. Profile counters group in a neutral inset surface. Existing typography, runtime palette and privacy owners remain canonical.
+
+
+## Owner supplied navigation dock
+The base64 SVG reference defines a floating graphite pill with a lime selected capsule. BottomNav implements it as real keyboard-operable route buttons; original app route names, unread counters and activity availability rules remain. Dock colors are locally scoped semantic variables in index.css and do not recolor the application. The container reserves safe-area space; the active-check-in shortcut stays above it. Source example labels (games/wheel/team) do not create unsupported routes.

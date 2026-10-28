@@ -42,9 +42,9 @@ export function BottomNav() {
 
   return (
     <nav aria-label="Ana gezinme"
-      className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-xl border-t border-border/80 shadow-[0_-4px_24px_-12px_hsl(var(--foreground)/0.15)] safe-bottom z-50"
+      className="riyo-dock fixed inset-x-0 bottom-0 z-50 px-3"
     >
-      <div className="mx-auto flex max-w-3xl items-center justify-around gap-1 px-3 py-2">
+      <div className="riyo-dock-surface mx-auto flex max-w-lg items-center gap-1 p-2">
         {items.map(({ path, icon: Icon, labelKey, countKey }) => {
           const isActive = location.pathname === path || (path !== '/' && location.pathname.startsWith(`${path}/`));
           const count = countKey ? unreadCounts[countKey] : 0;
@@ -57,19 +57,19 @@ export function BottomNav() {
               aria-current={isActive ? 'page' : undefined}
               onClick={() => handleNavClick(path, countKey)}
               className={cn(
-                'nav-item flex-1 relative rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                isActive ? 'nav-item-active' : 'nav-item-inactive'
+                'riyo-dock-item relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-full px-1 py-2.5',
+                isActive && 'riyo-dock-selected'
               )}
             >
-              <div className={cn('relative flex h-8 w-12 items-center justify-center rounded-xl transition-colors',isActive && 'border border-brand/20 bg-brand-soft')}>
-                <Icon className="w-[22px] h-[22px]" strokeWidth={isActive ? 2.2 : 1.5} />
+              <div className="relative flex h-7 w-9 items-center justify-center">
+                <Icon className="w-6 h-6" strokeWidth={isActive ? 2.2 : 1.5} />
                 {count > 0 && (
-                  <span className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                  <span className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] riyo-dock-count text-[10px] font-bold rounded-full flex items-center justify-center px-1">
                     {count > 99 ? '99+' : count}
                   </span>
                 )}
               </div>
-              <span className="text-[11px] font-semibold mt-1">{label}</span>
+              <span className="max-w-full truncate text-[11px] font-semibold">{label}</span>
             </button>
           );
         })}
