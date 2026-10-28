@@ -41,3 +41,6 @@ The owner-approved three-screen activity concept inherits Riyo's warm neutral, t
 
 ## Discovery refinement
 Keep the approved warm palette. Discovery opens with a restrained editorial heading, followed by compact location and search controls. Category chips scroll horizontally on narrow screens; venue cards form one column on phones and two columns from 640px. Visible sorting shares state with the filter sheet. Card actions say Mekanı keşfet and open existing venue detail gates. Inbox and notifications use short introductory headings with no invented activity statistics.
+
+
+Owner revision: venue listing returns to the preceding single-column full-width photo cards at every viewport, with the original card proportions and check-in detail action. The refined heading, filters and conversation screens remain. This supersedes the two-column discovery refinement above.

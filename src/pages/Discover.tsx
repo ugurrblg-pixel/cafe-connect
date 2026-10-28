@@ -362,7 +362,7 @@ export default function Discover() {
                   </p>
                 </div>
               </div>
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <div className="space-y-4">
                 {visible.slice(0, limit).map((cafe, index) => (
                   <VenueListCard
                     key={cafe.id}
