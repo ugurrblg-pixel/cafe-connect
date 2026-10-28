@@ -1,5 +1,5 @@
 .activity-map-shell {
-  height: min(48vh, 430px);
+  height: min(44vh, 360px);
   min-height: 280px;
   background: hsl(var(--secondary));
 }
@@ -7,50 +7,84 @@
   font-family: inherit;
   background: hsl(var(--secondary));
 }
+.activity-map .leaflet-tile-pane {
+  filter: saturate(0.35) contrast(0.94) brightness(1.04);
+}
 .activity-marker {
   background: none;
   border: none;
 }
 .activity-map-pin {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  min-height: 60px;
-  padding: 5px;
-  border: 3px solid white;
-  border-radius: 22px 22px 22px 5px;
+  gap: 6px;
+  width: 56px;
+  height: 38px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 14px;
   background: hsl(var(--card));
   color: hsl(var(--foreground));
-  box-shadow: 0 4px 12px hsl(var(--foreground) / 0.18);
+  box-shadow: 0 3px 10px hsl(var(--foreground) / 0.14);
 }
-.activity-map-pin > span {
-  font-size: 22px;
-  line-height: 26px;
+.activity-map-pin svg {
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
 }
-.activity-map-pin > small {
-  font-size: 11px;
+.activity-map-pin small {
+  font-family: inherit;
+  font-size: 12px;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 .activity-map-pin.is-selected {
+  border-color: hsl(var(--primary));
   background: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
+  box-shadow:
+    0 0 0 3px hsl(var(--primary) / 0.15),
+    0 3px 10px hsl(var(--foreground) / 0.14);
 }
 .activity-chosen-pin {
   display: block;
-  font-size: 32px;
-  color: hsl(var(--primary));
-  text-shadow: 0 2px 5px hsl(var(--foreground) / 0.3);
+  width: 26px;
+  height: 26px;
+  border: 4px solid hsl(var(--card));
+  border-radius: 50%;
+  background: hsl(var(--primary));
+  box-shadow:
+    0 0 0 2px hsl(var(--primary)),
+    0 2px 8px hsl(var(--foreground) / 0.2);
 }
 .activity-map .leaflet-control-attribution {
+  max-width: 100%;
+  font-family: inherit;
   font-size: 10px;
   padding: 3px 6px;
+  background: hsl(var(--card) / 0.94);
+  color: hsl(var(--muted-foreground));
 }
-.activity-map .leaflet-control-zoom a {
+.activity-map .leaflet-control-attribution a {
   color: hsl(var(--foreground));
 }
-.activity-map a:focus-visible {
+.activity-map .leaflet-control-zoom {
+  overflow: hidden;
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  box-shadow: 0 2px 8px hsl(var(--foreground) / 0.08);
+}
+.activity-map .leaflet-control-zoom a {
+  width: 40px;
+  height: 40px;
+  line-height: 40px;
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  font-size: 22px;
+  font-weight: 400;
+}
+.activity-map a:focus-visible,
+.activity-map .leaflet-marker-icon:focus-visible {
   outline: 2px solid hsl(var(--primary));
-  outline-offset: 2px;
+  outline-offset: 3px;
 }

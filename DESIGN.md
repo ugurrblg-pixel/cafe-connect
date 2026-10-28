@@ -92,3 +92,7 @@ Owner requested one related concept across routes. Canonical background is now m
 
 ## Notifications
 Dock retains a permanent Selamlar route and unread-event count alongside Activities. Notification center follows the mint/white concept, with incoming waves and matches and explicit mutual-match instructions. Only loaded notification events are marked seen, never chat messages. Existing same-venue wave-back checks remain.
+
+
+## Simplified activity map
+The incumbent OSM basemap is visually subdued on the tile pane only; credit and controls stay legible. Compact line-icon/count capsules replace large emoji pins. Selected markers use terracotta. Tümünü gör restores all public meeting points; geometry/filter changes refit the map and explicit selection pans. Center-picking, marker keyboard activation and visitor-location privacy are preserved.
