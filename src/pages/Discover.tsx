@@ -4,7 +4,6 @@ import {
   Bell,
   Coffee,
   Dumbbell,
-  Hand,
   Loader2,
   MapPin,
   RefreshCw,
@@ -144,19 +143,6 @@ export default function Discover() {
           }
         />
         <main className="mx-auto max-w-3xl space-y-5 px-4 pt-24">
-          <div className="discovery-intro border-b border-border/70 pb-6">
-            <p className="mb-2 text-xs font-semibold tracking-wide text-primary">
-              SENİN ÇEVREN, YENİ HİKAYELER
-            </p>
-            <h2 className="max-w-md text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
-              Dışarı çık.
-              <br />
-              <span className="text-primary">Bir sohbete rastla.</span>
-            </h2>
-            <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">
-              Yakınındaki bir mekanı seç, aynı ortamda yeni insanlarla tanış.
-            </p>
-          </div>
           <section
             aria-label="Konum ve arama alanı"
             className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/80 bg-card px-4 py-3.5 shadow-sm"
@@ -219,19 +205,6 @@ export default function Discover() {
               {locationError.message}
             </p>
           )}
-          <div className="flex items-start gap-3 border-l-2 border-brand/60 py-1 pl-4">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-brand/20 bg-brand-soft text-primary">
-              <Hand className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <div>
-              <h2 className="font-display text-sm font-bold">
-                Bir kahve, yeni bir sohbet
-              </h2>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Mekana katıl, el salla; ilgi karşılıklı olunca sohbete başla.
-              </p>
-            </div>
-          </div>
           <div className="relative">
             <Search
               className="pointer-events-none absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground"
@@ -327,7 +300,7 @@ export default function Discover() {
           {loading || locationLoading ? (
             <div className="space-y-4" aria-label="Mekanlar yükleniyor">
               {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-80 w-full rounded-2xl" />
+                <Skeleton key={i} className="h-32 w-full rounded-2xl" />
               ))}
             </div>
           ) : (
@@ -337,7 +310,7 @@ export default function Discover() {
                   id="venue-list-title"
                   className="text-xl font-bold tracking-tight"
                 >
-                  Yakındaki mekanlar
+                  Bir kahve molası ver.
                 </h2>
                 <div className="flex items-center gap-3">
                   <label className="sr-only" htmlFor="list-sort">
@@ -362,7 +335,7 @@ export default function Discover() {
                   </p>
                 </div>
               </div>
-              <div className="space-y-4">
+              <div>
                 {visible.slice(0, limit).map((cafe, index) => (
                   <VenueListCard
                     key={cafe.id}

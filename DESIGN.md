@@ -55,3 +55,7 @@ The base64 SVG reference defines a floating graphite pill with a lime selected c
 
 
 Owner adjustment: retain the floating capsule silhouette but use canonical card, primary terracotta, muted and border tokens throughout. The dock is capped at 448px, with 56px button targets and 22px icons. This supersedes the graphite/lime color specification; route behavior is unchanged.
+
+
+## Selected concept 2: compact radar
+Owner chose the compact-list mockup. VenueListCard is a single full-width route button with a left thumbnail, right name, actual distance/count, factual category/provider and trailing chevron. One column at every viewport, subtle row separators, no large card CTA. Source and representative-image captions remain. The oversized discovery intro and repeated social explanation are removed to prioritize nearby results. No unsupported amenity claims or mock attendance numbers are carried into production.
