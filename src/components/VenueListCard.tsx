@@ -26,7 +26,7 @@ export function VenueListCard({
   return (
     <article
       style={style}
-      className={`overflow-hidden rounded-2xl border bg-card shadow-card transition-shadow hover:shadow-md ${heat ? "border-brand/50" : "border-border/80"}`}
+      className={`group flex h-full flex-col overflow-hidden rounded-[22px] border bg-card shadow-card transition-shadow hover:shadow-md ${heat ? "border-brand/50" : "border-border/80"}`}
     >
       <button
         type="button"
@@ -41,7 +41,7 @@ export function VenueListCard({
           category={cafe.category}
           aspectRatio="hero"
           priority={priority}
-          className="h-48 w-full rounded-none sm:h-56"
+          className="h-52 w-full rounded-none transition-transform duration-300 motion-safe:group-hover:scale-[1.025] sm:h-48"
         />
         <span
           className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/10"
@@ -65,10 +65,10 @@ export function VenueListCard({
           {formatActiveUserCount(cafe.activeUsers)} kişi burada
         </span>
       </button>
-      <div className="space-y-3 p-4">
+      <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="font-display text-lg font-bold leading-snug">
+            <h3 className="font-display text-lg font-bold leading-snug tracking-tight">
               <button
                 type="button"
                 onClick={onClick}
@@ -109,10 +109,10 @@ export function VenueListCard({
         <Button
           onClick={onClick}
           variant={heat ? "default" : "outline"}
-          className="h-11 w-full rounded-xl"
+          className="mt-auto h-11 w-full rounded-xl"
         >
           <MapPin aria-hidden="true" />
-          Check-in ekranını aç
+          Mekanı keşfet
         </Button>
         <p className="text-[11px] text-muted-foreground">
           Konumun girişte doğrulanır. Kaynak: {venueSourceName(cafe.dataSource)}

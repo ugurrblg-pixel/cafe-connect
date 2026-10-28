@@ -135,6 +135,7 @@ export default function Notifications() {
         <Header title="Bildirimler" />
 
         <main className="mx-auto max-w-3xl pt-20">
+          <div className="px-5 pb-5 pt-2"><p className="mb-1 text-xs font-semibold text-primary">BİR SELAMLA BAŞLAR</p><h2 className="text-2xl font-bold tracking-tight">Sana gelen selamlar.</h2><p className="mt-2 text-sm text-muted-foreground">El sallamalarını ve yeni eşleşmelerini buradan takip et.</p></div>
           <Tabs defaultValue="waves" className="w-full">
             <TabsList className={cn('w-full grid mx-4 mt-2', paidFeatures ? 'grid-cols-3' : 'grid-cols-2')} style={{ width: 'calc(100% - 2rem)' }}>
               {paidFeatures && <TabsTrigger value="sparks" className="flex items-center gap-2">

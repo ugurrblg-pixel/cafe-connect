@@ -143,7 +143,20 @@ export default function Discover() {
             </div>
           }
         />
-        <main className="mx-auto max-w-3xl space-y-4 px-4 pt-20">
+        <main className="mx-auto max-w-3xl space-y-5 px-4 pt-24">
+          <div className="discovery-intro">
+            <p className="mb-2 text-xs font-semibold tracking-wide text-primary">
+              SENİN ÇEVREN, YENİ HİKAYELER
+            </p>
+            <h2 className="max-w-md text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
+              Dışarı çık.
+              <br />
+              <span className="text-primary">Bir sohbete rastla.</span>
+            </h2>
+            <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">
+              Yakınındaki bir mekanı seç, aynı ortamda yeni insanlarla tanış.
+            </p>
+          </div>
           <section
             aria-label="Konum ve arama alanı"
             className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/80 bg-card px-4 py-3 shadow-sm"
@@ -206,7 +219,7 @@ export default function Discover() {
               {locationError.message}
             </p>
           )}
-          <div className="flex items-start gap-3 rounded-xl border border-border/80 bg-card p-3.5 shadow-sm">
+          <div className="flex items-start gap-3 border-l-2 border-brand/60 py-1 pl-4">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-brand/20 bg-brand-soft text-primary">
               <Hand className="h-5 w-5" aria-hidden="true" />
             </span>
@@ -230,7 +243,7 @@ export default function Discover() {
               placeholder="Mekan ara"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="h-11 rounded-xl border-border/80 bg-card pl-10 pr-10 text-base shadow-sm"
+              className="h-12 rounded-2xl border-border bg-card pl-10 pr-10 text-base shadow-sm focus-visible:ring-primary/30"
             />
             {query && (
               <button
@@ -247,7 +260,7 @@ export default function Discover() {
             )}
           </div>
           <div
-            className="flex flex-wrap gap-2"
+            className="flex gap-2 overflow-x-auto pb-2"
             role="group"
             aria-label="Mekan türü"
           >
@@ -258,7 +271,7 @@ export default function Discover() {
                 variant="outline"
                 onClick={() => setFilter(value)}
                 aria-pressed={filter === value}
-                className={`rounded-full px-3.5 text-xs shadow-sm ${filter === value ? "border-foreground bg-foreground text-background hover:bg-foreground hover:text-background" : "bg-card"}`}
+                className={`h-10 shrink-0 rounded-xl px-3.5 text-xs ${filter === value ? "border-foreground bg-foreground text-background hover:bg-foreground hover:text-background" : "bg-card"}`}
               >
                 {Icon && <Icon className="h-3.5 w-3.5" aria-hidden="true" />}
                 {label}
@@ -320,19 +333,36 @@ export default function Discover() {
           ) : (
             <section aria-labelledby="venue-list-title">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <h2 id="venue-list-title" className="text-base font-bold">
+                <h2
+                  id="venue-list-title"
+                  className="text-xl font-bold tracking-tight"
+                >
                   Yakındaki mekanlar
                 </h2>
-                <p
-                  role="status"
-                  aria-live="polite"
-                  className="text-xs text-muted-foreground"
-                >
-                  {visible.length} mekan ·{" "}
-                  {sort === "active" ? "En hareketli" : "En yakın"}
-                </p>
+                <div className="flex items-center gap-3">
+                  <label className="sr-only" htmlFor="list-sort">
+                    Liste sıralaması
+                  </label>
+                  <select
+                    id="list-sort"
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value)}
+                    className="h-10 max-w-36 rounded-xl border border-border bg-card px-2 text-xs font-medium focus-visible:outline-primary"
+                  >
+                    <option value="nearby">En yakın</option>
+                    <option value="active">En hareketli</option>
+                  </select>
+                  <p
+                    role="status"
+                    aria-live="polite"
+                    className="text-xs text-muted-foreground"
+                  >
+                    {visible.length} mekan ·{" "}
+                    {sort === "active" ? "En hareketli" : "En yakın"}
+                  </p>
+                </div>
               </div>
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 {visible.slice(0, limit).map((cafe, index) => (
                   <VenueListCard
                     key={cafe.id}

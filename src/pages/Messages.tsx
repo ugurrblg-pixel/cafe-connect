@@ -83,6 +83,7 @@ export default function Messages() {
         <Header title="Mesajlar" />
 
         <main className="mx-auto max-w-3xl pt-20">
+          <div className="px-5 pb-5 pt-2"><p className="mb-1 text-xs font-semibold text-primary">TANIŞTIK, ŞİMDİ SOHBET ZAMANI</p><h2 className="text-2xl font-bold tracking-tight">Sohbetlerin burada.</h2><p className="mt-2 text-sm text-muted-foreground">Karşılıklı bir selam, yeni bir sohbetin başlangıcı.</p></div>
           {error && (
             <div className="px-5 py-4 text-sm text-muted-foreground">
               Sohbet listesi yüklenemedi.

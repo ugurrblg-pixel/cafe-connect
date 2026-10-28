@@ -37,3 +37,7 @@ Discovery uses full-width vertical photo cards, strong venue names, distance and
 ## Group activities
 
 The owner-approved three-screen activity concept inherits Riyo's warm neutral, terracotta and Plus Jakarta Sans/Syne design. ActivityMap owns Leaflet and its visible OSM credit, compact count pins and keyboard-accessible location selection. Activities owns the public plan list, detail, preview/consent and private group conversation. This adds an activity map without changing the map-free venue list. See docs/activities-design.md.
+
+
+## Discovery refinement
+Keep the approved warm palette. Discovery opens with a restrained editorial heading, followed by compact location and search controls. Category chips scroll horizontally on narrow screens; venue cards form one column on phones and two columns from 640px. Visible sorting shares state with the filter sheet. Card actions say Mekanı keşfet and open existing venue detail gates. Inbox and notifications use short introductory headings with no invented activity statistics.
