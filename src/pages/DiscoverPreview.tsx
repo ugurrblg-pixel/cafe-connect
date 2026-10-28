@@ -15,6 +15,6 @@ export default function DiscoverPreview() {
       <div className="flex items-center gap-2"><Button variant="ghost" size="sm" className="rounded-full" onClick={() => navigate('/')}><ArrowLeft aria-hidden="true"/>Ana keşfete dön</Button><strong className="text-sm">Tasarım denemesi</strong></div>
       <p className="text-xs text-muted-foreground">Örnek mekanlar ve sayılar · İşlemler kaydedilmez</p>
     </div>
-    <iframe title="Yeni keşfet tasarımı — deneme" sandbox="allow-scripts" srcDoc={document} className="min-h-0 w-full flex-1 border-0 bg-[#131317]" />
+    <iframe title="Yeni keşfet tasarımı — deneme" sandbox="allow-scripts" srcDoc={document} className="min-h-0 w-full flex-1 border-0 bg-[#F8F7F4]" />
   </div>;
 }

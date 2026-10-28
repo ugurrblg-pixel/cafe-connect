@@ -10,6 +10,15 @@ function open(){
  const dom=new JSDOM(discoverPreviewDocument(html,'html { color-scheme:dark }',script,'https://app.test','test-nonce'),{runScripts:'dangerously',url:'https://preview.test',virtualConsole:new VirtualConsole()});windows.push(dom);return dom;
 }
 afterEach(()=>{for(const dom of windows.splice(0))dom.window.close();});
+it('renders the new light design and opens filters from both entry points',()=>{
+ const dom=open(),d=dom.window.document;
+ expect(d.documentElement.classList.contains('light')).toBe(true);
+ expect(dom.window.getComputedStyle(d.body).backgroundColor).toBe('rgb(248, 247, 244)');
+ const dialog=d.querySelector<HTMLDialogElement>('#preview-filters')!;
+ dialog.showModal=()=>dialog.setAttribute('open','');dialog.close=()=>dialog.removeAttribute('open');
+ const entries=d.querySelectorAll<HTMLElement>('[data-preview-filters]');expect(entries).toHaveLength(2);
+ for(const entry of entries){entry.click();expect(dialog.hasAttribute('open')).toBe(true);(dialog.querySelector('button') as HTMLElement).click();expect(dialog.hasAttribute('open')).toBe(false);}
+});
 it('removes uploaded executable scripts and permits only the owned demo script',()=>{
  const extra=html.replace('</body>','<script>window.stolen = true</script></body>');
  const output=discoverPreviewDocument(extra,'',script,'https://app.test','test-nonce');

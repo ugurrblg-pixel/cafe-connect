@@ -27,7 +27,7 @@
     document.getElementById('preview-empty').hidden = cards.some(card => !card.hidden);
   }
   for (const filter of filters) filter.addEventListener('click', () => { category = filter.dataset.previewCategory; update(); });
-  document.querySelector('[data-preview-filters]').addEventListener('click', () => dialog.showModal());
+  for (const button of document.querySelectorAll('[data-preview-filters]')) button.addEventListener('click', () => dialog.showModal());
   for (const button of dialog.querySelectorAll('button')) button.addEventListener('click', event => { event.preventDefault(); dialog.close(); });
   document.getElementById('preview-radius').addEventListener('change', update);
   document.getElementById('preview-sort').addEventListener('change', update);
