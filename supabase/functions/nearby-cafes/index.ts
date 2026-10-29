@@ -193,10 +193,11 @@ Deno.serve(async (req) => {
     );
 
     // Get active check-in counts
-    const { data: checkIns } = await supabase
-      .from('check_ins')
-      .select('cafe_id')
-      .gt('expiry_time', new Date().toISOString());
+    const { data: checkIns } = nearbyVenues.length
+      ? await supabase.from('check_ins').select('cafe_id')
+        .in('cafe_id', nearbyVenues.map(v => v.id))
+        .gt('expiry_time', new Date().toISOString())
+      : { data: [] };
 
     const userCounts: Record<string, number> = {};
     (checkIns || []).forEach((c) => {

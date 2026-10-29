@@ -145,3 +145,7 @@ Keşif kotası UTC günü başına proje genelinde 25 dört-kategorili taramadı
 Dağıtım: önce yalnız yeni SQL dosyasını uygulayın; ardından `npx supabase functions deploy nearby-cafes --project-ref xbodyzqtltrdtdahrteh --no-verify-jwt`. İşlevin kendi auth.getUser kontrolü aynen kalır. Supabase oturumu yoksa önce kullanıcı kendi hesabıyla CLI girişini tamamlamalıdır; anahtarlar sohbete veya repoya konmamalıdır. Eski migration dosyalarını toplu çalıştırmayın.
 
 Foursquare OS Places bağımsız kaynak olarak mevcut hazırlama hattında desteklidir, fakat bu değişiklik yeni Foursquare verisi aktarmamıştır. Portal erişimi ve bölgesel kapsam incelemesi ayrı aşamadır.
+
+### 30 Ekim 2026 — canlı kurulum
+
+Yeni kapsam ve günlük bütçe SQL işlevleri Supabase SQL Editor üzerinden başarıyla uygulandı. `nearby-cafes` güncel kaynakla yeniden dağıtıldı; panelde güncelleme zamanı doğrulandı. Oturumsuz POST isteği 401 Sign in required döndürdü. Son kişi sayısı kapsam düzeltmesinden sonra ilgili 24 test ve typecheck geçti. Gerçek kullanıcı oturumuyla yakınlık araması bu kurulum kontrolünde çalıştırılmadı. Foursquare veri aktarımı yapılmadı.
