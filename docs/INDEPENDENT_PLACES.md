@@ -132,3 +132,16 @@ Mevcut Google kayıtlarından 200m uzaklık ve açık adaylardan 120m ayrılık 
 Açık kaynağın kendi adı/adresi/koordinatları kaydedilir. Mevcut cafeId ve Google place ID korunur; eski Google açıklama/fotoğraf/puan alanları taşınmaz. Google kimliği yalnız kimlik devamlılığı içindir. Kaynak atfı ve lisansı korunur, hedefli Google yenileme işi iptal edilir. Daha önce başlamış bir Google güncellemesine karşı projection trigger bağımsız alanları korur. Bu kayıtlar eski place_directory yerine private.google_source_adoptions üzerinden bağlıdır; tam bağımsız RPC moduna ileride ayrıca dahil edilmelidir. İptal/kapama yönetimi operatör incelemesi gerektirir.
 
 24 Ekim 2026 tarihinde bağlantı düzeldikten sonra migration tek başına uygulandı ve nearby-cafes dağıtıldı. Gerçek oturumla aramada Overture kaynaklı eşleşmelerin döndüğü doğrulandı. Yeni SQL testi yalnız izole test veritabanında çalıştırılır.
+
+
+## 29 Ekim 2026 — maliyet azaltma hazırlığı
+
+Bu bölümdeki değişiklikler canlıya uygulanmış sayılmaz; ayrıca dağıtım kanıtı gerekir. `20261029010000_shared_places_coverage.sql` yalnız başarıyla tamamlanmış, 28 günden yeni 2800m Google arama alanlarını kullanır. Kullanıcının 2000m dairesini tam kapsamak için alan merkezi en fazla 800m uzaklıkta olmalıdır; az mekan bulunması kapsam kanıtı değildir. Eksik/başarısız taramalar tekrar kullanılmaz.
+
+Yeni `nearby-cafes` kodu etkileşimli aramada hedefli Details işlerini ayrıca çalıştırmaz; Nearby Search zaten aynı mekan alanlarını yeniler. Açık kaynak eşleştirmesi korunur. Google içerik önbelleği uzatılmaz. Katılımcı sayısı sorgusu bütün check-in tablosu yerine ilgili mekan kimlikleriyle sınırlandırılır.
+
+Keşif kotası UTC günü başına proje genelinde 25 dört-kategorili taramadır: en fazla 100 Google Nearby Search denemesi. Önceki sınır 100 tarama/400 denemeydi; bu bir fatura veya gerçek tasarruf yüzdesi garantisi değildir. Kullanıcı başına 20 tarama ve 60 saniye koruması kalır. Kota bitince hazır sonuçlar kullanılabilir; hiç taranmamış alanlar beklemek zorunda kalabilir. Ayrı çalıştırılan eski bakım işleri bu etkileşimli sınırın kapsamında değildir.
+
+Dağıtım: önce yalnız yeni SQL dosyasını uygulayın; ardından `npx supabase functions deploy nearby-cafes --project-ref xbodyzqtltrdtdahrteh --no-verify-jwt`. İşlevin kendi auth.getUser kontrolü aynen kalır. Supabase oturumu yoksa önce kullanıcı kendi hesabıyla CLI girişini tamamlamalıdır; anahtarlar sohbete veya repoya konmamalıdır. Eski migration dosyalarını toplu çalıştırmayın.
+
+Foursquare OS Places bağımsız kaynak olarak mevcut hazırlama hattında desteklidir, fakat bu değişiklik yeni Foursquare verisi aktarmamıştır. Portal erişimi ve bölgesel kapsam incelemesi ayrı aşamadır.

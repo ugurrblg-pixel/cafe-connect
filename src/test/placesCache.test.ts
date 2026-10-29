@@ -8,10 +8,11 @@ const compiled = transpileModule(source, { compilerOptions: { target: ScriptTarg
 const cafe = { id: 'saved', name: 'Pizza Coffee', latitude: 41, longitude: 29, category: 'cafe', is_open: true };
 afterEach(() => vi.restoreAllMocks());
 
-function harness(state = 'cache', cached: any[] = [cafe], googleStatus = 'OK', upsertError: any = null, owned?: { rows: any[]; error?: unknown; anonymous?: boolean }, targeted?: {jobs:any[];error?:unknown;bounds?:string}) {
+function harness(state = 'cache', cached: any[] = [cafe], googleStatus = 'OK', upsertError: any = null, owned?: { rows: any[]; error?: unknown; anonymous?: boolean }, targeted?: {jobs:any[];error?:unknown;bounds?:string;covered?:boolean;coverageError?:unknown}) {
   let handler!: (req: Request) => Promise<Response>;
   const rpc = vi.fn(async (name: string) => name === 'search_independent_places'
     ? { data: owned?.rows, error: owned?.error || null }
+    : name === 'has_fresh_places_coverage' ? {data:targeted?.covered||false,error:targeted?.coverageError||null}
     : name === 'claim_targeted_place_refresh' ? {data:targeted?.jobs,error:targeted?.error||null}
     : ({ data: name === 'claim_places_search_area' ? { state, lease_token: 'lease' } : true, error: null }));
   const upsert = vi.fn(async (_rows: unknown[]) => ({ error: upsertError }));
@@ -84,7 +85,8 @@ it('authenticates before reading the independent directory', async () => {
 it('discovers missing pilot venues even when the database and targeted queue contain entries',async()=>{
  const h=harness('reserved',[cafe],'OK',null,undefined,{jobs:[{place_id:'scheduled-id',lease_token:'lease'}]});
  expect((await h.request()).status).toBe(200);
- expect(h.fetch).toHaveBeenCalledTimes(5);
+ expect(h.fetch).toHaveBeenCalledTimes(4);
+ expect(h.rpc).not.toHaveBeenCalledWith('claim_targeted_place_refresh',expect.anything());
  expect(h.rpc).toHaveBeenCalledWith('claim_places_search_area',expect.objectContaining({target_area_key:'4100:2900'}));
  expect(h.upsert).toHaveBeenCalled();
 });
@@ -112,3 +114,6 @@ it('filters cached tea-house spelling variants before returning venue results',a
  const h=harness('cache',[{...cafe,name:'Dostlar Kraathanesi'},{...cafe,id:'tea',name:'Çay Baçhesi'},{...cafe,id:'allowed',name:'Çaykur Cafe'}]);
  const body=await(await h.request()).json();expect(body.cafes.map((c:any)=>c.id)).toEqual(['allowed']);
 });
+
+it("reuses completed neighboring coverage without spending discovery or details quota",async()=>{const h=harness("reserved",[cafe],"OK",null,undefined,{jobs:[],covered:true});const body=await(await h.request()).json();expect(body.source).toBe("cache");expect(h.fetch).not.toHaveBeenCalled();expect(h.rpc).not.toHaveBeenCalledWith("claim_places_search_area",expect.anything());});
+it("falls back to the original lease if coverage migration is temporarily unavailable",async()=>{const h=harness("cache",[cafe],"OK",null,undefined,{jobs:[],coverageError:{message:"missing RPC"}});expect((await h.request()).status).toBe(200);expect(h.fetch).not.toHaveBeenCalled();});

@@ -210,47 +210,15 @@ Deno.serve(async (req) => {
       return true;
     });
 
-    // After comparison, only explicitly scheduled place IDs may spend Google quota.
-    // Empty regions do not silently trigger the four broad Nearby Search requests.
-    const targetedBounds = Deno.env.get('GOOGLE_PLACES_TARGETED_BOUNDS');
-    const bounds = targetedBounds?.split(',').map(Number);
-    const validBounds = bounds?.length === 4 && bounds.every(Number.isFinite)
-      && bounds[0] >= -180 && bounds[2] <= 180 && bounds[1] >= -85 && bounds[3] <= 85
-      && bounds[0] < bounds[2] && bounds[1] < bounds[3];
-    // No/invalid bounds fail closed to ID-only globally; valid bounds allow a controlled pilot.
-    const inTargetedRegion = !validBounds || (lng >= bounds![0] && lng <= bounds![2] && lat >= bounds![1] && lat <= bounds![3]);
-    if (Deno.env.get('GOOGLE_PLACES_TARGETED_ONLY') === 'true' && inTargetedRegion) {
-      if (GOOGLE_PLACES_KEY) {
-        const { data: jobs, error: jobError } = await supabase.rpc('claim_targeted_place_refresh', { p_lat: lat, p_lng: lng });
-        if (!jobError && Array.isArray(jobs)) {
-          for (const job of jobs.slice(0, 2)) {
-            let payload = null;
-            let retired = false;
-            try {
-              const url = new URL('https://maps.googleapis.com/maps/api/place/details/json');
-              url.searchParams.set('place_id', job.place_id);
-              url.searchParams.set('fields', 'place_id,name,geometry,type,business_status');
-              url.searchParams.set('key', GOOGLE_PLACES_KEY);
-              const response = await fetch(url.toString(), { signal: AbortSignal.timeout(5000) });
-              if (response.ok) {
-                const result = await response.json();
-                const place = result.result;
-                if (result.status === 'NOT_FOUND') retired = true;
-                else if (result.status === 'OK' && place?.place_id === job.place_id && typeof place.name === 'string'
-                  && Number.isFinite(place.geometry?.location?.lat) && Number.isFinite(place.geometry?.location?.lng)
-                  && Array.isArray(place.types)) {
-                  retired = !isAcceptedVenue(place);
-                  if (!retired) payload = { place_id: job.place_id, name: place.name, latitude: place.geometry.location.lat,
-                    longitude: place.geometry.location.lng, category: mapCategory(place.types) };
-                }
-              }
-            } catch { /* Never log a keyed Google request URL or response payload. */ }
-            await supabase.rpc('finish_targeted_place_refresh', { p_place_id: job.place_id, p_lease: job.lease_token, p_payload: payload, p_retired: retired });
-          }
-        }
-      }
-      // Continue to the shared area cache: scheduled IDs cannot discover missing venues.
-    }
+    // Nearby Search already refreshes these fields. Do not also pay for per-place
+    // Details jobs on the same interactive search. Reviewed open-source adoption
+    // above remains active and scheduled maintenance is kept separate.
+    // Reuse a completed neighboring area only when its 2.8km discovery circle
+    // fully covers this visitor's 2km result circle. Sparse/empty completed areas
+    // are coverage evidence too; venue count is never used as a coverage proxy.
+    const { data: covered, error: coverageError } = await supabase.rpc('has_fresh_places_coverage', { p_lat: lat, p_lng: lng });
+    if (!coverageError && covered === true) return respond(validVenues, userCounts, 'cache');
+    if (coverageError) console.warn('Shared coverage unavailable; using existing area lease');
 
     // --- Step 2: Call Google Places API ---
     if (!GOOGLE_PLACES_KEY) {
@@ -375,6 +343,8 @@ Deno.serve(async (req) => {
       return true;
     });
 
+    const missingCounts = filteredFinal.filter(v=>!nearbyVenues.some(c=>c.id===v.id)).map(v=>v.id);
+    if(missingCounts.length){const {data: extraCounts}=await supabase.from('check_ins').select('cafe_id').in('cafe_id',missingCounts).gt('expiry_time',new Date().toISOString());for(const row of extraCounts||[])userCounts[row.cafe_id]=(userCounts[row.cafe_id]||0)+1;}
     console.log(`Returning ${filteredFinal.length} venues (google_places)`);
     return respond(filteredFinal, userCounts, 'google_places');
   } catch (error) {
