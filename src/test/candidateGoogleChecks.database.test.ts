@@ -27,3 +27,23 @@ it('counts failed calls against the shared budget and does not retry them automa
 it('rejects ordinary user access before claiming a paid request',async()=>{await db.exec('SET ROLE authenticated;');await expect(db.query('SELECT public.claim_candidate_google_checks()')).rejects.toThrow(/permission denied/);});
 it('does not exceed the existing daily maintenance budget',async()=>{const {c}=await setup();await db.exec('UPDATE private.targeted_place_budget SET used=20;');await db.query("UPDATE private.candidate_google_checks SET status='ready',lease=NULL,lease_until=NULL WHERE candidate_id=$1",[c]);expect((await db.query<{v:any[]}>('SELECT public.claim_candidate_google_checks() v')).rows[0].v).toHaveLength(0);});
 it('does not let the old interactive adoption bypass an address review',async()=>{const {c,lease}=await setup();await finish(c,lease,{...payload(),formatted_address:'Different street'});expect((await db.query<{v:number}>('SELECT public.adopt_matching_open_sources(40.77,29.4) v')).rows[0].v).toBe(0);expect((await db.query('SELECT * FROM private.google_source_adoptions')).rows).toHaveLength(0);});
+
+const reviewedIds=['0a990574-2c8b-4428-a7fa-293feb6e73a9','6f2e4985-8114-4125-b907-e91740479d17','8a81e0b7-558f-41da-b409-8b5917116071','b00c8ad2-f4d5-4ae5-81da-927bf75e8065','dd203d9b-d21f-4731-a546-13c36078bde9','f33b9e93-1e0d-4639-87a0-7cbcc60a98cb'];
+async function reviewedBatch(offset:number){for(const [i,id] of reviewedIds.entries()){
+ const r={...record,name:'Reviewed Cafe '+i,sourceId:'reviewed-'+i,latitude:40.77+i*0.001};
+ await db.query("INSERT INTO private.place_candidates(id,provider,source_id,release,fingerprint,record) VALUES($1,'overture',$2,'fixture','fp',$3)",[id,r.sourceId,JSON.stringify(r)]);
+ const g=(await db.query<{id:string}>("INSERT INTO public.cafes(google_place_id,name,address,latitude,longitude,category,last_synced_at) VALUES($1,$2,'',$3,29.4,'cafe',now()) RETURNING id",['reviewed-google-'+i,r.name,r.latitude+(i===5?offset:0)])).rows[0].id;
+ await db.query("INSERT INTO private.candidate_google_checks(candidate_id,fingerprint,cafe_id,google_place_id,status) VALUES($1,'fp',$2,$3,'different')",[id,g,'reviewed-google-'+i]);
+}}
+const reviewedSql=readFileSync('supabase/migrations/20261031030000_owner_reviewed_six_candidates.sql','utf8');
+it('applies exactly the six owner-reviewed records up to 30m without creating cafes; repeat is safe',async()=>{
+ await reviewedBatch(0.00026);await db.exec(reviewedSql);await db.exec(reviewedSql);
+ expect((await db.query('SELECT * FROM public.cafes')).rows).toHaveLength(6);
+ expect((await db.query('SELECT * FROM private.google_source_adoptions')).rows).toHaveLength(6);
+ expect((await db.query('SELECT * FROM private.place_directory_audit')).rows).toHaveLength(6);
+ expect((await db.query<any>("SELECT count(*)::int n FROM public.cafes WHERE independent_approved AND data_source='overture'")).rows[0].n).toBe(6);
+});
+it('rolls the entire six-record batch back when one position exceeds 30m',async()=>{
+ await reviewedBatch(0.00028);await expect(db.exec(reviewedSql)).rejects.toThrow(/owner rule/);await db.exec('ROLLBACK;');
+ expect((await db.query('SELECT * FROM private.google_source_adoptions')).rows).toHaveLength(0);
+});
