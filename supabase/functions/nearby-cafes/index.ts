@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
       const results = await Promise.all(jobs.slice(0, 6).map(async job => {
         let payload = null;
         try {
-          const query = new URLSearchParams({ place_id: job.place_id, fields: 'place_id,name,formatted_address,geometry,types,business_status', language: 'tr', key: GOOGLE_PLACES_KEY });
+          const query = new URLSearchParams({ place_id: job.place_id, fields: 'place_id,name,formatted_address,address_components,geometry,types,business_status', language: 'tr', key: GOOGLE_PLACES_KEY });
           const reply = await fetch('https://maps.googleapis.com/maps/api/place/details/json?' + query, { signal: AbortSignal.timeout(10000) });
           if (reply.ok) { const data = await reply.json(); if (data.status === 'OK') payload = data.result; }
         } catch { /* Failed attempts still consume the claimed daily budget. */ }
