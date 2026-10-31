@@ -52,18 +52,19 @@ export default function CafeRoom() {
   const { t } = useI18n();
   const { cafes, loading: cafesLoading } = useCafes();
   const { isCheckedIn, loading: checkInLoading, verifyingLocation, checkIn, checkOut } = useCheckIn(id || '');
-  
+
   // Load only server-authorized records without public profile broadcasts.
   const { users: activeUsers, loading: usersLoading, connectionStatus, refetch: refetchUsers } = useCafeUsers(id || '', {
     isCheckedIn,
   });
-  
+
   const { sendWave, hasWavedAt, hasReceivedWaveFrom, sentWaves } = useWaves();
   const { sendSpark, hasSentSparkTo, canSendSpark, dailySparkCount, sparkLimit } = useSparks();
   const { hasMatchWith, getMatchConversation, createConversationForMatch, matches, refetch: refetchMatches } = useMatches();
   const { canStartChat, incrementChatCount, isPremium } = usePremium();
   const { isComplete: isProfileComplete } = useProfileCompletion();
-  
+
+  const [attendancePending, setAttendancePending] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const selectedUser = activeUsers.find(member => member.userId === selectedUserId) || null;
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -77,7 +78,7 @@ export default function CafeRoom() {
   const [sparkingAt, setSparkingAt] = useState<string | null>(null);
 
   const cafe = cafes.find((c) => c.id === id);
-  
+
   // Get live cafe status from opening hours
   const cafeStatus = cafe ? getCafeStatus(cafe.openingHours) : null;
   const statusColors = cafeStatus ? getStatusColors(cafeStatus.status) : null;
@@ -124,20 +125,28 @@ export default function CafeRoom() {
       return;
     }
 
+    if (attendancePending || checkInLoading) return;
+    setAttendancePending(true);
+    try {
     const success = await checkIn();
     if (success) {
       toast.success(cafe.name + ' mekânına katıldın', {
         description: 'Onaylı fotoğrafların ve sınırlı profilin aynı mekândaki katılımcılara görünür. Girişin 60 dakika geçerli.',
       });
     }
+    } finally { setAttendancePending(false); }
   };
 
   const handleCheckOut = async () => {
+    if (attendancePending || checkInLoading) return;
+    setAttendancePending(true);
+    try {
     const success = await checkOut();
     if (success) {
       setSelectedUserId(null); setSheetOpen(false);
       toast.info(cafe.name + ' mekânından ayrıldın');
     }
+    } finally { setAttendancePending(false); }
   };
 
   const handleOpenChat = async (userId: string, _userName: string) => {
@@ -169,7 +178,7 @@ export default function CafeRoom() {
     setWavingAt(userId);
     const result = await sendWave(userId, id);
     setWavingAt(null);
-    
+
     if (result.success) {
       if (result.isMatch) {
         await refetchMatches();
@@ -188,7 +197,7 @@ export default function CafeRoom() {
     if (type === 'wave') {
       handleWave(userId, userName);
     } else {
-      toast.info('Coming soon!');
+      toast.info('Bu etkileşim henüz kullanılamıyor.');
     }
   };
 
@@ -224,38 +233,39 @@ export default function CafeRoom() {
 
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="mx-auto min-h-screen max-w-[440px] bg-background pt-20">
+      <Header title="Mekan" showBack />
       {/* Hero Image */}
-      <div className="relative h-56">
+      <div className="relative mx-4 h-60 overflow-hidden rounded-[28px] border border-border/70 shadow-sm">
         <CafeImage
           cafeId={cafe.id}
           imageUrl={cafe.imageUrl}
           category={cafe.category}
           alt={cafe.name}
-          className="h-56"
+          className="h-60"
           aspectRatio="hero"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
-        <Header title="" showBack transparent />
+        <div className="absolute inset-0 bg-gradient-to-t from-foreground/25 to-transparent" />
+
       </div>
 
       {/* Content */}
-      <main className="mx-auto max-w-3xl px-4 -mt-12 relative pb-32">
+      <main className="relative -mt-6 px-4 pb-56">
         {/* Cafe Info Card */}
-        <div className="card-elevated p-5 mb-6">
+        <div className="rounded-3xl border border-border/80 bg-card p-5 shadow-sm mb-6">
           <div className="mb-3">
-            <h1 className="text-xl font-bold text-foreground mb-1">{cafe.name}</h1>
+            <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-foreground mb-2">{cafe.name}</h1>
             <VenueSources venues={[cafe]} />
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <MapPin className="w-4 h-4" />
-              <span>{cafe.address}</span>
+              <span className="break-words">{cafe.address || 'Adres bilgisi henüz eklenmemiş.'}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 text-sm">
+          <div className="flex flex-wrap items-center gap-3 border-t border-border/70 pt-4 text-xs">
             <div className="flex items-center gap-1.5 text-primary font-medium">
               <Users className="w-4 h-4" />
-              <span>{activeUsers.length} kişi burada</span>
+              <span>{!isCheckedIn?'Katılımcılar katılınca görünür':usersLoading?'Katılımcılar yükleniyor…':connectionStatus==='disconnected'?'Katılımcı bilgisi alınamadı':activeUsers.length+' kişi burada'}</span>
             </div>
             <div className={cn(
               'flex items-center gap-1.5',
@@ -272,7 +282,7 @@ export default function CafeRoom() {
         </div>
 
         {/* Intent Filter & Chat Limit */}
-        <div className="flex items-center gap-3 mb-4">
+        {isCheckedIn && <div className="flex items-center gap-3 mb-4">
           <IntentFilterChips
             selected={intentFilter}
             onChange={setIntentFilter}
@@ -283,25 +293,27 @@ export default function CafeRoom() {
           )}
         </div>
 
+        }
+
         {/* Active Users */}
         <section>
           <h2 className="font-semibold text-lg text-foreground mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-accent rounded-full animate-pulse-soft" />
-            Şu an burada
+            {isCheckedIn?'Şu an burada':'Bir selamla başlasın'}
             {intentFilter !== 'all' && (
               <span className="text-sm font-normal text-muted-foreground">
                 ({otherUsers.length} kişiden {filteredUsers.length})
               </span>
             )}
             {/* Connection status indicator */}
-            <ConnectionIndicator status={connectionStatus} className="ml-auto" />
+            {isCheckedIn && <ConnectionIndicator status={connectionStatus} className="ml-auto" />}
           </h2>
 
           {!isCheckedIn ? (
-            <div className="card-elevated p-6 text-center">
+            <div className="rounded-3xl border border-border/80 bg-card p-6 text-center shadow-sm">
               <ShieldCheck className="mx-auto mb-3 h-7 w-7 text-accent" aria-hidden="true" />
-              <p className="font-medium">Katılımcıları görmek için Buradayım de</p>
-              <p className="mt-2 text-sm text-muted-foreground">Katılınca aynı mekândaki kişilerle sınırlı profilini paylaşırsın. İletişim bilgilerin gizli kalır.</p>
+              <p className="font-medium">Bu mekandaki insanlarla tanış</p>
+              <p className="mt-2 text-sm text-muted-foreground">Mekandaysan Buradayım diyerek katıl. Sınırlı profilin yalnız aynı mekandaki katılımcılara görünür; iletişim bilgilerin gizli kalır.</p>
             </div>
           ) : usersLoading ? (
             <div className="space-y-3">
@@ -358,7 +370,7 @@ export default function CafeRoom() {
               ))}
             </div>
           ) : otherUsers.length > 0 ? (
-            <div className="card-elevated p-8 text-center">
+            <div className="rounded-3xl border border-border/80 bg-card p-8 text-center shadow-sm">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                 <Users className="w-8 h-8 text-muted-foreground" />
               </div>
@@ -371,7 +383,7 @@ export default function CafeRoom() {
                 <Users className="w-8 h-8 text-muted-foreground" />
               </div>
               <p className="text-muted-foreground mb-1">Henüz başka kimse burada değil</p>
-              <p className="text-sm text-muted-foreground">Buradayım diyerek ilk sen katıl!</p>
+              <p className="text-sm text-muted-foreground">Şu an ilk katılımcı sensin. Yeni katılanlar burada görünecek.</p>
             </div>
           )}
         </section>
@@ -389,13 +401,14 @@ export default function CafeRoom() {
       </main>
 
       {/* Fixed Check-in Button */}
-      <div className="fixed bottom-0 left-0 right-0 mx-auto max-w-[440px] p-4 glass-effect border-t border-border safe-bottom">
+      <div style={{paddingBottom:'max(1rem, env(safe-area-inset-bottom, 0px))'}} className="fixed bottom-0 left-0 right-0 z-40 mx-auto max-w-[440px] rounded-t-3xl border-t border-border bg-card/95 p-4 shadow-lg backdrop-blur-xl safe-bottom">
         <CheckInButton
           isCheckedIn={isCheckedIn}
           onCheckIn={handleCheckIn}
           onCheckOut={handleCheckOut}
           cafeName={cafe.name}
           verifyingLocation={verifyingLocation}
+          busy={checkInLoading || attendancePending}
         />
       </div>
 

@@ -1,0 +1,12 @@
+import {render,screen,fireEvent} from '@testing-library/react';
+import {expect,it,vi} from 'vitest';
+import {UserCard} from './UserCard';
+import {CheckInButton} from './CheckInButton';
+vi.mock('@/contexts/I18nContext',()=>({useI18n:()=>({t:{intents:{chat:'Sohbet',friendship:'Arkadaşlık',dating:'Tanışma'}}})}));
+vi.mock('@/components/PrivateProfileImage',()=>({PrivateProfileImage:(props:any)=><img {...props}/>}));
+const user={id:'fixture',name:'Örnek Kullanıcı',age:27,bio:'Kitap ve kahve sohbetleri.',photoUrl:'',purpose:'chat' as const,allowDMs:true,isOnline:true};
+it('does not invent online presence when the server has not supplied activity',()=>{render(<UserCard user={user}/>);expect(screen.getByText('Aktiflik bilgisi yok')).toBeInTheDocument();expect(screen.queryByText('Şimdi aktif')).toBeNull();expect(screen.getByRole('button',{name:'Selam ver'})).toBeDisabled();});
+it('keeps opening a profile and sending a wave as separate accessible actions',()=>{const tap=vi.fn(),wave=vi.fn();render(<UserCard user={user} onTap={tap} onInteraction={wave}/>);fireEvent.click(screen.getByRole('button',{name:'Profili gör'}));expect(tap).toHaveBeenCalledOnce();expect(wave).not.toHaveBeenCalled();fireEvent.click(screen.getByRole('button',{name:'Selam ver'}));expect(wave).toHaveBeenCalledWith('wave');});
+it('disables duplicate waves and exposes chat only for a matched person',()=>{const message=vi.fn();render(<UserCard user={user} waveState="matched" onMessage={message} onInteraction={vi.fn()}/>);expect(screen.getByRole('button',{name:'Eşleştiniz'})).toBeDisabled();fireEvent.click(screen.getByRole('button',{name:'Sohbet'}));expect(message).toHaveBeenCalledOnce();});
+it('prevents another attendance action while a request is in progress',()=>{const join=vi.fn();render(<CheckInButton isCheckedIn={false} onCheckIn={join} onCheckOut={vi.fn()} verifyingLocation/>);const button=screen.getByRole('button',{name:'Konum doğrulanıyor…'});expect(button).toBeDisabled();fireEvent.click(button);expect(join).not.toHaveBeenCalled();});
+it('names the leave action explicitly and keeps its callback separate',()=>{const leave=vi.fn(),join=vi.fn();render(<CheckInButton isCheckedIn cafeName="Örnek mekan" onCheckIn={join} onCheckOut={leave}/>);fireEvent.click(screen.getByRole('button',{name:'Mekandan ayrıl'}));expect(leave).toHaveBeenCalledOnce();expect(join).not.toHaveBeenCalled();});

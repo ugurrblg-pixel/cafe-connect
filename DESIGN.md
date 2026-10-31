@@ -93,6 +93,12 @@ Owner requested one related concept across routes. Canonical background is now m
 ## Notifications
 Dock retains a permanent Selamlar route and unread-event count alongside Activities. Notification center follows the mint/white concept, with incoming waves and matches and explicit mutual-match instructions. Only loaded notification events are marked seen, never chat messages. Existing same-venue wave-back checks remain.
 
+## Venue attendance and profile cards
+
+CafeRoom uses the same 440px mint canvas, shared Header, inset rounded venue photo and white information/participant cards. CheckInButton owns the fixed safe-area action, explicit Mekandan ayrıl label, visibility explanation and disabled pending state. Participant names wrap, badges have their own row and social actions remain separate from profile navigation. Unknown last activity is explicitly unknown, never invented online presence. ProfileBottomSheet uses a bounded, scrollable white surface, larger accepted-photo carousel, 44px close/menu targets and return focus. Existing private photo ownership and same-venue visibility rules remain authoritative.
+
+VerificationRequest explains a current selfie with the right hand raised and face/hand visible in one frame, including the mirrored-preview caveat. Admin guidance asks for the same pose and manual comparison; this does not claim automatic pose, face recognition or official identity checking.
+
 
 ## Simplified activity map
 The incumbent OSM basemap is visually subdued on the tile pane only; credit and controls stay legible. Compact line-icon/count capsules replace large emoji pins. Selected markers use terracotta. Tümünü gör restores all public meeting points; geometry/filter changes refit the map and explicit selection pans. Center-picking, marker keyboard activation and visitor-location privacy are preserved.

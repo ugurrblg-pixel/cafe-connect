@@ -46,6 +46,12 @@ Profile, photos, verification selfies, own-sent messages and social activity are
 
 VenueListCard owns the keyboard-accessible venue navigation row. Search filters loaded results and its clear action restores input focus. Select/Listbox: native ownership is retained for discovery sorting, with its existing accessible label and real sort behavior. No map or additional location request is introduced by this layout.
 
+## Venue participant presentation
+
+Attendance mutations remain owned by useCheckIn. CafeRoom disables duplicate join/leave actions while resolving attendance or waiting for its existing mutation. CheckInButton labels the leave action explicitly. Before joining, participant counts are unavailable rather than reported as zero; loading and failed reads remain distinct. UserCard uses native profile/wave/chat buttons, wraps long names and does not infer presence from missing timestamps. ProfileBottomSheet restores focus to its opener and uses the current cafe when resolving a match/conversation. New profile fields and broader photo access are not introduced.
+
+New verification instructions ask for the right hand raised with face and hand visible. The existing consent/upload/manual admin review flow remains; there is no automated pose check. Previously verified accounts are not invalidated by this presentation update.
+
 ## Navigation and recovery polish
 
 BottomNav stays within the shared content width and marks nested profile routes as the current destination. Discover filters wrap on narrow screens, preserve loaded-data-only search, and provide one reset action for empty filtered results. The location summary states the existing 2 km scope. Failed profile loading keeps navigation available and ignores responses after account/screen changes. Missing venue details provide retry and a return to discovery. No access rules change.
