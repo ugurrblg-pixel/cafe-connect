@@ -58,12 +58,13 @@ function isExcludedVenueName(name: string): boolean {
 }
 
 /** Returns true if the place passes strict acceptance rules */
-function isAcceptedVenue(place: GooglePlace): boolean {
+function isAcceptedVenue(place: GooglePlace, reviewedCategory?: string): boolean {
   if (isExcludedVenueName(place.name)) return false;
   const types = place.types || [];
 
   // Rule 1: Must have at least one venue type
-  const hasVenueType = types.some((t) => VENUE_TYPES.includes(t as any));
+  const hasVenueType = types.some((t) => VENUE_TYPES.includes(t as any))
+    || VENUE_TYPES.includes(reviewedCategory as typeof VENUE_TYPES[number]);
   if (!hasVenueType) return false;
 
   // Trust the explicit venue type. A cafe can also sell pizza or burgers.
@@ -97,6 +98,25 @@ Deno.serve(async (req) => {
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error('Missing Supabase configuration');
+    }
+
+    // A manual missing-venue report can be diagnosed with one bounded name lookup.
+    // Results are transient for operator review; this route never publishes them.
+    if (req.headers.get('x-riyo-place-lookup') === '1') {
+      const operatorKey = req.headers.get('apikey');
+      if (!operatorKey || !GOOGLE_PLACES_KEY) return new Response(JSON.stringify({ error: 'Operator access unavailable' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      let report; try { report = await req.json(); } catch { report = null; }
+      if (!report || typeof report.query !== 'string' || report.query.trim().length < 3 || report.query.length > 160) return new Response(JSON.stringify({ error: 'Valid venue query required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      const operator = createClient(SUPABASE_URL, operatorKey);
+      const { data: reserved, error: denied } = await operator.rpc('reserve_operator_place_lookup');
+      if (denied) return new Response(JSON.stringify({ error: 'Operator access required' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (reserved !== true) return new Response(JSON.stringify({ error: 'Maintenance budget reached' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      const query = new URLSearchParams({ input: report.query.trim(), inputtype: 'textquery', language: 'tr', fields: 'place_id,name,formatted_address,geometry,types,business_status', key: GOOGLE_PLACES_KEY });
+      const reply = await fetch('https://maps.googleapis.com/maps/api/place/findplacefromtext/json?' + query, { signal: AbortSignal.timeout(10000) });
+      if (!reply.ok) throw new Error('Place lookup unavailable');
+      const data = await reply.json();
+      if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') throw new Error('Place lookup unavailable');
+      return new Response(JSON.stringify({ status: data.status, candidates: data.candidates || [], automaticWrites: 0 }), { headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
     }
 
     // Operator-only batch: the caller's own API key must pass service_role-only
@@ -270,6 +290,9 @@ Deno.serve(async (req) => {
 
     console.log('Cache miss, calling Google Places API...');
 
+    const { data: reviewed, error: reviewError } = await supabase.rpc('get_reviewed_venue_categories');
+    const reviewedCategories: Record<string, string> = !reviewError && reviewed && typeof reviewed === 'object' && !Array.isArray(reviewed) ? reviewed : {};
+    if (reviewError) console.warn('Reviewed venue categories unavailable; keeping strict type rules');
     const allPlaces: GooglePlace[] = [];
     let successfulGoogleRequests = 0;
     const seenIds = new Set<string>();
@@ -292,7 +315,7 @@ Deno.serve(async (req) => {
         }
         successfulGoogleRequests++;
         for (const place of data.results || []) {
-          if (!seenIds.has(place.place_id) && isAcceptedVenue(place)) {
+          if (!seenIds.has(place.place_id) && isAcceptedVenue(place, reviewedCategories[place.place_id])) {
             seenIds.add(place.place_id);
             allPlaces.push(place);
           }
@@ -322,7 +345,7 @@ Deno.serve(async (req) => {
           address: '',
           latitude: p.geometry.location.lat,
           longitude: p.geometry.location.lng,
-          category: mapCategory(p.types),
+          category: VENUE_TYPES.includes(reviewedCategories[p.place_id] as typeof VENUE_TYPES[number]) ? reviewedCategories[p.place_id] : mapCategory(p.types),
           rating: 4.5,
           image_url: '',
           opening_hours: null,

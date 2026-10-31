@@ -8,11 +8,12 @@ const compiled = transpileModule(source, { compilerOptions: { target: ScriptTarg
 const cafe = { id: 'saved', name: 'Pizza Coffee', latitude: 41, longitude: 29, category: 'cafe', is_open: true };
 afterEach(() => vi.restoreAllMocks());
 
-function harness(state = 'cache', cached: any[] = [cafe], googleStatus = 'OK', upsertError: any = null, owned?: { rows: any[]; error?: unknown; anonymous?: boolean }, targeted?: {jobs:any[];error?:unknown;bounds?:string;covered?:boolean;coverageError?:unknown}) {
+function harness(state = 'cache', cached: any[] = [cafe], googleStatus = 'OK', upsertError: any = null, owned?: { rows: any[]; error?: unknown; anonymous?: boolean }, targeted?: {jobs:any[];error?:unknown;bounds?:string;covered?:boolean;coverageError?:unknown;reviewedCategories?:Record<string,string>;places?:any[]}) {
   let handler!: (req: Request) => Promise<Response>;
   const rpc = vi.fn(async (name: string) => name === 'search_independent_places'
     ? { data: owned?.rows, error: owned?.error || null }
     : name === 'has_fresh_places_coverage' ? {data:targeted?.covered||false,error:targeted?.coverageError||null}
+    : name === 'get_reviewed_venue_categories' ? {data:targeted?.reviewedCategories||{},error:null}
     : name === 'claim_targeted_place_refresh' ? {data:targeted?.jobs,error:targeted?.error||null}
     : ({ data: name === 'claim_places_search_area' ? { state, lease_token: 'lease' } : true, error: null }));
   const upsert = vi.fn(async (_rows: unknown[]) => ({ error: upsertError }));
@@ -25,7 +26,7 @@ function harness(state = 'cache', cached: any[] = [cafe], googleStatus = 'OK', u
     } };
   const fetch = vi.fn(async (_url: string) => new Response(JSON.stringify(_url.includes('/details/') ? {
     status:googleStatus,result:{place_id:'scheduled-id',name:'Fixture Coffee',geometry:{location:{lat:41,lng:29}},types:['cafe']},
-  } : { status: googleStatus, results: [
+  } : { status: googleStatus, results: targeted?.places || [
     { place_id: 'pizza-cafe', name: 'Pizza Coffee', types: ['cafe','restaurant','food'], geometry: { location: { lat: 41, lng: 29 } } },
     { place_id: 'restaurant', name: 'Restaurant', types: ['restaurant','food'], geometry: { location: { lat: 41, lng: 29 } } },
   ] })));
@@ -117,3 +118,8 @@ it('filters cached tea-house spelling variants before returning venue results',a
 
 it("reuses completed neighboring coverage without spending discovery or details quota",async()=>{const h=harness("reserved",[cafe],"OK",null,undefined,{jobs:[],covered:true});const body=await(await h.request()).json();expect(body.source).toBe("cache");expect(h.fetch).not.toHaveBeenCalled();expect(h.rpc).not.toHaveBeenCalledWith("claim_places_search_area",expect.anything());});
 it("falls back to the original lease if coverage migration is temporarily unavailable",async()=>{const h=harness("cache",[cafe],"OK",null,undefined,{jobs:[],coverageError:{message:"missing RPC"}});expect((await h.request()).status).toBe(200);expect(h.fetch).not.toHaveBeenCalled();});
+
+const genericCoffee={place_id:'generic-coffee',name:'Reviewed Coffee',types:['store','food'],geometry:{location:{lat:41,lng:29}}};
+it('keeps unreviewed stores excluded even when their name contains coffee',async()=>{const h=harness('reserved',[],'OK',null,undefined,{jobs:[],places:[genericCoffee]});await h.request();expect(h.upsert).not.toHaveBeenCalled();});
+it('accepts only an explicitly reviewed generic-type venue under its recorded category',async()=>{const h=harness('reserved',[],'OK',null,undefined,{jobs:[],places:[genericCoffee],reviewedCategories:{'generic-coffee':'cafe'}});await h.request();expect(h.upsert.mock.calls[0][0]).toEqual([expect.objectContaining({google_place_id:'generic-coffee',category:'cafe'})]);});
+it('never lets a category override bypass name exclusions or permanent closure',async()=>{const h=harness('reserved',[],'OK',null,undefined,{jobs:[],places:[{...genericCoffee,business_status:'CLOSED_PERMANENTLY'},{...genericCoffee,place_id:'excluded',name:'Market Coffee'}],reviewedCategories:{'generic-coffee':'cafe',excluded:'cafe'}});await h.request();expect(h.upsert).not.toHaveBeenCalled();});
