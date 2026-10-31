@@ -99,6 +99,27 @@ Deno.serve(async (req) => {
       throw new Error('Missing Supabase configuration');
     }
 
+    // Operator-only batch: the caller's own API key must pass service_role-only
+    // RPC permissions. Never substitute our service key before this check.
+    if (req.headers.get('x-riyo-candidate-review') === '1') {
+      const operatorKey = req.headers.get('apikey');
+      if (!operatorKey || !GOOGLE_PLACES_KEY) return new Response(JSON.stringify({ error: 'Operator access unavailable' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      const operator = createClient(SUPABASE_URL, operatorKey);
+      const { data: jobs, error: permissionError } = await operator.rpc('claim_candidate_google_checks');
+      if (permissionError || !Array.isArray(jobs)) return new Response(JSON.stringify({ error: 'Operator access required' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      const results = await Promise.all(jobs.slice(0, 6).map(async job => {
+        let payload = null;
+        try {
+          const query = new URLSearchParams({ place_id: job.place_id, fields: 'place_id,name,formatted_address,geometry,types,business_status', language: 'tr', key: GOOGLE_PLACES_KEY });
+          const reply = await fetch('https://maps.googleapis.com/maps/api/place/details/json?' + query, { signal: AbortSignal.timeout(10000) });
+          if (reply.ok) { const data = await reply.json(); if (data.status === 'OK') payload = data.result; }
+        } catch { /* Failed attempts still consume the claimed daily budget. */ }
+        const { data: outcome, error: saveError } = await operator.rpc('finish_candidate_google_check', { p_candidate: job.candidate_id, p_lease: job.lease, p_google: payload });
+        return { candidate_id: job.candidate_id, status: saveError ? 'save_error' : outcome };
+      }));
+      return new Response(JSON.stringify({ checked: results.length, results }), { headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+    }
+
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const token = req.headers.get('Authorization')?.match(/^Bearer\s+(.+)$/i)?.[1];
     if (!token) {

@@ -149,3 +149,15 @@ Foursquare OS Places bağımsız kaynak olarak mevcut hazırlama hattında deste
 ### 30 Ekim 2026 — canlı kurulum
 
 Yeni kapsam ve günlük bütçe SQL işlevleri Supabase SQL Editor üzerinden başarıyla uygulandı. `nearby-cafes` güncel kaynakla yeniden dağıtıldı; panelde güncelleme zamanı doğrulandı. Oturumsuz POST isteği 401 Sign in required döndürdü. Son kişi sayısı kapsam düzeltmesinden sonra ilgili 24 test ve typecheck geçti. Gerçek kullanıcı oturumuyla yakınlık araması bu kurulum kontrolünde çalıştırılmadı. Foursquare veri aktarımı yapılmadı.
+
+### 31 Ekim 2026 — 444 adayın Google karşılaştırması
+
+Kullanıcı, adayların Google API veya önbellekle karşılaştırılmasını ve yalnız eşleşenlerin kaydedilmesini istedi. Pilot içindeki 444 henüz eşleştirilmemiş adayın tamamı taze Google önbelleğiyle karşılaştırıldı. 438 aday aynı normalize ad, kategori ve 25m konum koşulunu sağlayamadı; bu sonuç Google'da bulunmadıkları anlamına gelmez. 6 aday ilk koşulu sağladı, ancak Google önbelleğinde adres olmadığı için API kontrolüne ayrıldı.
+
+`20261031010000_candidate_google_checks.sql` karşılaştırma durumlarını yalnız özel tabloda saklar. Operatör `nearby-cafes` isteğinde `x-riyo-candidate-review: 1` kullanır; gelen API anahtarıyla oluşturulan ayrı istemci, yalnız service_role'a açık claim RPC'sini geçmeden Google'a istek atamaz. Sunucunun kendi servis anahtarı bu yetki kontrolünde kullanılmaz. Normal uygulama kullanıcıları bu işi çalıştıramaz. Supabase test aracındaki hazır gizli anahtar seçeneği kullanıldı; anahtar okunmadı/raporlanmadı ve test alanından kaldırıldı.
+
+En fazla 6 iş, mevcut günlük 20 Details bakım bütçesinden ayrılır. Başarısız veya tamamlanan işler kendiliğinden yeniden çalışmaz. İşlem bu altı Google place ID için Details isteği yaptı; yanıtlar yalnız işlem belleğinde karşılaştırıldı. Ad, tam normalize adres, açık kategori ve 25m içindeki konum birlikte aranır; çoklu şube/kaynak kimliği engellenir. Yalnız doğrulanırsa açık kaynağın kendi bilgileri eski cafeId korunarak yansıtılır. Google açıklama alanları bağımsız veri diye kaydedilmez. Bu eşitlik koşulu yazım/eksik adres nedeniyle gerçek eşleşmeleri de bekletebilir; `different` kesin olarak farklı işletme demek değildir.
+
+Canlı sonuç: `cache_not_exact=438`, `different=6`, `verified_saved=0`, toplam 444. Yeni mekan onaylanmadı. 438 adaya ücretli tek tek Google araması yapılmadı. 444 karşılaştırma kaydı inceleme kanıtıdır; bunlar yayınlanmış mekan değildir.
+
+`20261031020000_guard_checked_candidates.sql`, normal kullanıcı aramalarındaki eski ad/kategori/mesafe eşleştirmesinin bu adayların adres incelemesini atlamasını engeller. SQL değişiklikleri ve işlev canlıya uygulandı. Anonim normal istek 401; genel publishable anahtarla operatör denemesi 403 döndü. 263 testlik genel koşu ve ek koruma sonrası 9 veritabanı testi, tip kontrolü ve derleme geçti. Sonuç kanıtı: `outputs/candidate-comparison-444-2026-10-31.png` (çalışma alanı üst dizininde).
