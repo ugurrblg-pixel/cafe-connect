@@ -84,3 +84,33 @@ it('rejects an identical name beyond the owner-approved distance',async()=>{
  await exactNameFixture('Cafes Bar Cafe',0.00028);await expect(db.exec(exactNameSql)).rejects.toThrow(/Reviewed identity/);await db.exec('ROLLBACK;');
  expect((await db.query('SELECT * FROM private.google_source_adoptions')).rows).toHaveLength(0);
 });
+
+const variantSql=readFileSync('supabase/migrations/20261101040000_owner_reviewed_name_variants.sql','utf8');
+const variantFixtures=[
+ ['040cb003-55b8-49cd-8297-6087914a22de','885d546a-3a86-48c4-ab99-a3eeb94a682e','72a40112ce735cf51328e2960a355233','ChIJHSUbY3fhyhQRsHpCs-AwjIM','Play Studio Darıca','PlayStüdyo Darıca | Kadınlara Özel Spor Salonu','gym'],
+ ['8212bf1c-8d06-48af-a1e0-789a1fd8f151','a3f841b3-7044-41f5-b009-e17aad62e3f3','1f74b37b1cf279f20c43ba70c8047b60','ChIJSeYFw8PhyhQRbPU5UP8nnYA','PuMa GyM','PUMA GYM FİTNESS CENTER','gym'],
+ ['eb908d60-35c7-4b5a-8152-b1212cf08a4e','e9887be7-29fe-444b-9544-499a5da51bc9','f3c4ddac1ba9d8b78ceb7783287058c6','ChIJ_XvZUYggyxQRyxhN_QV6Z4k','Paradise Cafe & Restaurant','Gebze Paradise Cafe','cafe'],
+];
+async function variantBatch(){for(const [i,[c,g,fp,place,name,target,category]] of variantFixtures.entries()){
+ const r={...record,sourceId:'variant-'+i,name,category,license:'CDLA-Permissive-2.0',latitude:40.77+i*0.001};
+ await db.query("INSERT INTO private.place_candidates(id,provider,source_id,release,fingerprint,record) VALUES($1,'overture',$2,'fixture',$3,$4)",[c,r.sourceId,fp,JSON.stringify(r)]);
+ await db.query("INSERT INTO public.cafes(id,google_place_id,name,latitude,longitude,category,last_synced_at) VALUES($1,$2,$3,$4,29.4,$5,now())",[g,place,target,r.latitude,category]);
+ await db.query("INSERT INTO private.candidate_google_checks(candidate_id,fingerprint,status) VALUES($1,$2,'cache_not_exact')",[c,fp]);
+}}
+it('adopts exactly three reviewed name variants and keeps cafe IDs on repeat',async()=>{
+ await variantBatch();await db.exec(variantSql);await db.exec(variantSql);
+ expect((await db.query('SELECT * FROM public.cafes')).rows).toHaveLength(3);
+ expect((await db.query('SELECT * FROM private.google_source_adoptions')).rows).toHaveLength(3);
+ expect((await db.query('SELECT * FROM private.place_directory_audit')).rows).toHaveLength(3);
+ expect((await db.query<any>("SELECT count(*)::int n FROM public.cafes WHERE independent_approved AND data_source='overture'")).rows[0].n).toBe(3);
+});
+it('atomically rejects changed business identity in the reviewed variant batch',async()=>{
+ await variantBatch();await db.query('UPDATE public.cafes SET name=$1 WHERE id=$2',['Neighboring shop',variantFixtures[2][1]]);
+ await expect(db.exec(variantSql)).rejects.toThrow(/owner rule/);await db.exec('ROLLBACK;');
+ expect((await db.query('SELECT * FROM private.google_source_adoptions')).rows).toHaveLength(0);
+});
+it('atomically rejects a reviewed variant moved beyond 30m',async()=>{
+ await variantBatch();await db.query('UPDATE public.cafes SET latitude=latitude+0.00028 WHERE id=$1',[variantFixtures[2][1]]);
+ await expect(db.exec(variantSql)).rejects.toThrow(/owner rule/);await db.exec('ROLLBACK;');
+ expect((await db.query('SELECT * FROM private.google_source_adoptions')).rows).toHaveLength(0);
+});
