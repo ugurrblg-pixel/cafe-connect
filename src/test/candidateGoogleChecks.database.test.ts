@@ -62,3 +62,25 @@ it('shares name-lookup quota with candidate maintenance instead of creating a se
 it('does not grant ordinary clients access to the paid name-lookup reservation',async()=>{await db.exec('SET ROLE authenticated;');await expect(db.query('SELECT public.reserve_operator_place_lookup()')).rejects.toThrow(/permission denied/);});
 
 it('keeps manually reviewed venue categories available only to the server role',async()=>{expect((await db.query<{v:any}>('SELECT public.get_reviewed_venue_categories() v')).rows[0].v).toMatchObject({'ChIJO_UXP4rdyhQRiaTrdXEeUcM':'cafe'});await db.exec('SET ROLE authenticated;');await expect(db.query('SELECT public.get_reviewed_venue_categories()')).rejects.toThrow(/permission denied/);});
+
+const exactNameSql=readFileSync('supabase/migrations/20261101030000_owner_reviewed_exact_name.sql','utf8');
+async function exactNameFixture(name='Cafes Bar Cafe',offset=0){
+ const r={...record,name:'Cafes Bar Cafe',license:'CDLA-Permissive-2.0',address:''};
+ await db.query("INSERT INTO private.place_candidates(id,provider,source_id,release,fingerprint,record) VALUES('9a3ac7ff-9980-47e0-b76a-1b6cb6ad6501','overture','fixture','fixture','3b905385344a4fadeca027264f5cec8d',$1)",[JSON.stringify(r)]);
+ await db.query("INSERT INTO public.cafes(id,google_place_id,name,latitude,longitude,category,last_synced_at) VALUES('d0dd4a8c-fbc5-4580-a48f-05fdea5fbe1f','ChIJd6l-yw8gyxQRkIMaaqio_5A',$1,$2,29.4,'bar',now())",[name,40.77+offset]);
+ await db.exec("INSERT INTO private.candidate_google_checks(candidate_id,fingerprint,status) VALUES('9a3ac7ff-9980-47e0-b76a-1b6cb6ad6501','3b905385344a4fadeca027264f5cec8d','cache_not_exact');");
+}
+it('adopts only the owner-approved exact-name category exception, preserving identity and idempotency',async()=>{
+ await exactNameFixture();await db.exec(exactNameSql);await db.exec(exactNameSql);
+ expect((await db.query<any>('SELECT id,category,data_source,independent_approved,address FROM public.cafes')).rows).toEqual([{id:'d0dd4a8c-fbc5-4580-a48f-05fdea5fbe1f',category:'cafe',data_source:'overture',independent_approved:true,address:''}]);
+ expect((await db.query('SELECT * FROM private.place_directory_audit')).rows).toHaveLength(1);
+ expect((await db.query<any>('SELECT status FROM private.candidate_google_checks')).rows[0].status).toBe('verified_saved');
+});
+it('does not apply owner approval to a renamed neighboring business',async()=>{
+ await exactNameFixture('Different Cafe');await expect(db.exec(exactNameSql)).rejects.toThrow(/Reviewed identity/);await db.exec('ROLLBACK;');
+ expect((await db.query('SELECT * FROM private.google_source_adoptions')).rows).toHaveLength(0);
+});
+it('rejects an identical name beyond the owner-approved distance',async()=>{
+ await exactNameFixture('Cafes Bar Cafe',0.00028);await expect(db.exec(exactNameSql)).rejects.toThrow(/Reviewed identity/);await db.exec('ROLLBACK;');
+ expect((await db.query('SELECT * FROM private.google_source_adoptions')).rows).toHaveLength(0);
+});
