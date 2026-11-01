@@ -15,6 +15,7 @@ import { AdminGuard } from "./components/admin/AdminGuard";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { AppStartupScreen } from "./components/AppStartupScreen";
+import { useStartupPending } from "./hooks/useStartupPending";
 
 // Lazy-load all page components for faster initial load
 const Discover = lazy(() => import("./pages/Discover"));
@@ -94,6 +95,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function AppRoutes() {
   const { user, loading } = useAuth();
+  const startupPending = useStartupPending(loading);
   const location = useLocation();
 
   // Hide status bar on certain pages
@@ -107,7 +109,7 @@ function AppRoutes() {
   // Hide bottom nav on admin pages
   const hideBottomNav = location.pathname.startsWith('/admin') || location.pathname === '/deneme/kesfet';
 
-  if (loading) {
+  if (startupPending) {
     return <AppStartupScreen />;
   }
 
