@@ -14,6 +14,7 @@ import { lazy, Suspense, memo } from "react";
 import { AdminGuard } from "./components/admin/AdminGuard";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { OfflineBanner } from "./components/OfflineBanner";
+import { AppStartupScreen } from "./components/AppStartupScreen";
 
 // Lazy-load all page components for faster initial load
 const Discover = lazy(() => import("./pages/Discover"));
@@ -46,7 +47,7 @@ const TermsOfUse = lazy(() => import("./pages/settings/TermsOfUse"));
 
 const PageFallback = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+    <div role="status" aria-label="Sayfa yükleniyor" className="animate-spin motion-reduce:animate-none rounded-full h-8 w-8 border-b-2 border-primary" />
   </div>
 );
 
@@ -80,11 +81,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <AppStartupScreen />;
   }
 
   if (!user) {
@@ -111,11 +108,7 @@ function AppRoutes() {
   const hideBottomNav = location.pathname.startsWith('/admin') || location.pathname === '/deneme/kesfet';
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <AppStartupScreen />;
   }
 
   return (

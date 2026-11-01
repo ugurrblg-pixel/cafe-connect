@@ -1,5 +1,9 @@
 # Riyo behavior contract
 
+## Application startup
+
+AuthContext remains the sole session/profile readiness owner. AppRoutes/ProtectedRoute render AppStartupScreen only while its existing loading flag is true, preserving login, OAuth, recovery and protected-route behavior. The screen makes no API/location requests and never invents a percentage. A 10-second UI timer reveals a reload action without failing open or extending auth loading. Browser online/offline events change the explanation; an online event is not proof of server connectivity. Timers/listeners are removed on unmount. Shared Button owns recovery and the existing global OfflineBanner remains visible. There is no minimum splash duration or extra route.
+
 ## Ownership and navigation
 
 `src/components/ui/button.tsx`: shared actions. `src/components/ui/sheet.tsx`: Radix sheet/focus lifecycle. `src/components/ProfileBottomSheet.tsx`: limited cafe profile overlay. `src/hooks/useCafeUsers.ts`: server-projected attendance, 30-second refresh, no broad profile SELECT fallback. `src/hooks/usePrivatePhoto.ts`: private-image adapter. `src/hooks/useCafePhoto.ts`: cafe-photo transport and revocation. `src/lib/visibilityEvents.ts`: local invalidation after a saved block change. Sonner is the shared feedback owner. Existing I18nContext owns application locale; this touched flow uses Turkish.
