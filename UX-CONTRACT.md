@@ -2,6 +2,8 @@
 
 ## Application startup
 
+Returning to a tab with the same resolved user must not re-enter startup or unmount route content. AuthContext updates the session on repeated SIGNED_IN/TOKEN_REFRESHED events while retaining the stable user/profile and skipping redundant profile reads. USER_UPDATED refreshes the profile in the background. Initial readiness, actual account changes and sign-out still clear or gate the scoped profile; stale responses remain invalidated. A full browser/process restart is a new app mount and retains the three-second opening period. This does not prevent operating-system tab eviction or claim native resume testing.
+
 AuthContext remains the sole session/profile readiness owner. AppRoutes uses useStartupPending to show AppStartupScreen for at least three seconds per app mount and longer while auth loading remains true. The minimum timer never resets on route or auth updates. ProtectedRoute retains its auth guard; login, OAuth and recovery destinations are preserved. The screen makes no API/location requests and never invents a percentage. A 10-second UI timer reveals a reload action without failing open or extending auth loading. Browser online/offline events change the explanation; an online event is not proof of server connectivity. Timers/listeners are removed on unmount. Shared Button owns recovery and the existing global OfflineBanner remains visible. No extra route is introduced.
 
 ## Ownership and navigation

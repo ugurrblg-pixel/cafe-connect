@@ -30,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const activeUserId = useRef<string | null>(null);
+  const profileReadyUserId = useRef<string | null>(null);
   const profileRequest = useRef(0);
 
   const fetchProfile = async (userId: string) => {
@@ -52,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const profileData = await fetchProfile(user.id);
       if (activeUserId.current === user.id && request === profileRequest.current) {
         setProfile(profileData);
+        profileReadyUserId.current = user.id;
         setLoading(false);
       }
     }
@@ -60,16 +62,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let disposed = false;
     let authEventReceived = false;
-    const applySession = (nextSession: Session | null) => {
+    const applySession = (nextSession: Session | null, event?: string) => {
       if (disposed) return;
       const userId = nextSession?.user.id ?? null;
-      const request = ++profileRequest.current;
-      if (activeUserId.current !== userId) setProfile(null);
+      const identityChanged = activeUserId.current !== userId;
+      if (identityChanged) {
+        setProfile(null);
+        profileReadyUserId.current = null;
+      }
       activeUserId.current = userId;
       setSession(nextSession);
-      setUser(nextSession?.user ?? null);
-      setLoading(!!userId);
+      // A renewed token still belongs to the same user. Preserve the user
+      // reference so page-owned effects do not restart on tab focus.
+      setUser(previous => !identityChanged && event !== 'USER_UPDATED' ? previous : nextSession?.user ?? null);
+      const ready = !!userId && profileReadyUserId.current === userId;
+      setLoading(!!userId && !ready);
+      if (ready && event !== 'USER_UPDATED') return;
+      const request = ++profileRequest.current;
       if (!userId) {
+        profileReadyUserId.current = null;
         setProfile(null);
         return;
       }
@@ -79,13 +90,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const profileData = await fetchProfile(userId);
         if (disposed || request !== profileRequest.current || activeUserId.current !== userId) return;
         setProfile(profileData);
+        profileReadyUserId.current = userId;
         setLoading(false);
       }, 0);
     };
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, nextSession) => {
+      (event, nextSession) => {
         authEventReceived = true;
-        applySession(nextSession);
+        applySession(nextSession, event);
       }
     );
 
