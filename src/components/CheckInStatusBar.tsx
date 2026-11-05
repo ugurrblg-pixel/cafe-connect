@@ -41,7 +41,7 @@ export function CheckInStatusBar() {
       const diffMs = expiry.getTime() - now.getTime();
 
       if (diffMs <= 0) {
-        setTimeRemaining('Expired');
+        setTimeRemaining('Süre doldu');
         setProgressPercent(0);
         return;
       }
@@ -58,11 +58,11 @@ export function CheckInStatusBar() {
       const seconds = totalSeconds % 60;
 
       if (hours > 0) {
-        setTimeRemaining(`${hours}h ${minutes}m`);
+        setTimeRemaining(`${hours} sa ${minutes} dk`);
       } else if (minutes > 0) {
-        setTimeRemaining(`${minutes}m ${seconds}s`);
+        setTimeRemaining(`${minutes} dk ${seconds} sn`);
       } else {
-        setTimeRemaining(`${seconds}s`);
+        setTimeRemaining(`${seconds} sn`);
       }
     };
 
@@ -85,10 +85,10 @@ export function CheckInStatusBar() {
     setIsCheckingOut(false);
     
     if (success) {
-      toast.info('Checked out successfully');
+      toast.info('Mekandan ayrıldın');
     } else {
       setIsExiting(false);
-      toast.error('Failed to check out');
+      toast.error('Mekandan ayrılma işlemi tamamlanamadı. Tekrar dene.');
     }
   };
 
@@ -159,7 +159,7 @@ export function CheckInStatusBar() {
                 <span className="font-medium tabular-nums">
                   {timeRemaining}
                 </span>
-                <span className="opacity-70">remaining</span>
+                {progressPercent > 0 && <span className="opacity-70">kaldı</span>}
               </div>
             </div>
           </div>
@@ -177,7 +177,7 @@ export function CheckInStatusBar() {
                   : 'bg-accent-foreground/20 hover:bg-accent-foreground/30',
                 isCheckingOut && 'opacity-50 cursor-not-allowed'
               )}
-              aria-label="Check out"
+              aria-label="Mekandan ayrıl"
             >
               <X className={cn(
                 'w-4 h-4 transition-transform duration-200',
