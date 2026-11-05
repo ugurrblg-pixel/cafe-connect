@@ -12,7 +12,9 @@
 
 - Anonymous production POST to delete-account returned 401 sign_in_required. This proves anonymous denial only, not enabled flags or complete deletion.
 - Account-deletion UI/handler and worker tests passed locally. Full live deletion still needs a designated disposable account and storage/Auth verification; never delete an existing owner account as a test.
-- Supabase dashboard access could not be established through the current browser connection. Backend deletion flags, migration state, backups and restore capability have not been verified in this release.
+- Supabase access recovered through the in-app browser. Project status is Healthy. The dashboard explicitly reports that this Free Plan has no project backups. Restore has not been exercised; no plan upgrade or database restore was started.
+- Read-only live SQL confirmed prepare_account_deletion(uuid) and private.account_deletions exist; authenticated cannot execute preparation directly, service_role can. The legacy JWT gateway is off as previously authorized; anonymous endpoint requests still return 401 through function-owned auth. The signed-in owner's profile shows the enabled deletion action. No real account was deleted and the backend feature flag's value was not extracted.
+- GitHub Release quality runs typecheck, tests and production build with isolated placeholder environment values and contents:read only. First run exposed two suites depending on absent local environment settings; the isolated CI configuration fixed this. Run 42067325046 passed all checks. Local full checks were interrupted by host out-of-memory errors, not reported as passed.
 - ErrorBoundary offers support contact and console diagnostics. No central automatic error-reporting provider, alerting or uptime monitor has been configured; do not claim monitoring is operational.
 - Privacy/terms contact address is corrected. Substantive legal review remains open: photo screening transfers, verification selfies/manual review and retention, restricted moderation records after deletion, Places data and current payment availability must match implementation. No claim of legal compliance is made.
 - Broader Google independence/import scope is unchanged. Existing 2km search and paid-request quotas remain.
@@ -36,3 +38,9 @@ Record device/OS/browser, time, steps and result for each. Physical-device succe
 ## Before broad promotion
 
 Confirm end-to-end deletion, two-device safety checks, dashboard backup/restore evidence, central error/availability monitoring and policy review. A 20–30 person free beta can surface issues, but these pending items must not be represented as completed. Premium checkout and phone push remain closed.
+
+## Free-plan backup preparation
+
+No working backup has been produced by this release. Before taking personal data from a broad audience, the operator needs a PostgreSQL-compatible database export and a separate copy of Storage file bytes in a private, access-restricted destination. A database dump alone does not contain profile/selfie image bytes. Never commit backups, connection passwords or private images to this repository or upload them to public artifacts.
+
+Use the official Supabase backup/restore instructions, record the PostgreSQL version and required roles/extensions, and test restoration only in a separate non-production project. Restoring over production is not a validation step. A CLI connection needs the operator's database credentials; do not extract browser session secrets or change/reset the database password to bypass this dependency. A paid automatic backup plan is a separate owner decision; no spending was authorized by this preparation.
