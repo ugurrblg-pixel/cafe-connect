@@ -9,6 +9,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json && tsc -p tsconfig.places.json",
+    "verify:release": "node scripts/release/smoke.mjs",
     "places:prepare": "node scripts/places/prepare.ts",
     "places:validate": "node scripts/places/stage.ts",
     "preview": "vite preview",

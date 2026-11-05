@@ -53,6 +53,9 @@ export class ErrorBoundary extends Component<Props, State> {
               Yenile
             </Button>
           </div>
+          <a className="mt-6 text-sm text-primary underline underline-offset-4 hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" href="mailto:support@cafemeet.com?subject=Riyo%20hata%20bildirimi">
+            Destekle iletişime geç
+          </a>
         </div>
       );
     }

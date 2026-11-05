@@ -1,5 +1,9 @@
 # Riyo behavior contract
 
+## Install and offline behavior
+
+The public manifest and PNG icons define the standalone web app. NotificationContext owns worker registration with updateViaCache:none. public/sw.js owns only riyo-public-shell-* caches of the generic offline document and icons. API calls, private images, messages and authenticated HTML are not cached. Navigation remains network-first without forced reloads; server errors stay visible and only network failure uses offline.html. Worker activation may remove obsolete caches in its own prefix only. Push delivery remains unavailable; dormant notifications use generic text and same-origin routes. Offline is a recovery state, not a promise of offline private features.
+
 ## Application startup
 
 Returning to a tab with the same resolved user must not re-enter startup or unmount route content. AuthContext updates the session on repeated SIGNED_IN/TOKEN_REFRESHED events while retaining the stable user/profile and skipping redundant profile reads. USER_UPDATED refreshes the profile in the background. Initial readiness, actual account changes and sign-out still clear or gate the scoped profile; stale responses remain invalidated. A full browser/process restart is a new app mount and retains the three-second opening period. This does not prevent operating-system tab eviction or claim native resume testing.

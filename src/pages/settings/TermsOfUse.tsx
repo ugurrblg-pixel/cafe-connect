@@ -21,7 +21,7 @@ export default function TermsOfUse() {
                 İşbu Kullanım Koşulları ("Sözleşme"), Türkiye Cumhuriyeti kanunlarına göre kurulmuş şahıs işletmesi olan <strong>UĞUR BİLGİN</strong> ("Şirket") ile Riyo mobil uygulamasını kullanan gerçek kişi ("Kullanıcı") arasında akdedilmiştir.
               </p>
               <p className="mb-2">
-                İletişim: <a href="mailto:support@riyoapp.com" className="text-primary underline">support@riyoapp.com</a>
+                İletişim: <a href="mailto:support@cafemeet.com" className="text-primary underline">support@cafemeet.com</a>
               </p>
               <p>
                 Kullanıcı, uygulamaya kayıt olarak bu sözleşmeyi elektronik ortamda kabul etmiş sayılır.
@@ -135,8 +135,8 @@ export default function TermsOfUse() {
           {/* Footer */}
           <footer className="mt-12 mb-8 text-center space-y-2">
             <p className="text-xs text-muted-foreground">© 2026 Riyo – Tüm Hakları Saklıdır</p>
-            <a href="mailto:support@riyoapp.com" className="text-xs text-primary underline">
-              support@riyoapp.com
+            <a href="mailto:support@cafemeet.com" className="text-xs text-primary underline">
+              support@cafemeet.com
             </a>
           </footer>
         </main>

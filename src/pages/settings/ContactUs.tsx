@@ -20,7 +20,7 @@ export default function ContactUs() {
               </div>
               <div>
                 <h3 className="font-semibold text-foreground mb-1">{t.contact.emailTitle}</h3>
-                <a href="mailto:support@riyoapp.com" className="text-sm text-primary underline">support@riyoapp.com</a>
+                <a href="mailto:support@cafemeet.com" className="text-sm text-primary underline">support@cafemeet.com</a>
               </div>
             </div>
           </section>

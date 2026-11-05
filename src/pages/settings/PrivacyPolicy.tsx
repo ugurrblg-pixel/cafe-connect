@@ -18,7 +18,7 @@ export default function PrivacyPolicy() {
             <h3 className="font-semibold text-foreground mb-1">Veri Sorumlusu</h3>
             <p className="text-sm text-foreground">UĞUR BİLGİN</p>
             <p className="text-sm text-foreground">
-              İletişim: <a href="mailto:support@riyoapp.com" className="text-primary underline">support@riyoapp.com</a>
+              İletişim: <a href="mailto:support@cafemeet.com" className="text-primary underline">support@cafemeet.com</a>
             </p>
           </div>
 
@@ -68,7 +68,7 @@ export default function PrivacyPolicy() {
                 <li>İşlemeye itiraz</li>
               </ol>
               <p className="mt-3">
-                haklarınızı <a href="mailto:support@riyoapp.com" className="text-primary underline">support@riyoapp.com</a> adresine iletebilirsiniz.
+                haklarınızı <a href="mailto:support@cafemeet.com" className="text-primary underline">support@cafemeet.com</a> adresine iletebilirsiniz.
               </p>
             </section>
           </div>
@@ -76,8 +76,8 @@ export default function PrivacyPolicy() {
           {/* Footer */}
           <footer className="mt-12 mb-8 text-center space-y-2">
             <p className="text-xs text-muted-foreground">© 2026 Riyo – Tüm Hakları Saklıdır</p>
-            <a href="mailto:support@riyoapp.com" className="text-xs text-primary underline">
-              support@riyoapp.com
+            <a href="mailto:support@cafemeet.com" className="text-xs text-primary underline">
+              support@cafemeet.com
             </a>
           </footer>
         </main>
