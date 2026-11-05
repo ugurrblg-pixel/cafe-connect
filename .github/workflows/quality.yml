@@ -13,6 +13,10 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      # Test/build placeholders only; this job never gets production credentials.
+      VITE_SUPABASE_URL: https://ci.example.invalid
+      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
     steps:
       - uses: actions/checkout@v7
         with:
