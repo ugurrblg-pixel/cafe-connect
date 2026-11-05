@@ -7,6 +7,21 @@
 const CAFE_PLACEHOLDERS = [
   '/placeholders/cafes/riyo-cafe-sunlit.webp',
   '/placeholders/cafes/riyo-cafe-cozy.webp',
+  '/placeholders/cafes/cafe-1.jpg',
+  '/placeholders/cafes/cafe-2.jpg',
+  '/placeholders/cafes/cafe-3.jpg',
+  '/placeholders/cafes/cafe-5.jpg',
+  '/placeholders/cafes/cafe-6.jpg',
+  '/placeholders/cafes/cafe-7.jpg',
+  '/placeholders/cafes/cafe-8.jpg',
+  '/placeholders/cafes/cafe-9.jpg',
+  '/placeholders/cafes/cafe-11.jpg',
+  '/placeholders/cafes/cafe-14.jpg',
+  '/placeholders/cafes/cafe-15.jpg',
+  '/placeholders/cafes/cafe-16.jpg',
+  '/placeholders/cafes/cafe-17.jpg',
+  '/placeholders/cafes/cafe-19.jpg',
+  '/placeholders/cafes/cafe-20.jpg',
 ];
 
 /**
@@ -31,15 +46,14 @@ function hashString(str: string): number {
  * @param imageUrl - The cafe's own image URL (optional)
  * @returns The image URL to use
  */
-export function getCafeImage(cafeId: string, imageUrl?: string | null): string {
+export function getCafeImage(cafeId: string, imageUrl?: string | null, category = 'cafe'): string {
   // If cafe has a valid image URL, use it
   if (imageUrl && imageUrl.trim() !== '') {
     return imageUrl;
   }
   
   // Otherwise, deterministically select a placeholder based on cafe ID
-  const index = hashString(cafeId) % CAFE_PLACEHOLDERS.length;
-  return CAFE_PLACEHOLDERS[index];
+  return getCafeFallbackImage(cafeId, category);
 }
 
 /**
@@ -49,7 +63,9 @@ export function getCafeImage(cafeId: string, imageUrl?: string | null): string {
  * @param cafeId - Unique identifier for the cafe
  * @returns A placeholder image URL
  */
-export function getCafeFallbackImage(cafeId: string): string {
+export function getCafeFallbackImage(cafeId: string, category = 'cafe'): string {
+  if (category === 'gym') return '/placeholders/cafes/riyo-gym.webp';
+  if (category === 'bar' || category === 'night_club') return '/placeholders/cafes/riyo-bar.webp';
   const index = hashString(cafeId) % CAFE_PLACEHOLDERS.length;
   return CAFE_PLACEHOLDERS[index];
 }

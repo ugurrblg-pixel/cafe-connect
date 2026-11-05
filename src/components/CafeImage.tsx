@@ -29,15 +29,13 @@ export function CafeImage({
 }: CafeImageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-  useEffect(() => { setHasError(false); setIsLoading(true); }, [cafeId, imageUrl]);
-  const representative = !imageUrl || hasError;
-  const categoryFallback = category === 'gym' ? '/placeholders/cafes/riyo-gym.webp'
-    : category === 'bar' || category === 'night_club' ? '/placeholders/cafes/riyo-bar.webp' : null;
+  useEffect(() => { setHasError(false); setIsLoading(true); }, [cafeId, imageUrl, category]);
+  const representative = !imageUrl?.trim() || hasError;
 
   // Get the appropriate image source
   const imageSrc = hasError
-    ? getCafeFallbackImage(cafeId)
-    : getCafeImage(cafeId, imageUrl);
+    ? getCafeFallbackImage(cafeId, category)
+    : getCafeImage(cafeId, imageUrl, category);
 
   const handleLoad = useCallback(() => {
     setIsLoading(false);
@@ -70,7 +68,7 @@ export function CafeImage({
 
       {/* Actual image */}
       <img
-        src={representative && categoryFallback ? categoryFallback : imageSrc}
+        src={imageSrc}
         alt={representative ? `${alt} için temsili ${category === 'gym' ? 'spor salonu' : category === 'bar' || category === 'night_club' ? 'bar' : 'kafe'} görseli` : alt}
         className={cn(
           'w-full h-full object-cover transition-opacity duration-300',

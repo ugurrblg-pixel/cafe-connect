@@ -31,6 +31,8 @@ A cafe profile includes display name, age, bio, purpose, interests, verification
 
 ## Venue source disclosure
 
+CafeImage uses a stable cafeId-based selection from 17 reviewed local representative cafe images: two existing Riyo WebP images and 15 previously unused JPG assets. The library includes bright, cozy, garden, book-lined and espresso-bar settings. Gym and bar/nightclub fallbacks remain category-specific. Whitespace-only/missing or failed own-image URLs display the representative caption. The same cafeId resolves to the same image across list/detail views; loading remains lazy except for priority images. No provider or real venue photography claim follows from the illustration.
+
 `VenueSources` owns source/license disclosure across discovery and venue details. Card captions name the actual provider; expanded credits preserve the source attribution text and link only to maintained provider/license URLs. Use inherited muted typography and native keyboard-accessible disclosure. Unknown opening status stays unknown; a source match is not an account or business verification badge.
 
 ## Discovery list
