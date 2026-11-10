@@ -250,7 +250,7 @@ export default function Auth() {
               <label htmlFor="terms" className="text-xs text-muted-foreground leading-snug cursor-pointer">
                 <a href="/settings/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline">Kullanım Koşullarını</a>
                 {' '}ve{' '}
-                <a href="/settings/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline">Gizlilik Politikasını</a>
+                <a href="/settings/help/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-primary underline">Gizlilik Politikasını</a>
                 {' '}kabul ediyorum.
               </label>
             </div>

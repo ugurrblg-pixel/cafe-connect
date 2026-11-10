@@ -153,7 +153,7 @@ function AppRoutes() {
         <Route path="/settings/help/location" element={<ProtectedRoute><SuspensePage><LocationUsage /></SuspensePage></ProtectedRoute>} />
         <Route path="/settings/help/premium" element={<ProtectedRoute><SuspensePage><PremiumPayments /></SuspensePage></ProtectedRoute>} />
         <Route path="/settings/help/contact" element={<ProtectedRoute><SuspensePage><ContactUs /></SuspensePage></ProtectedRoute>} />
-        <Route path="/settings/help/privacy-policy" element={<ProtectedRoute><SuspensePage><PrivacyPolicy /></SuspensePage></ProtectedRoute>} />
+        <Route path="/settings/help/privacy-policy" element={<SuspensePage><PrivacyPolicy /></SuspensePage>} />
         <Route path="/settings/help/terms" element={<ProtectedRoute><SuspensePage><TermsOfUse /></SuspensePage></ProtectedRoute>} />
         {/* Admin routes */}
         <Route path="/admin" element={<AdminGuard><SuspensePage><AdminDashboard /></SuspensePage></AdminGuard>} />
