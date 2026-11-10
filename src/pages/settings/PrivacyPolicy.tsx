@@ -1,5 +1,6 @@
 import { Header } from '@/components/Header';
 import { PageLayout } from '@/components/PageLayout';
+import { Link } from 'react-router-dom';
 
 export default function PrivacyPolicy() {
   return (
@@ -84,7 +85,7 @@ export default function PrivacyPolicy() {
               <h2 className="text-lg font-semibold text-foreground mb-3">6. Saklama, yedekleme ve silme</h2>
               <div className="space-y-3">
                 <p>Hesap verilerini ve fotoğrafları Supabase’de saklarız. Kesinti veya veri kaybı sonrası kurtarma için günlük şifreli kopyaları Hostinger sunucusunda tutarız. Veritabanı için 7 günlük ve 4 haftalık yedek saklarız. Profil fotoğrafları ve doğrulama selfieleri için ayrı bir 7 günlük yedek döngüsü kullanırız.</p>
-                <p>Hesap silme işlemi hesabınızı, profilinizi, fotoğraflarınızı ve kendi gönderdiğiniz mesajları aktif sistemden kaldırır. Bazı moderasyon kayıtları sınırlı erişimle saklanabilir. Silinen verilerin önceki yedeklerdeki kopyaları yedek saklama döngüsü tamamlanana kadar kalabilir.</p>
+                <p><Link to="/account-deletion" className="text-primary underline">Hesap ve veri silme</Link> işlemi hesabınızı, profilinizi, fotoğraflarınızı ve kendi gönderdiğiniz mesajları aktif sistemden kaldırır. Bazı moderasyon kayıtları sınırlı erişimle saklanabilir. Silinen verilerin önceki yedeklerdeki kopyaları yedek saklama döngüsü tamamlanana kadar kalabilir.</p>
               </div>
             </section>
 

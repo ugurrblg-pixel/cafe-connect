@@ -1,5 +1,6 @@
 import { Header } from '@/components/Header';
 import { PageLayout } from '@/components/PageLayout';
+import { Link } from 'react-router-dom';
 
 export default function TermsOfUse() {
   return (
@@ -10,7 +11,7 @@ export default function TermsOfUse() {
           {/* Title & Date */}
           <div className="py-6">
             <h1 className="text-2xl font-bold text-foreground tracking-tight">RİYO KULLANIM KOŞULLARI</h1>
-            <p className="text-sm text-muted-foreground mt-2">Son Güncelleme Tarihi: 19 Şubat 2026</p>
+            <p className="text-sm text-muted-foreground mt-2">Son güncelleme <time dateTime="2026-11-10">10 Kasım 2026</time></p>
           </div>
 
           <div className="space-y-8 text-sm text-foreground leading-relaxed">
@@ -18,13 +19,13 @@ export default function TermsOfUse() {
             <section>
               <h2 className="text-lg font-semibold text-foreground mb-3">1. Taraflar</h2>
               <p className="mb-2">
-                İşbu Kullanım Koşulları ("Sözleşme"), Türkiye Cumhuriyeti kanunlarına göre kurulmuş şahıs işletmesi olan <strong>UĞUR BİLGİN</strong> ("Şirket") ile Riyo mobil uygulamasını kullanan gerçek kişi ("Kullanıcı") arasında akdedilmiştir.
+                Bu koşullar Riyo hizmetini sunan <strong>UĞUR BİLGİN</strong> ile hizmeti kullanan kişi arasındaki ilişkiyi düzenler.
               </p>
               <p className="mb-2">
                 İletişim: <a href="mailto:support@cafemeet.com" className="text-primary underline">support@cafemeet.com</a>
               </p>
               <p>
-                Kullanıcı, uygulamaya kayıt olarak bu sözleşmeyi elektronik ortamda kabul etmiş sayılır.
+                Kullanıcı, kayıt sırasında kullanım koşullarını elektronik ortamda kabul eder. Kişisel verilerin işlenmesi <Link to="/settings/help/privacy-policy" className="text-primary underline">Gizlilik Politikası</Link> sayfasında açıklanır.
               </p>
             </section>
 
@@ -50,12 +51,11 @@ export default function TermsOfUse() {
               <p className="mb-2">Riyo yalnızca 18 yaş ve üzeri bireyler tarafından kullanılabilir.</p>
               <p className="mb-1">Kullanıcı:</p>
               <ol className="list-decimal list-inside space-y-1 ml-2">
-                <li>18 yaşından büyük olduğunu</li>
+                <li>En az 18 yaşında olduğunu</li>
                 <li>Verdiği bilgilerin doğru olduğunu</li>
               </ol>
               <p className="mt-2">beyan eder.</p>
               <p className="mt-2">Yaşın yanlış beyanından doğacak hukuki sorumluluk kullanıcıya aittir.</p>
-              <p>Şirket gerekli gördüğünde kimlik doğrulama talep edebilir.</p>
             </section>
 
             {/* 4. Kullanıcı Yükümlülükleri */}
@@ -71,20 +71,16 @@ export default function TermsOfUse() {
                 <li>Spam veya ticari kullanım yapmak</li>
               </ol>
               <p className="mt-2">İhlal halinde hesap askıya alınabilir veya kapatılabilir.</p>
+              <p className="mt-2"><Link to="/community-rules" className="text-primary underline">Topluluk Kuralları</Link> sayfasında bildirim, engelleme ve itiraz adımlarını bulabilirsiniz.</p>
             </section>
 
             {/* 5. Fiziksel Buluşmalar */}
             <section>
               <h2 className="text-lg font-semibold text-foreground mb-3">5. Fiziksel Buluşmalar ve Sorumluluk</h2>
               <p className="mb-2">
-                Riyo üzerinden tanışan kullanıcıların gerçekleştirdiği fiziksel buluşmalar tamamen kullanıcıların sorumluluğundadır.
+                Fiziksel buluşmalara katılma kararını kullanıcılar verir. Tanımadığınız kişilerle buluşurken halka açık bir mekân seçin.
               </p>
-              <p className="mb-1">Şirket:</p>
-              <ol className="list-decimal list-inside space-y-1 ml-2">
-                <li>Kullanıcı kimliğini garanti etmez</li>
-                <li>Offline gerçekleşen olaylardan sorumlu değildir</li>
-                <li>Mekan güvenliğini garanti etmez</li>
-              </ol>
+              <p>Profil doğrulaması sınırlı bir fotoğraf incelemesidir. Mekân güvenliği veya diğer kullanıcıların davranışları hakkında garanti vermez.</p>
             </section>
 
             {/* 6. Konum Verisi */}
@@ -103,32 +99,19 @@ export default function TermsOfUse() {
             {/* 7. Hesap Silme */}
             <section>
               <h2 className="text-lg font-semibold text-foreground mb-3">7. Hesap Silme</h2>
-              <p className="mb-2">Kullanıcı hesabını istediği zaman silebilir.</p>
-              <p className="mb-1">Hesap silindiğinde:</p>
-              <ol className="list-decimal list-inside space-y-1 ml-2">
-                <li>Profil görünürlüğü kaldırılır</li>
-                <li>Veriler anonimleştirilebilir</li>
-                <li>Yasal yükümlülükler kapsamında saklanabilir</li>
-              </ol>
+              <p><Link to="/account-deletion" className="text-primary underline">Hesap ve veri silme</Link> sayfasından işlemi başlatabilirsiniz. Tamamlandığında hesap, profil, fotoğraflar ve gönderdiğiniz mesajlar aktif sistemden kaldırılır. Sınırlı moderasyon kayıtları ve önceki yedek kopyaları hakkında Gizlilik Politikası’na bakabilirsiniz.</p>
             </section>
 
             {/* 8. Sorumluluğun Sınırlandırılması */}
             <section>
               <h2 className="text-lg font-semibold text-foreground mb-3">8. Sorumluluğun Sınırlandırılması</h2>
-              <p className="mb-2">Şirket;</p>
-              <ol className="list-decimal list-inside space-y-1 ml-2">
-                <li>Sistem kesintileri</li>
-                <li>Veri kaybı</li>
-                <li>Kullanıcı davranışları</li>
-                <li>Üçüncü taraf mekan hizmetleri</li>
-              </ol>
-              <p className="mt-2">nedeniyle oluşabilecek zararlardan sorumlu değildir.</p>
+              <p>Üçüncü taraf mekânların çalışma saatleri ve hizmetleri değişebilir. Bu koşullar kapsamında uygulanması zorunlu yasal haklarınız saklıdır.</p>
             </section>
 
             {/* 9. Yetkili Mahkeme */}
             <section>
-              <h2 className="text-lg font-semibold text-foreground mb-3">9. Yetkili Mahkeme</h2>
-              <p>Uyuşmazlıklarda Şirket merkezinin bulunduğu yer mahkemeleri ve icra daireleri yetkilidir.</p>
+              <h2 className="text-lg font-semibold text-foreground mb-3">9. Uyuşmazlıklar</h2>
+              <p>Hizmetle ilgili başvurularınızı destek adresine iletebilirsiniz. Kanunen yetkili mercilere başvurma hakkınız saklıdır.</p>
             </section>
           </div>
 

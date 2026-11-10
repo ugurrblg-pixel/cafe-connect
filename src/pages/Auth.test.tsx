@@ -18,6 +18,8 @@ it('uses Google OAuth with the current site redirect when enabled',async()=>{
  mock.oauth.mockResolvedValue({error:null});
  render(<MemoryRouter><Auth /></MemoryRouter>);
  fireEvent.click(screen.getByRole('button',{name:'Google'}));
+ expect(mock.oauth).not.toHaveBeenCalled();
+ fireEvent.click(await screen.findByRole('button',{name:'Koşulları kabul et ve devam et'}));
  await waitFor(()=>expect(mock.oauth).toHaveBeenCalledWith({provider:'google',options:{redirectTo:`${window.location.origin}/`}}));
 });
 it('passes the birth date during signup and does not write a profile without a session',async()=>{

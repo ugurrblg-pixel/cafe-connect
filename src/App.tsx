@@ -44,6 +44,7 @@ const LocationUsage = lazy(() => import("./pages/settings/LocationUsage"));
 const PremiumPayments = lazy(() => import("./pages/settings/PremiumPayments"));
 const ContactUs = lazy(() => import("./pages/settings/ContactUs"));
 const PrivacyPolicy = lazy(() => import("./pages/settings/PrivacyPolicy"));
+const LegalHelp = lazy(() => import("./pages/settings/LegalHelp"));
 const TermsOfUse = lazy(() => import("./pages/settings/TermsOfUse"));
 
 const PageFallback = () => (
@@ -154,7 +155,10 @@ function AppRoutes() {
         <Route path="/settings/help/premium" element={<ProtectedRoute><SuspensePage><PremiumPayments /></SuspensePage></ProtectedRoute>} />
         <Route path="/settings/help/contact" element={<ProtectedRoute><SuspensePage><ContactUs /></SuspensePage></ProtectedRoute>} />
         <Route path="/settings/help/privacy-policy" element={<SuspensePage><PrivacyPolicy /></SuspensePage>} />
-        <Route path="/settings/help/terms" element={<ProtectedRoute><SuspensePage><TermsOfUse /></SuspensePage></ProtectedRoute>} />
+        <Route path="/settings/help/terms" element={<SuspensePage><TermsOfUse /></SuspensePage>} />
+        <Route path="/settings/terms" element={<Navigate to="/settings/help/terms" replace />} />
+        <Route path="/community-rules" element={<SuspensePage><LegalHelp page="community" /></SuspensePage>} />
+        <Route path="/account-deletion" element={<SuspensePage><LegalHelp page="deletion" /></SuspensePage>} />
         {/* Admin routes */}
         <Route path="/admin" element={<AdminGuard><SuspensePage><AdminDashboard /></SuspensePage></AdminGuard>} />
         <Route path="/admin/users" element={<AdminGuard><SuspensePage><AdminUsers /></SuspensePage></AdminGuard>} />

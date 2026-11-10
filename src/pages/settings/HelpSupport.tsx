@@ -15,6 +15,7 @@ export default function HelpSupport() {
     { icon: <Mail className="w-5 h-5 text-primary" />, label: t.settings.contactUs, description: t.settings.contactUsDesc, onClick: () => navigate('/settings/help/contact') },
     { icon: <FileText className="w-5 h-5 text-muted-foreground" />, label: t.settings.privacyPolicy, description: t.settings.privacyPolicyDesc, onClick: () => navigate('/settings/help/privacy-policy') },
     { icon: <Scale className="w-5 h-5 text-muted-foreground" />, label: t.settings.termsOfUse, description: t.settings.termsOfUseDesc, onClick: () => navigate('/settings/help/terms') },
+    { icon: <BookOpen className="w-5 h-5 text-muted-foreground" />, label: 'Topluluk Kuralları', description: 'Bildirim, engelleme ve itiraz', onClick: () => navigate('/community-rules') },
   ];
 
   return (

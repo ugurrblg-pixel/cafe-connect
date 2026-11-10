@@ -275,10 +275,9 @@ export default function Onboarding() {
         </div>
         <div className="px-8 pb-8">
           <p className="text-xs text-muted-foreground/70 text-center leading-relaxed">
-            {t.onboarding.agreeToTerms}{' '}
-            <span className="text-primary">{t.onboarding.termsOfService}</span>
-            {' '}{t.onboarding.and}{' '}
-            <span className="text-primary">{t.onboarding.privacyPolicy}</span>
+            <a href="/settings/help/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline">{t.onboarding.termsOfService}</a>
+            {' · '}
+            <a href="/settings/help/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-primary underline">{t.onboarding.privacyPolicy}</a>
           </p>
         </div>
       </div>

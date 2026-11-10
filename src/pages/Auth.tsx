@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Coffee, Mail, Lock, User, Eye, EyeOff, CalendarIcon } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Link } from 'react-router-dom';
 import { containsProfanity, getProfanityError } from '@/lib/profanityFilter';
 import { useI18n } from '@/contexts/I18nContext';
@@ -135,11 +136,12 @@ export default function Auth() {
         </h2>
 
         {googleEnabled && <>
+        <AlertDialog>
+        <AlertDialogTrigger asChild>
         <Button
           type="button"
           variant="outline"
           className="w-full mb-4 h-12"
-          onClick={handleGoogleSignIn}
           disabled={loading}
         >
           <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
@@ -150,6 +152,20 @@ export default function Auth() {
           </svg>
           {t.auth.continueWithGoogle}
         </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Google ile devam et</AlertDialogTitle>
+            <AlertDialogDescription>
+              Google ile ilk girişinizde Riyo hesabı açılabilir. Devam etmeden önce <a href="/settings/help/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline">Kullanım Koşullarını</a> okuyun. Verilerinizin nasıl işlendiğini <a href="/settings/help/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-primary underline">Gizlilik Politikası</a> açıklar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Vazgeç</AlertDialogCancel>
+            <AlertDialogAction onClick={handleGoogleSignIn}>Koşulları kabul et ve devam et</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+        </AlertDialog>
 
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
@@ -248,13 +264,14 @@ export default function Auth() {
                 className="mt-0.5"
               />
               <label htmlFor="terms" className="text-xs text-muted-foreground leading-snug cursor-pointer">
-                <a href="/settings/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline">Kullanım Koşullarını</a>
-                {' '}ve{' '}
-                <a href="/settings/help/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-primary underline">Gizlilik Politikasını</a>
+                <a href="/settings/help/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline">Kullanım Koşullarını</a>
                 {' '}kabul ediyorum.
               </label>
             </div>
           )}
+          {!isLogin && <p className="text-xs text-muted-foreground">
+            Verilerinizin nasıl işlendiğini <a href="/settings/help/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-primary underline">Gizlilik Politikası</a> açıklar.
+          </p>}
 
           <Button type="submit" className="w-full h-12" disabled={loading || (!isLogin && !acceptedTerms)}>
             {loading ? t.auth.loading : isLogin ? t.auth.signIn : t.auth.signUp}
