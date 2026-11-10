@@ -380,7 +380,7 @@ export default function Discover() {
                       ? "Aramayı veya filtreleri değiştirerek tekrar bakabilirsin."
                       : position
                         ? "Aramayı yenileyebilir veya daha sonra tekrar deneyebilirsin."
-                        : "Konum izniyle çevrendeki mekanları ve mesafelerini gösterebiliriz."}
+                        : "Konumunla çevrendeki mekânları buluruz. Gerektiğinde yaklaşık arama alanını Google Places’a göndeririz."}
                   </p>
                   {cafes.length > 0 ? (
                     <Button variant="outline" className="mt-4" onClick={clear}>

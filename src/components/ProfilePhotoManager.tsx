@@ -269,7 +269,13 @@ export function ProfilePhotoManager({ photos, onPhotosChange, onBusyChange }: Pr
         onChange={handleFileSelect}
         className="hidden"
       />
-      {reviewEnabled && <label className="flex items-start gap-2 rounded-xl bg-secondary/50 p-3 text-xs text-muted-foreground"><input type="checkbox" checked={reviewConsent} onChange={e => setReviewConsent(e.target.checked)} disabled={uploading} className="mt-0.5" />Yüklediğim fotoğrafın cinsel içerik, şiddet ve kendine zarar içeriği kontrolü için OpenAI’a gönderilmesine izin veriyorum. Bu işlem hesap doğrulaması değildir.</label>}
+      {reviewEnabled && <div className="space-y-2 rounded-xl bg-secondary/50 p-3 text-xs leading-relaxed text-muted-foreground">
+        <p>Yeni profil fotoğrafı eklemek için içerik denetimi gerekir. OpenAI, fotoğrafı cinsel içerik, şiddet ve kendine zarar içeriği açısından kontrol eder. <a href="/settings/help/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-primary underline">Veriler nasıl işleniyor?</a></p>
+        <label className="flex items-start gap-2">
+          <input type="checkbox" checked={reviewConsent} onChange={e => setReviewConsent(e.target.checked)} disabled={uploading} className="mt-0.5" />
+          Yükleyeceğim fotoğrafın bu denetim için OpenAI’a gönderilmesine izin veriyorum.
+        </label>
+      </div>}
 
       <p className="text-xs text-muted-foreground">
         Fotoğraf değişiklikleri hemen kaydedilir. İlk fotoğraf ana fotoğrafındır.

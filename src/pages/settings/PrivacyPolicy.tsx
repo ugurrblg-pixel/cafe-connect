@@ -55,7 +55,8 @@ export default function PrivacyPolicy() {
               <h2 className="text-lg font-semibold text-foreground mb-3">3. Fotoğraflar ve hesap doğrulama</h2>
               <div className="space-y-3">
                 <p>Yeni profil fotoğrafı yüklerken verdiğiniz izinle fotoğraf, cinsel içerik, şiddet ve kendine zarar içeriği açısından denetlenmek üzere OpenAI’a gönderilir. Denetimden geçmeyen veya denetimi tamamlanamayan yeni fotoğraflar profilinize eklenmez.</p>
-                <p>Hesap doğrulaması isteğe bağlıdır. Başvurunuz beklemedeyken yetkili Riyo ekibi, gönderdiğiniz selfie ile başvuru anındaki ana profil fotoğrafınızı ilk 7 gün içinde elle karşılaştırabilir. Selfie diğer kullanıcılara gösterilmez ve otomatik profil fotoğrafı denetimine gönderilmez. Bu 7 gün, ekibin başvuruyu inceleyebildiği süredir.</p>
+                <p>Hesap doğrulaması isteğe bağlıdır. Başvurunuz beklemedeyken yetkili Riyo ekibi, gönderdiğiniz selfie ile başvuru anındaki ana profil fotoğrafınızı ilk 7 gün içinde elle karşılaştırabilir. Selfie diğer kullanıcılara gösterilmez ve OpenAI’a gönderilmez.</p>
+                <p>Yedi gün inceleme erişiminin süresidir. Başvuru sonuçlandığında veya başvuruyu geri çektiğinizde doğrulama ekranından selfieyi silebilirsiniz. Yeni başvuru gönderirken önceki kapalı başvuruların selfie dosyalarını temizleriz.</p>
               </div>
             </section>
 
