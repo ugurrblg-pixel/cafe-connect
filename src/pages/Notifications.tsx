@@ -295,8 +295,10 @@ export default function Notifications() {
                     >
                       <div className="flex items-center gap-4">
                         {/* Avatar - clickable to profile */}
-                        <div
-                          className="flex-shrink-0 cursor-pointer"
+                        <button
+                          type="button"
+                          aria-label={`${wave.fromUser?.displayName || 'Selam gönderen'} profilini görüntüle`}
+                          className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           onClick={() =>
                             wave.fromUserId &&
                             navigate(`/profile/${wave.fromUserId}`)
@@ -315,20 +317,17 @@ export default function Notifications() {
                               className="rounded-full w-14 h-14"
                             />
                           )}
-                        </div>
+                        </button>
 
-                        {/* Content - name clickable to profile */}
+                        {/* Wave details and profile action */}
                         <div className="flex-1 min-w-0">
-                          <p
-                            className="font-semibold text-foreground cursor-pointer hover:underline"
-                            onClick={() =>
-                              wave.fromUserId &&
-                              navigate(`/profile/${wave.fromUserId}`)
-                            }
-                          >
+                          <p className="font-semibold text-foreground">
                             {wave.fromUser?.displayName || "Biri"} sana el
                             salladı 👋
                           </p>
+                          <Button variant="link" className="h-9 px-0" onClick={() => navigate(`/profile/${wave.fromUserId}`)}>
+                            Profili gör
+                          </Button>
                           <p className="text-sm text-muted-foreground">
                             {getCafeName(wave.cafeId)} •{" "}
                             {formatDistanceToNow(wave.createdAt, {

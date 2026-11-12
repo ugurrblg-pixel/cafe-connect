@@ -1,244 +1,82 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Navigate, useParams } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { ProfilePhotoCarousel } from '@/components/ProfilePhotoCarousel';
 import { PurposeBadge } from '@/components/PurposeBadge';
 import { HobbyDisplay } from '@/components/HobbyDisplay';
-import { PremiumBadge } from '@/components/PremiumBadge';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
-import { supabase } from '@/integrations/supabase/client';
-import { Purpose } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/contexts/AuthContext';
 import { useProfileViews } from '@/hooks/useProfileViews';
 import { useActiveCheckIn } from '@/hooks/useActiveCheckIn';
-import { COFFEE_OPTIONS } from '@/components/profile/CoffeePreferenceSelector';
-import { ENERGY_OPTIONS } from '@/components/profile/SocialEnergySelector';
-import { Coffee, Zap, Quote, UtensilsCrossed, Star, CalendarDays } from 'lucide-react';
-import { ZODIAC_OPTIONS } from '@/pages/ProfileEdit';
-
-interface UserProfile {
-  displayName: string;
-  age: number | null;
-  bio: string;
-  photoUrl: string;
-  photoUrls: string[];
-  purpose: Purpose;
-  hobbies: string[];
-  isPremium: boolean;
-  isVerified: boolean;
-  coffeePreference: string | null;
-  socialEnergy: string | null;
-  motto: string | null;
-  foodPersonality: string | null;
-  zodiacSign: string | null;
-  weekendPlan: string | null;
-}
+import { useCafeUsers } from '@/hooks/useCafeUsers';
 
 export default function UserProfileView() {
   const { userId } = useParams<{ userId: string }>();
-  const navigate = useNavigate();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [profileLoading, setProfileLoading] = useState(true);
+  const { user } = useAuth();
   const { logProfileView } = useProfileViews();
-  const { activeCheckIn } = useActiveCheckIn();
-  
+  const { activeCheckIn, loading: checkInLoading } = useActiveCheckIn();
+  const cafeId = activeCheckIn?.cafeId ?? '';
+  const { users, loading, connectionStatus } = useCafeUsers(cafeId, {
+    isCheckedIn: Boolean(cafeId),
+  });
+  const profile = users.find(member => member.userId === userId);
+  const visibleUserId = profile?.userId;
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (!userId) return;
-
-      const [profileRes, subscriptionRes] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select('display_name, age, bio, photo_url, photo_urls, purpose, hobbies, is_verified, coffee_preference, social_energy, motto, food_personality, zodiac_sign, weekend_plan')
-          .eq('user_id', userId)
-          .maybeSingle(),
-        supabase
-          .from('subscriptions')
-          .select('status, expires_at')
-          .eq('user_id', userId)
-          .maybeSingle(),
-      ]);
-
-      if (profileRes.data) {
-        const sub = subscriptionRes.data;
-        const isPremium = sub?.status === 'active' && 
-          (!sub?.expires_at || new Date(sub.expires_at) > new Date());
-
-        setProfile({
-          displayName: profileRes.data.display_name || 'Anonim',
-          age: profileRes.data.age,
-          bio: profileRes.data.bio || '',
-          photoUrl: profileRes.data.photo_url || '',
-          photoUrls: (profileRes.data.photo_urls as string[]) || [],
-          purpose: (profileRes.data.purpose as Purpose) || 'chat',
-          hobbies: (profileRes.data.hobbies as string[]) || [],
-          isPremium,
-          isVerified: profileRes.data.is_verified || false,
-          coffeePreference: profileRes.data.coffee_preference || null,
-          socialEnergy: profileRes.data.social_energy || null,
-          motto: (profileRes.data as any).motto || null,
-          foodPersonality: (profileRes.data as any).food_personality || null,
-          zodiacSign: (profileRes.data as any).zodiac_sign || null,
-          weekendPlan: (profileRes.data as any).weekend_plan || null,
-        });
-      }
-      setProfileLoading(false);
-    };
-
-    fetchProfile();
-    // Log profile view
-    if (userId) {
-      logProfileView(userId, activeCheckIn?.cafeId || null);
+    if (visibleUserId && visibleUserId !== user?.id) {
+      void logProfileView(visibleUserId, cafeId);
     }
-  }, [userId]);
+  }, [visibleUserId, user?.id, cafeId, logProfileView]);
 
-  if (profileLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header title="Profil" showBack />
-        <main className="pt-20 px-4">
-          <div className="flex flex-col items-center py-6">
-            <Skeleton className="w-64 h-64 rounded-2xl mb-4" />
-            <Skeleton className="h-8 w-32 mb-2" />
-            <Skeleton className="h-6 w-24" />
-          </div>
-        </main>
-      </div>
-    );
-  }
+  if (userId === user?.id) return <Navigate to="/profile" replace />;
 
-  if (!profile) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header title="Profil" showBack />
-        <div className="flex items-center justify-center pt-32">
-          <p className="text-muted-foreground">Profil bulunamadı</p>
-        </div>
-      </div>
-    );
-  }
-
+  const pending = checkInLoading || Boolean(cafeId && loading);
   return (
     <div className="min-h-screen bg-background pb-24">
-      <Header title={profile.displayName} showBack />
-
-      <main className="pt-20 px-4">
-        <div className="flex flex-col items-center py-6">
-          <ProfilePhotoCarousel
-            photos={profile.photoUrls}
-            avatarUrl={profile.photoUrl}
-            name={profile.displayName}
-            size="lg"
-            className="mb-4"
-          />
-
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-foreground">
-              {profile.displayName}{profile.age ? `, ${profile.age}` : ''}
-            </h1>
-            {profile.isVerified && <VerifiedBadge size="sm" showText />}
-            {profile.isPremium && <PremiumBadge size="sm" />}
+      <Header title={profile?.displayName ?? 'Profil'} showBack />
+      <main className="mx-auto max-w-[440px] px-4 pt-20">
+        {pending ? (
+          <div className="flex flex-col items-center gap-4 py-6" role="status" aria-label="Profil yükleniyor">
+            <Skeleton className="aspect-square w-full max-w-[280px] rounded-2xl" />
+            <Skeleton className="h-8 w-32" />
           </div>
-
-          <PurposeBadge purpose={profile.purpose} />
-        </div>
-
-        {/* Bio */}
-        {profile.bio && (
-          <section className="card-elevated p-4 mb-4">
-            <h2 className="font-semibold text-foreground mb-2">Hakkında</h2>
-            <p className="text-muted-foreground">{profile.bio}</p>
-          </section>
-        )}
-
-        {/* Hobbies */}
-        {profile.hobbies.length > 0 && (
-          <section className="card-elevated p-4 mb-4">
-            <h2 className="font-semibold text-foreground mb-3">Hobiler</h2>
-            <HobbyDisplay hobbies={profile.hobbies} />
-          </section>
-        )}
-
-        {/* Coffee & Social Energy */}
-        {(profile.coffeePreference || profile.socialEnergy) && (
-          <section className="card-elevated p-4 mb-4">
-            <h2 className="font-semibold text-foreground mb-3">Tercihler</h2>
-            <div className="flex flex-wrap gap-3">
-              {profile.coffeePreference && (() => {
-                const coffee = COFFEE_OPTIONS.find(o => o.value === profile.coffeePreference);
-                return coffee ? (
-                  <div className="flex items-center gap-2 bg-secondary/50 rounded-xl px-3 py-2">
-                    <span className="text-lg">{coffee.emoji}</span>
-                    <div>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1"><Coffee className="w-3 h-3" /> Kahve Tercihi</p>
-                      <p className="text-sm font-medium text-foreground">{coffee.label}</p>
-                    </div>
-                  </div>
-                ) : null;
-              })()}
-              {profile.socialEnergy && (() => {
-                const energy = ENERGY_OPTIONS.find(o => o.value === profile.socialEnergy);
-                return energy ? (
-                  <div className="flex items-center gap-2 bg-secondary/50 rounded-xl px-3 py-2">
-                    <span className="text-lg">{energy.emoji}</span>
-                    <div>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1"><Zap className="w-3 h-3" /> Sosyal Enerji</p>
-                      <p className="text-sm font-medium text-foreground">{energy.label}</p>
-                    </div>
-                  </div>
-                ) : null;
-              })()}
+        ) : profile ? (
+          <>
+            <div className="flex flex-col items-center gap-3 py-6 text-center">
+              <ProfilePhotoCarousel
+                photos={profile.photoUrls}
+                avatarUrl={profile.photoUrl}
+                name={profile.displayName}
+                enableFullscreen={false}
+              />
+              <div className="flex max-w-full items-center gap-2">
+                <h1 className="min-w-0 break-words text-2xl font-bold text-foreground">
+                  {profile.displayName}{profile.age ? `, ${profile.age}` : ''}
+                </h1>
+                {profile.isVerified && <VerifiedBadge size="sm" showText />}
+              </div>
+              <PurposeBadge purpose={profile.purpose} />
             </div>
-          </section>
-        )}
-
-        {/* Personal Touch */}
-        {(profile.motto || profile.foodPersonality || profile.zodiacSign || profile.weekendPlan) && (
-          <section className="card-elevated p-4 mb-4">
-            <h2 className="font-semibold text-foreground mb-3">Kişisel</h2>
-            <div className="space-y-3">
-              {profile.motto && (
-                <div className="flex items-start gap-2.5">
-                  <Quote className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Mottoum</p>
-                    <p className="text-sm font-medium text-foreground">{profile.motto}</p>
-                  </div>
-                </div>
-              )}
-              {profile.foodPersonality && (
-                <div className="flex items-start gap-2.5">
-                  <UtensilsCrossed className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Bir yemekle tanımla</p>
-                    <p className="text-sm font-medium text-foreground">{profile.foodPersonality}</p>
-                  </div>
-                </div>
-              )}
-              {profile.zodiacSign && (() => {
-                const zodiac = ZODIAC_OPTIONS.find(z => z.value === profile.zodiacSign);
-                return zodiac ? (
-                  <div className="flex items-start gap-2.5">
-                    <Star className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Burç</p>
-                      <p className="text-sm font-medium text-foreground">{zodiac.emoji} {zodiac.label}</p>
-                    </div>
-                  </div>
-                ) : null;
-              })()}
-              {profile.weekendPlan && (
-                <div className="flex items-start gap-2.5">
-                  <CalendarDays className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Hafta sonu planım</p>
-                    <p className="text-sm font-medium text-foreground">{profile.weekendPlan}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
+            {profile.bio && (
+              <section className="card-elevated mb-4 p-4">
+                <h2 className="mb-2 font-semibold text-foreground">Hakkında</h2>
+                <p className="break-words text-muted-foreground">{profile.bio}</p>
+              </section>
+            )}
+            {profile.hobbies.length > 0 && (
+              <section className="card-elevated mb-4 p-4">
+                <h2 className="mb-3 font-semibold text-foreground">Hobiler</h2>
+                <HobbyDisplay hobbies={profile.hobbies} />
+              </section>
+            )}
+          </>
+        ) : (
+          <p className="py-12 text-center text-sm text-muted-foreground" role="status">
+            {cafeId && connectionStatus === 'disconnected'
+              ? 'Profil şu anda yüklenemiyor. Lütfen tekrar dene.'
+              : 'Profil, aynı mekânda aktif check-in yaptığınızda ve paylaşım açıksa görünür.'}
+          </p>
         )}
       </main>
     </div>

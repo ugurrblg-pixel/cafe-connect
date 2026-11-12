@@ -25,9 +25,24 @@ export function useCafePhoto(reference:string,userId?:string):string|undefined {
     if(objectId===access.objectId&&url)return;
     clear();expiry=setTimeout(clear,31_000);
     const downloadVersion=version;
-    const {data:photo,error:photoError}=await supabase.functions.invoke('cafe-photo',{body:{...target,mode:'image'}});
+    // FunctionsClient decodes image/webp as text. Read the authenticated response as bytes.
+    const {data:{session},error:sessionError}=await supabase.auth.getSession();
+    if(cancelled||downloadVersion!==version)return;
+    if(sessionError||session?.user.id!==userId){clear();return;}
+    const response=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cafe-photo`,{
+      method:'POST',
+      headers:{
+        Authorization:`Bearer ${session.access_token}`,
+        apikey:import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        'Content-Type':'application/json',
+      },
+      body:JSON.stringify({...target,mode:'image'}),
+      cache:'no-store',
+    });
+    const photo=response.ok&&response.headers.get('content-type')?.split(';')[0]==='image/webp'
+      ?await response.blob():null;
     if(cancelled||downloadVersion!==version||document.visibilityState!=='visible')return;
-    if(photoError||!(photo instanceof Blob)||photo.type!=='image/webp'){clear();return;}
+    if(!photo?.size){clear();return;}
     url=URL.createObjectURL(photo);objectId=access.objectId;
     clearTimeout(expiry);expiry=setTimeout(clear,31_000);
     setResolved({reference,userId,url});
